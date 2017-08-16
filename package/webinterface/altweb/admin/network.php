@@ -45,6 +45,7 @@
 // 02-16-2017, Added Restart FTP Server support
 // 06-02-2017, Added selectable Prefix Delegation interfaces
 // 07-12-2017, Added ACME (Let's Encrypt) Certificate configuration
+// 08-13-2017, Added IPv6 ULA and DHCPv6 server user interface
 //
 // System location of rc.conf file
 $CONFFILE = '/etc/rc.conf';
@@ -316,6 +317,15 @@ function saveNETWORKsettings($conf_dir, $conf_file) {
   if ($value !== '' && strpos($value, '/') === FALSE) {
     $value="$value/64";
   }
+  if ($value !== '') {
+    if ($value[0] == ':') {
+      $ula_prefix = $_POST['ipv6_ula_prefix'];
+      $value = substr($ula_prefix,0,strrpos($ula_prefix,':')-1).$value;
+    }
+    strtok($value,"/");
+//    $value = exec('netcalc -n '.$value.' | sed -n -r -e \'s/^Compressed IPv6 *: *([0-9a-fA-F:]+).*$/\\1/p\'').'/'.strtok('/');
+    $value = compressIPV6addr($value).'/'.strtok('/');
+  }
   $value = 'INTIPV6="'.$value.'"';
   fwrite($fp, "### 1st LAN IPv6\n".$value."\n");
 
@@ -331,6 +341,15 @@ function saveNETWORKsettings($conf_dir, $conf_file) {
   $value = tuq($_POST['int2_ipv6']);
   if ($value !== '' && strpos($value, '/') === FALSE) {
     $value="$value/64";
+  }
+  if ($value !== '') {
+    if ($value[0] == ':') {
+      $ula_prefix = $_POST['ipv6_ula_prefix'];
+      $value = substr($ula_prefix,0,strrpos($ula_prefix,':')-1).$value;
+    }
+    strtok($value,"/");
+//    $value = exec('netcalc -n '.$value.' | sed -n -r -e \'s/^Compressed IPv6 *: *([0-9a-fA-F:]+).*$/\\1/p\'').'/'.strtok('/');
+    $value = compressIPV6addr($value).'/'.strtok('/');
   }
   $value = 'INT2IPV6="'.$value.'"';
   fwrite($fp, "### 2nd LAN IPv6\n".$value."\n");
@@ -348,6 +367,15 @@ function saveNETWORKsettings($conf_dir, $conf_file) {
   if ($value !== '' && strpos($value, '/') === FALSE) {
     $value="$value/64";
   }
+  if ($value !== '') {
+    if ($value[0] == ':') {
+      $ula_prefix = $_POST['ipv6_ula_prefix'];
+      $value = substr($ula_prefix,0,strrpos($ula_prefix,':')-1).$value;
+    }
+    strtok($value,"/");
+//    $value = exec('netcalc -n '.$value.' | sed -n -r -e \'s/^Compressed IPv6 *: *([0-9a-fA-F:]+).*$/\\1/p\'').'/'.strtok('/');
+    $value = compressIPV6addr($value).'/'.strtok('/');
+  }
   $value = 'INT3IPV6="'.$value.'"';
   fwrite($fp, "### 3rd LAN IPv6\n".$value."\n");
 
@@ -363,6 +391,15 @@ function saveNETWORKsettings($conf_dir, $conf_file) {
   $value = tuq($_POST['int4_ipv6']);
   if ($value !== '' && strpos($value, '/') === FALSE) {
     $value="$value/64";
+  }
+  if ($value !== '') {
+    if ($value[0] == ':') {
+      $ula_prefix = $_POST['ipv6_ula_prefix'];
+      $value = substr($ula_prefix,0,strrpos($ula_prefix,':')-1).$value;
+    }
+    strtok($value,"/");
+//    $value = exec('netcalc -n '.$value.' | sed -n -r -e \'s/^Compressed IPv6 *: *([0-9a-fA-F:]+).*$/\\1/p\'').'/'.strtok('/');
+    $value = compressIPV6addr($value).'/'.strtok('/');
   }
   $value = 'INT4IPV6="'.$value.'"';
   fwrite($fp, "### 4th LAN IPv6\n".$value."\n");
@@ -380,33 +417,43 @@ function saveNETWORKsettings($conf_dir, $conf_file) {
   if ($value !== '' && strpos($value, '/') === FALSE) {
     $value="$value/64";
   }
+  if ($value !== '') {
+    if ($value[0] == ':') {
+      $ula_prefix = $_POST['ipv6_ula_prefix'];
+      $value = substr($ula_prefix,0,strrpos($ula_prefix,':')-1).$value;
+    }
+    strtok($value,"/");
+//    $value = exec('netcalc -n '.$value.' | sed -n -r -e \'s/^Compressed IPv6 *: *([0-9a-fA-F:]+).*$/\\1/p\'').'/'.strtok('/');
+    $value = compressIPV6addr($value).'/'.strtok('/');
+  }
   $value = 'DMZIPV6="'.$value.'"';
   fwrite($fp, "### DMZ IPv6\n".$value."\n");
 
   $value = 'NODHCP="'.getNODHCP_value().'"';
   fwrite($fp, "### No DHCP on interfaces\n".$value."\n");
 
-  $tokens = explode('~', $_POST['int_autoconf']);
-  $x_value = $tokens[0];
-  $y_value = $tokens[1];
-  $tokens = explode('~', $_POST['int2_autoconf']);
-  $x_value .= $tokens[0];
-  $y_value .= $tokens[1];
-  $tokens = explode('~', $_POST['int3_autoconf']);
-  $x_value .= $tokens[0];
-  $y_value .= $tokens[1];
-  $tokens = explode('~', $_POST['int4_autoconf']);
-  $x_value .= $tokens[0];
-  $y_value .= $tokens[1];
-  $tokens = explode('~', $_POST['dmz_autoconf']);
-  $x_value .= $tokens[0];
-  $y_value .= $tokens[1];
+  $value = isset($_POST['int_ula']) ? ' INTIF' : '';
+  $value .= isset($_POST['int2_ula']) ? ' INT2IF' : '';
+  $value .= isset($_POST['int3_ula']) ? ' INT3IF' : '';
+  $value .= isset($_POST['int4_ula']) ? ' INT4IF' : '';
+  $value .= isset($_POST['dmz_ula']) ? ' DMZIF' : '';
+  $value = 'IPV6_PREFIX_ULA="'.trim($value).'"';
+  fwrite($fp, "### IPv6 Autoconfig Site ULA\n".$value."\n");
 
-  $value = 'IPV6_AUTOCONF="'.trim($x_value).'"';
-  fwrite($fp, "### IPv6 Autoconfig\n".$value."\n");
-
-  $value = 'IPV6_PREFIX_DELEGATION="'.trim($y_value).'"';
+  $value = isset($_POST['int_gua']) ? ' INTIF' : '';
+  $value .= isset($_POST['int2_gua']) ? ' INT2IF' : '';
+  $value .= isset($_POST['int3_gua']) ? ' INT3IF' : '';
+  $value .= isset($_POST['int4_gua']) ? ' INT4IF' : '';
+  $value .= isset($_POST['dmz_gua']) ? ' DMZIF' : '';
+  $value = 'IPV6_PREFIX_DELEGATION="'.trim($value).'"';
   fwrite($fp, "### IPv6 Prefix Delegation\n".$value."\n");
+
+//  $value = 'IPV6_AUTOCONF_RAONLY="'.getDHCPV6_value('raonly').'"';
+//  fwrite($fp, "### IPv6 Router Advertisements\n".$value."\n");
+  $value = 'IPV6_AUTOCONF="'.getDHCPV6_value('stateless').'"';
+  fwrite($fp, "### IPv6 Stateless DHCP\n".$value."\n");
+  $value = 'IPV6_AUTOCONF_DHCP="'.getDHCPV6_value('stateful').'"';
+  fwrite($fp, "### IPv6 Stateful DHCP\n".$value."\n");
 
   $value = 'FWVERS="'.$_POST['firewall'].'"';
   fwrite($fp, "### Firewall Type\n".$value."\n");
@@ -647,6 +694,14 @@ function saveNETWORKsettings($conf_dir, $conf_file) {
   fwrite($fp, "### VPN Type\n".$value."\n");
   
   fwrite($fp, "### IPv6 DHCPv6 Client Options\n");
+  $value = $_POST['ipv6_ula_prefix'];
+  if ($value !== '') {
+    strtok($value,"/");
+//    $value = exec('netcalc -n '.$value.' | sed -n -r -e \'s/^Compressed IPv6 *: *([0-9a-fA-F:]+).*$/\\1/p\'').'/'.strtok('/');
+    $value = compressIPV6addr($value).'/'.strtok('/');
+  }
+  $value = 'IPV6_SITE_ULA_PREFIX="'.$value.'"';
+  fwrite($fp, $value."\n");
   $value = 'DHCPV6_CLIENT_REQUEST_ADDRESS="'.$_POST['dhcpv6_client_request_address'].'"';
   fwrite($fp, $value."\n");
   $value = 'DHCPV6_CLIENT_REQUEST_PREFIX="'.$_POST['dhcpv6_client_request_prefix'].'"';
@@ -957,6 +1012,76 @@ function getNODHCP_value() {
   return(trim($rtn));
 }
 
+// Function: putDNS_DHCPV6_Html
+//
+function putDNS_DHCPV6_Html($db, $cur_db, $varif, $name) {
+
+  $sel_raonly = '';
+  $sel_stateless = '';
+  $sel_stateful = '';
+
+  if ($varif !== '') {
+    if (($value = getVARdef($db, 'IPV6_AUTOCONF_DHCP', $cur_db)) !== '') {
+      $tokens = explode(' ', $value);
+      foreach ($tokens as $token) {
+        if ($token === $varif) {
+          $sel_stateful = ' selected="selected"';
+          break;
+        }
+      }
+    }
+    if ($sel_stateful === '' &&
+        ($value = getVARdef($db, 'IPV6_AUTOCONF', $cur_db)) !== '') {
+      $tokens = explode(' ', $value);
+      foreach ($tokens as $token) {
+        if ($token === $varif) {
+          $sel_stateless = ' selected="selected"';
+          break;
+        }
+      }
+    }
+    if ($sel_stateful === '' && $sel_stateless === '' &&
+        ($value = getVARdef($db, 'IPV6_AUTOCONF_RAONLY', $cur_db)) !== '') {
+      $tokens = explode(' ', $value);
+      foreach ($tokens as $token) {
+        if ($token === $varif) {
+          $sel_raonly = ' selected="selected"';
+          break;
+        }
+      }
+    }
+  }
+  putHtml('&ndash;');
+  putHtml('<select name="'.$name.'">');
+  putHtml('<option value="">No Router Advertisements</option>');
+//  putHtml('<option value="raonly"'.$sel_raonly.'>RA Only</option>');
+  putHtml('<option value="stateless"'.$sel_stateless.'>RA &amp; Stateless DHCP</option>');
+  putHtml('<option value="stateful"'.$sel_stateful.'>Stateful DHCP &amp; RA</option>');
+  putHtml('</select>');
+}
+
+// Function: getDHCPV6_value
+//
+function getDHCPV6_value($selection) {
+
+  $entries = array (
+    'int_ipv6ra'  => 'INTIF',
+    'int2_ipv6ra' => 'INT2IF',
+    'int3_ipv6ra' => 'INT3IF',
+    'int4_ipv6ra' => 'INT4IF',
+    'dmz_ipv6ra'  => 'DMZIF'
+  );
+  $rtn = '';
+
+  foreach ($entries as $key => $value) {
+    if ($_POST[$key] === $selection) {
+      $rtn .= ' '.$value;
+    }
+  }
+
+  return(trim($rtn));
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $result = 1;
   if (! $global_admin) {
@@ -1138,6 +1263,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     if (is_writable($file)) {
       header('Location: /admin/edit.php?file='.$file);
+      exit;
+    }
+  } elseif (isset($_POST['submit_new_ula_prefix'])) {
+    if (isset($_POST['confirm_new_prefix'])) {
+      $_POST['ipv6_ula_prefix'] = trim(shell_exec('unique-local-ipv6'));
+      $result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE);
+    } else {
+      $result = 2;
+      header('Location: '.$myself.'?reboot_restart='.$process.'&result='.$result);
       exit;
     }
   } elseif (isset($_POST['submit_reboot'])) {
@@ -1587,6 +1721,14 @@ require_once '../common/header.php';
   putHtml('<strong>Internal Interfaces:</strong>');
   putHtml('</td></tr>');
   putHtml('<tr class="dtrow1"><td style="text-align: left;" colspan="6">');
+  putHtml('&nbsp;&nbsp;<strong>Site IPv6 ULA Prefix:</strong>');
+  $value = getVARdef($db, 'IPV6_SITE_ULA_PREFIX', $cur_db);
+  putHtml('<input type="text" size="25" maxlength="20" value="'.$value.'" name="ipv6_ula_prefix" />');
+  putHtml('&ndash;&nbsp;<input type="submit" value="Generate new prefix" name="submit_new_ula_prefix" class="formbtn" />');
+  putHtml('&ndash;<input type="checkbox" value="new_prefix" name="confirm_new_prefix" />&nbsp;Confirm');
+  putHtml('</td></tr>');
+
+  putHtml('<tr class="dtrow1"><td style="text-align: left;" colspan="6">');
   putHtml('<strong>1st LAN Interface:</strong>');
   putHtml('<select name="int_eth">');
   putHtml('<option value="">none</option>');
@@ -1598,31 +1740,23 @@ require_once '../common/header.php';
     }
   }
   putHtml('</select>');
-  putDNS_DHCP_Html($db, $cur_db, $varif, 'int_dhcp');
   $value = getVARdef($db, 'INTIP', $cur_db);
-  putHtml('&ndash;&nbsp;IPv4:<input type="text" size="16" maxlength="15" value="'.$value.'" name="int_ip" />');
+  putHtml('&nbsp;&nbsp;IPv4:<input type="text" size="16" maxlength="15" value="'.$value.'" name="int_ip" />');
   if (($value = getVARdef($db, 'INTNM', $cur_db)) === '') {
     $value = '255.255.255.0';
   }
   putHtml('NetMask:<input type="text" size="16" maxlength="15" value="'.$value.'" name="int_mask_ip" />');
+  putDNS_DHCP_Html($db, $cur_db, $varif, 'int_dhcp');
   putHtml('</td></tr>');
   
   putHtml('<tr class="dtrow1"><td style="text-align: left;" colspan="6">');
-  putHtml('&nbsp;&nbsp;IPv6 Autoconfig:');
-  putHtml('<select name="int_autoconf">');
-  putHtml('<option value="">disabled</option>');
-  if (isVARtype('IPV6_PREFIX_DELEGATION', $db, $cur_db, 'INTIF')) {
-    $sel1 = '';
-    $sel2 = ' selected="selected"';
-  } else {
-    $sel1 = isVARtype('IPV6_AUTOCONF', $db, $cur_db, 'INTIF') ? ' selected="selected"' : '';
-    $sel2 = '';
-  }
-  putHtml('<option value=" INTIF~"'.$sel1.'>enabled</option>');
-  putHtml('<option value=" INTIF~ INTIF"'.$sel2.'>Assign GUA Prefix</option>');
-  putHtml('</select>');
   $value = getVARdef($db, 'INTIPV6', $cur_db);
-  putHtml('&ndash;&nbsp;IPv6/nn:<input type="text" size="45" maxlength="43" value="'.$value.'" name="int_ipv6" />');
+  putHtml('&nbsp;&nbsp;IPv6/nn:<input type="text" size="45" maxlength="43" value="'.$value.'" name="int_ipv6" placeholder="Optional if GUA or ULA assigned" />');
+  $sel = isVARtype('IPV6_PREFIX_DELEGATION', $db, $cur_db, 'INTIF') ? ' checked="checked"' : '';
+  putHtml('<input type="checkbox" value="int_gua" name="int_gua"'.$sel.' />Assign GUA');
+  $sel = isVARtype('IPV6_PREFIX_ULA', $db, $cur_db, 'INTIF') ? ' checked="checked"' : '';
+  putHtml('<input type="checkbox" value="int_ula" name="int_ula"'.$sel.' />Assign ULA');
+  putDNS_DHCPV6_Html($db, $cur_db, 'INTIF', 'int_ipv6ra');
   putHtml('</td></tr>');
   
   putHtml('<tr class="dtrow1"><td style="text-align: left;" colspan="6">');
@@ -1637,31 +1771,23 @@ require_once '../common/header.php';
     }
   }
   putHtml('</select>');
-  putDNS_DHCP_Html($db, $cur_db, $varif, 'int2_dhcp');
   $value = getVARdef($db, 'INT2IP', $cur_db);
-  putHtml('&ndash;&nbsp;IPv4:<input type="text" size="16" maxlength="15" value="'.$value.'" name="int2_ip" />');
+  putHtml('&nbsp;&nbsp;IPv4:<input type="text" size="16" maxlength="15" value="'.$value.'" name="int2_ip" />');
   if (($value = getVARdef($db, 'INT2NM', $cur_db)) === '') {
     $value = '255.255.255.0';
   }
   putHtml('NetMask:<input type="text" size="16" maxlength="15" value="'.$value.'" name="int2_mask_ip" />');
+  putDNS_DHCP_Html($db, $cur_db, $varif, 'int2_dhcp');
   putHtml('</td></tr>');
   
   putHtml('<tr class="dtrow1"><td style="text-align: left;" colspan="6">');
-  putHtml('&nbsp;&nbsp;IPv6 Autoconfig:');
-  putHtml('<select name="int2_autoconf">');
-  putHtml('<option value="">disabled</option>');
-  if (isVARtype('IPV6_PREFIX_DELEGATION', $db, $cur_db, 'INT2IF')) {
-    $sel1 = '';
-    $sel2 = ' selected="selected"';
-  } else {
-    $sel1 = isVARtype('IPV6_AUTOCONF', $db, $cur_db, 'INT2IF') ? ' selected="selected"' : '';
-    $sel2 = '';
-  }
-  putHtml('<option value=" INT2IF~"'.$sel1.'>enabled</option>');
-  putHtml('<option value=" INT2IF~ INT2IF"'.$sel2.'>Assign GUA Prefix</option>');
-  putHtml('</select>');
   $value = getVARdef($db, 'INT2IPV6', $cur_db);
-  putHtml('&ndash;&nbsp;IPv6/nn:<input type="text" size="45" maxlength="43" value="'.$value.'" name="int2_ipv6" />');
+  putHtml('&nbsp;&nbsp;IPv6/nn:<input type="text" size="45" maxlength="43" value="'.$value.'" name="int2_ipv6" placeholder="Optional if GUA or ULA assigned" />');
+  $sel = isVARtype('IPV6_PREFIX_DELEGATION', $db, $cur_db, 'INT2IF') ? ' checked="checked"' : '';
+  putHtml('<input type="checkbox" value="int2_gua" name="int2_gua"'.$sel.' />Assign GUA');
+  $sel = isVARtype('IPV6_PREFIX_ULA', $db, $cur_db, 'INT2IF') ? ' checked="checked"' : '';
+  putHtml('<input type="checkbox" value="int2_ula" name="int2_ula"'.$sel.' />Assign ULA');
+  putDNS_DHCPV6_Html($db, $cur_db, 'INT2IF', 'int2_ipv6ra');
   putHtml('</td></tr>');
   
   putHtml('<tr class="dtrow1"><td style="text-align: left;" colspan="6">');
@@ -1676,31 +1802,23 @@ require_once '../common/header.php';
     }
   }
   putHtml('</select>');
-  putDNS_DHCP_Html($db, $cur_db, $varif, 'int3_dhcp');
   $value = getVARdef($db, 'INT3IP', $cur_db);
-  putHtml('&ndash;&nbsp;IPv4:<input type="text" size="16" maxlength="15" value="'.$value.'" name="int3_ip" />');
+  putHtml('&nbsp;&nbsp;IPv4:<input type="text" size="16" maxlength="15" value="'.$value.'" name="int3_ip" />');
   if (($value = getVARdef($db, 'INT3NM', $cur_db)) === '') {
     $value = '255.255.255.0';
   }
   putHtml('NetMask:<input type="text" size="16" maxlength="15" value="'.$value.'" name="int3_mask_ip" />');
+  putDNS_DHCP_Html($db, $cur_db, $varif, 'int3_dhcp');
   putHtml('</td></tr>');
   
   putHtml('<tr class="dtrow1"><td style="text-align: left;" colspan="6">');
-  putHtml('&nbsp;&nbsp;IPv6 Autoconfig:');
-  putHtml('<select name="int3_autoconf">');
-  putHtml('<option value="">disabled</option>');
-  if (isVARtype('IPV6_PREFIX_DELEGATION', $db, $cur_db, 'INT3IF')) {
-    $sel1 = '';
-    $sel2 = ' selected="selected"';
-  } else {
-    $sel1 = isVARtype('IPV6_AUTOCONF', $db, $cur_db, 'INT3IF') ? ' selected="selected"' : '';
-    $sel2 = '';
-  }
-  putHtml('<option value=" INT3IF~"'.$sel1.'>enabled</option>');
-  putHtml('<option value=" INT3IF~ INT3IF"'.$sel2.'>Assign GUA Prefix</option>');
-  putHtml('</select>');
   $value = getVARdef($db, 'INT3IPV6', $cur_db);
-  putHtml('&ndash;&nbsp;IPv6/nn:<input type="text" size="45" maxlength="43" value="'.$value.'" name="int3_ipv6" />');
+  putHtml('&nbsp;&nbsp;IPv6/nn:<input type="text" size="45" maxlength="43" value="'.$value.'" name="int3_ipv6" placeholder="Optional if GUA or ULA assigned" />');
+  $sel = isVARtype('IPV6_PREFIX_DELEGATION', $db, $cur_db, 'INT3IF') ? ' checked="checked"' : '';
+  putHtml('<input type="checkbox" value="int3_gua" name="int3_gua"'.$sel.' />Assign GUA');
+  $sel = isVARtype('IPV6_PREFIX_ULA', $db, $cur_db, 'INT3IF') ? ' checked="checked"' : '';
+  putHtml('<input type="checkbox" value="int3_ula" name="int3_ula"'.$sel.' />Assign ULA');
+  putDNS_DHCPV6_Html($db, $cur_db, 'INT3IF', 'int3_ipv6ra');
   putHtml('</td></tr>');
   
   putHtml('<tr class="dtrow1"><td style="text-align: left;" colspan="6">');
@@ -1715,31 +1833,23 @@ require_once '../common/header.php';
     }
   }
   putHtml('</select>');
-  putDNS_DHCP_Html($db, $cur_db, $varif, 'int4_dhcp');
   $value = getVARdef($db, 'INT4IP', $cur_db);
-  putHtml('&ndash;&nbsp;IPv4:<input type="text" size="16" maxlength="15" value="'.$value.'" name="int4_ip" />');
+  putHtml('&nbsp;&nbsp;IPv4:<input type="text" size="16" maxlength="15" value="'.$value.'" name="int4_ip" />');
   if (($value = getVARdef($db, 'INT4NM', $cur_db)) === '') {
     $value = '255.255.255.0';
   }
   putHtml('NetMask:<input type="text" size="16" maxlength="15" value="'.$value.'" name="int4_mask_ip" />');
+  putDNS_DHCP_Html($db, $cur_db, $varif, 'int4_dhcp');
   putHtml('</td></tr>');
   
   putHtml('<tr class="dtrow1"><td style="text-align: left;" colspan="6">');
-  putHtml('&nbsp;&nbsp;IPv6 Autoconfig:');
-  putHtml('<select name="int4_autoconf">');
-  putHtml('<option value="">disabled</option>');
-  if (isVARtype('IPV6_PREFIX_DELEGATION', $db, $cur_db, 'INT4IF')) {
-    $sel1 = '';
-    $sel2 = ' selected="selected"';
-  } else {
-    $sel1 = isVARtype('IPV6_AUTOCONF', $db, $cur_db, 'INT4IF') ? ' selected="selected"' : '';
-    $sel2 = '';
-  }
-  putHtml('<option value=" INT4IF~"'.$sel1.'>enabled</option>');
-  putHtml('<option value=" INT4IF~ INT4IF"'.$sel2.'>Assign GUA Prefix</option>');
-  putHtml('</select>');
   $value = getVARdef($db, 'INT4IPV6', $cur_db);
-  putHtml('&ndash;&nbsp;IPv6/nn:<input type="text" size="45" maxlength="43" value="'.$value.'" name="int4_ipv6" />');
+  putHtml('&nbsp;&nbsp;IPv6/nn:<input type="text" size="45" maxlength="43" value="'.$value.'" name="int4_ipv6" placeholder="Optional if GUA or ULA assigned" />');
+  $sel = isVARtype('IPV6_PREFIX_DELEGATION', $db, $cur_db, 'INT4IF') ? ' checked="checked"' : '';
+  putHtml('<input type="checkbox" value="int4_gua" name="int4_gua"'.$sel.' />Assign GUA');
+  $sel = isVARtype('IPV6_PREFIX_ULA', $db, $cur_db, 'INT4IF') ? ' checked="checked"' : '';
+  putHtml('<input type="checkbox" value="int4_ula" name="int4_ula"'.$sel.' />Assign ULA');
+  putDNS_DHCPV6_Html($db, $cur_db, 'INT4IF', 'int4_ipv6ra');
   putHtml('</td></tr>');
   
   putHtml('<tr class="dtrow1"><td style="text-align: left;" colspan="6">');
@@ -1754,31 +1864,23 @@ require_once '../common/header.php';
     }
   }
   putHtml('</select>');
-  putDNS_DHCP_Html($db, $cur_db, $varif, 'dmz_dhcp');
   $value = getVARdef($db, 'DMZIP', $cur_db);
-  putHtml('&ndash;&nbsp;IPv4:<input type="text" size="16" maxlength="15" value="'.$value.'" name="dmz_ip" />');
+  putHtml('&nbsp;&nbsp;IPv4:<input type="text" size="16" maxlength="15" value="'.$value.'" name="dmz_ip" />');
   if (($value = getVARdef($db, 'DMZNM', $cur_db)) === '') {
     $value = '255.255.255.0';
   }
   putHtml('NetMask:<input type="text" size="16" maxlength="15" value="'.$value.'" name="dmz_mask_ip" />');
+  putDNS_DHCP_Html($db, $cur_db, $varif, 'dmz_dhcp');
   putHtml('</td></tr>');
   
   putHtml('<tr class="dtrow1"><td style="text-align: left;" colspan="6">');
-  putHtml('&nbsp;&nbsp;IPv6 Autoconfig:');
-  putHtml('<select name="dmz_autoconf">');
-  putHtml('<option value="">disabled</option>');
-  if (isVARtype('IPV6_PREFIX_DELEGATION', $db, $cur_db, 'DMZIF')) {
-    $sel1 = '';
-    $sel2 = ' selected="selected"';
-  } else {
-    $sel1 = isVARtype('IPV6_AUTOCONF', $db, $cur_db, 'DMZIF') ? ' selected="selected"' : '';
-    $sel2 = '';
-  }
-  putHtml('<option value=" DMZIF~"'.$sel1.'>enabled</option>');
-  putHtml('<option value=" DMZIF~ DMZIF"'.$sel2.'>Assign GUA Prefix</option>');
-  putHtml('</select>');
   $value = getVARdef($db, 'DMZIPV6', $cur_db);
-  putHtml('&ndash;&nbsp;IPv6/nn:<input type="text" size="45" maxlength="43" value="'.$value.'" name="dmz_ipv6" />');
+  putHtml('&nbsp;&nbsp;IPv6/nn:<input type="text" size="45" maxlength="43" value="'.$value.'" name="dmz_ipv6" placeholder="Optional if GUA or ULA assigned" />');
+  $sel = isVARtype('IPV6_PREFIX_DELEGATION', $db, $cur_db, 'DMZIF') ? ' checked="checked"' : '';
+  putHtml('<input type="checkbox" value="dmz_gua" name="dmz_gua"'.$sel.' />Assign GUA');
+  $sel = isVARtype('IPV6_PREFIX_ULA', $db, $cur_db, 'DMZIF') ? ' checked="checked"' : '';
+  putHtml('<input type="checkbox" value="dmz_ula" name="dmz_ula"'.$sel.' />Assign ULA');
+  putDNS_DHCPV6_Html($db, $cur_db, 'DMZIF', 'dmz_ipv6ra');
   putHtml('</td></tr>');
   
   putHtml('<tr class="dtrow0"><td colspan="6">&nbsp;</td></tr>');
