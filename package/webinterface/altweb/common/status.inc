@@ -39,6 +39,7 @@
 // 12-01-2016, Added chronyc to replace ntpq
 // 05-15-2017, Added IPv6 Prefixes/Address
 // 07-16-2017, Added ACME Certificates
+// 07-31-2017, Added interface identifier to IPv6 prefix/address display
 //
 // System location of OpenVPN Client logfile
 $OVPNCLOGFILE = '/var/log/openvpnclient-status.log';
@@ -356,7 +357,7 @@ function getIPV6address() {
   $cmd .= ' | awk \'$3 == "inet6" { split($4, field, "/"); print field[1]; nextfile; }\'';
   $cmd .= ';echo "#next#"';
   $cmd .= ';/sbin/ip -6 -o addr show scope global 2>/dev/null';
-  $cmd .= ' | awk \'$2 != "\'"$EXTIF"\'" && $3 == "inet6" { print $4; }\'';
+  $cmd .= ' | awk \'$2 != "\'"$EXTIF"\'" && $3 == "inet6" { print $4," ["$2"]"; }\'';
 
   $output = array();
   @exec($cmd, $output);
