@@ -4,6 +4,299 @@
 # Network Tools
 #
 
+NETCONFFILE="/mnt/kd/rc.conf.d/gui.network.conf"
+SUBNETCONFFILE="/mnt/kd/dhcp6c_subnets"
+
+# get_dhcpv6_subnet <interface> <prefixlen> <requested-subnet>
+#
+# Returns a four character hex string representing the ULA subnet id
+# for a given interface.  Each interface (e.g. eth1, br0) has a
+# unique subnet id that is persistent (never changing) unless the
+# subnet save file is deleted, in which case new ids will be
+# assigned which may be different from previous subnet ids.
+#
+# If requuested-subnet is set, this is desired subnet (hex string).
+# If this can be assigned (no conflicts) then it will be used.
+# If this is set to "ffff" then highest available subnet selected.
+#
+# Returns blank/null string if subnet id cannot be assigned / used.
+get_dhcpv6_subnet()
+{
+  local if=$1 prefix_len=$2 subnet=$3
+  local sys_prefix_len="${DHCPV6_CLIENT_PREFIX_LEN:-60}"
+  declare -A IF_SUBNET_IDS
+  declare -A IDS_SUBNET_IF
+  local i str val max_subnet
+  local request_max=0
+  local changes=0
+
+  # Calculate maximum prefix len / subnet value...
+  prefix_len="${prefix_len:-$sys_prefix_len}"
+  max_subnet="$(((2**(64-$prefix_len))-1))"
+
+  if [ -n "$subnet" ] ; then
+    # caller requesting a specific subnet,
+    # make sure it is a 4 character hex string
+    if [ "$(printf '%04x' 0x$subnet)" = "ffff" ] ; then
+      # maximum available subnet requested
+      subnet="$(printf '%04x' $max_subnet)"
+      request_max=1
+    elif [ "$(printf '%d' 0x$subnet)" -gt "$max_subnet" ]; then
+      # requested subnet exceeds max available, round down
+      subnet="$(printf '%04x' $max_subnet)"
+    else
+      subnet="$(printf '%04x' 0x$subnet)"
+    fi
+  fi
+
+  # read in saved list of subnet ids
+  if [ -e "$SUBNETCONFFILE" ]; then
+    while IFS==/ read -r key val1 val2; do
+      IF_SUBNET_IDS[$key]="$val1/$val2"
+      IDS_SUBNET_IF[$val1]="$key"
+    done < "$SUBNETCONFFILE"
+    unset IFS
+  fi
+
+  if [ -z  "${IF_SUBNET_IDS[$if]}" ]; then
+    # a subnet for this interface has never been set before
+    if [ -n "$subnet" ]; then
+      # a subnet id has been requested, try it.
+      if [ -z "${IDS_SUBNET_IF[$subnet]}" ]; then
+        # subnet has not been used before, so it is safe to use now
+        IDS_SUBNET_IF[$subnet]="$if"
+        IF_SUBNET_IDS[$if]="$subnet/$prefix_len"
+        changes=1
+      elif [ "$request_max" -ne "0" ] && [ "${IDS_SUBNET_IF[$subnet]}" != "$if" ]; then
+        # requested subnet is already in use by another interface
+        # but caller requesting next highest available.
+        i=$max_subnet
+        while [ "$i" -ge "0" ]; do
+          str="$(printf '%04x' $i)"
+          i=$[$i-1]
+          if [ -z "${IDS_SUBNET_IF[$str]}" ]; then
+            IDS_SUBNET_IF[$str]="$if"
+            IF_SUBNET_IDS[$if]="$str/$prefix_len"
+            changes=1
+            break
+          fi
+        done
+      fi
+      # else requested subnet is already assigned to requested interface
+      # or requested subnet is already in use by another interface
+      # so nothing to do.  Will return current subnet (which may be blank)
+    else
+      # we will assign the first available new subnet
+      if [ "$request_max" -ne "0" ]; then
+        i=$max_subnet
+        while [ "$i" -ge "0" ]; do
+          str="$(printf '%04x' $i)"
+          i=$[$i-1]
+          if [ -z "${IDS_SUBNET_IF[$str]}" ]; then
+            IDS_SUBNET_IF[$str]="$if"
+            IF_SUBNET_IDS[$if]="$str/$prefix_len"
+            changes=1
+            break
+          fi
+        done
+      else
+        i=0
+        while [ "$i" -le "$max_subnet" ]; do
+          str="$(printf '%04x' $i)"
+          i=$[$i+1]
+          if [ -z "${IDS_SUBNET_IF[$str]}" ]; then
+            IDS_SUBNET_IF[$str]="$if"
+            IF_SUBNET_IDS[$if]="$str/$prefix_len"
+            changes=1
+            break
+          fi
+        done
+      fi
+    fi
+  elif [ "${IF_SUBNET_IDS[$if]##*/}" -gt "$prefix_len" ]; then
+    # subnet exists for this interface, but the prefix length has changed
+    # the new prefix length permits a longer subnet id.
+    if [ "$request_max" -ne "0" ]; then
+      # Caller requested highest available subnet
+      # so look for new highest possible
+      unset IDS_SUBNET_IF[${IF_SUBNET_IDS[$if]%%/*}]
+      unset IF_SUBNET_IDS[$if]
+      changes=1
+      i=$max_subnet
+      while [ "$i" -ge "0" ]; do
+        str="$(printf '%04x' $i)"
+        i=$[$i-1]
+        if [ -z "${IDS_SUBNET_IF[$str]}" ]; then
+          IDS_SUBNET_IF[$str]="$if"
+          IF_SUBNET_IDS[$if]="$str/$prefix_len"
+          break
+        fi
+      done
+    else
+      # We can keep the subnet id, but we should update the prefix length
+      IF_SUBNET_IDS[$if]="${IF_SUBNET_IDS[$if]%%/*}/$prefix_len"
+      changes=1
+    fi
+  elif [ "${IF_SUBNET_IDS[$if]##*/}" -lt "$prefix_len" ]; then
+    # the new prefix length requires a shorter subnet id.  We much check
+    # whether existing id is still valid.  If so use it, else we have to
+    # go find a new one.
+    val="$(printf '%d' 0x${IF_SUBNET_IDS[$if]%%/*})"
+    if [ "$val" -le "$max_subnet" ]; then
+      # old value fits within range of new subnets.  We can keep
+      # the subnet id, but we should update the prefix length
+      IF_SUBNET_IDS[$if]="${IF_SUBNET_IDS[$if]%%/*}/$prefix_len"
+      changes=1
+    else
+      # we have to search for a new subnet id that fits within range
+      unset IDS_SUBNET_IF[${IF_SUBNET_IDS[$if]%%/*}]
+      unset IF_SUBNET_IDS[$if]
+      changes=1
+      # we will assign the first available new subnet
+      if [ "$request_max" -ne "0" ]; then
+        i=$max_subnet
+        while [ "$i" -ge "0" ]; do
+          str="$(printf '%04x' $i)"
+          i=$[$i-1]
+          if [ -z "${IDS_SUBNET_IF[$str]}" ]; then
+            IDS_SUBNET_IF[$str]="$if"
+            IF_SUBNET_IDS[$if]="$str/$prefix_len"
+            break
+          fi
+        done
+      else
+        i=0
+        while [ "$i" -le "$max_subnet" ]; do
+          str="$(printf '%04x' $i)"
+          i=$[$i+1]
+          if [ -z "${IDS_SUBNET_IF[$str]}" ]; then
+            IDS_SUBNET_IF[$str]="$if"
+            IF_SUBNET_IDS[$if]="$str/$prefix_len"
+            break
+          fi
+        done
+      fi
+    fi
+  fi
+
+  if [ "$changes" -ne "0" ]; then
+    # something changed in our list of subnets.  Need to write out new
+    # values to the subnet file.
+    rm -f "$SUBNETCONFFILE.new"
+    for key in "${!IF_SUBNET_IDS[@]}"; do
+      echo "$key=${IF_SUBNET_IDS[$key]}" >> "$SUBNETCONFFILE.new"
+    done
+    mv -f "$SUBNETCONFFILE.new" "$SUBNETCONFFILE"
+  fi
+
+  echo "${IF_SUBNET_IDS[$if]%%/*}"
+}
+
+# get_ipv6_site_ula_prefix <interface> <prefixlen> <requested-subnet>
+# if no parameters set returns the site ULA prefix as a /48 IPv6 address
+# if no site ULA set yet, one is generated randomly
+#
+# If interface set, return a /64 IPv6 address for that interface.
+# Each interface is guaranteed to have a unique IPv6 subnet-id based
+# on the prefix lenth provided.
+#
+# If requuested-subnet is set, this is desired subnet (hex string).
+# If this can be assigned (no conflicts) then it will be used.
+# If this is set to "ffff" then highest available subnet selected.
+#
+# Returns blank/null string if subnet id cannot be assigned / used.
+get_ipv6_site_ula_prefix()
+{
+  local if=$1 prefix_len=$2 subnet=$3
+  local subnetnew ula_prefix ula_subnet subnetmax subnetbase
+  local sys_prefix_len="${DHCPV6_CLIENT_PREFIX_LEN:-60}"
+
+  # just in case not passed in as a parameter...
+  prefix_len="${prefix_len:-$sys_prefix_len}"
+
+  if [ -z "$IPV6_SITE_ULA_PREFIX" ]; then
+    # Site ULA prefix not set yet...
+    IPV6_SITE_ULA_PREFIX="$(/usr/sbin/unique-local-ipv6)"
+    # escape the colons and slashes so that sed doesn't try and parse them
+    ula_prefix="${IPV6_SITE_ULA_PREFIX//:/\\:}"
+    ula_prefix="${ula_prefix//\//\/}"
+    grep -q "IPV6_SITE_ULA_PREFIX=" "$NETCONFFILE"
+    if [ $? -eq 0 ]; then
+      # replace old value in the .conf file with new value
+      sed -i "s/^\(IPV6_SITE_ULA_PREFIX=\).*/\1\"$ula_prefix\"/" "$NETCONFFILE"
+    else
+     # add value in the .conf file as it is not there yet
+      sed -i "/### IPv6 DHCPv6 Client Options/a IPV6_SITE_ULA_PREFIX=\"$ula_prefix\"" "$NETCONFFILE"
+    fi
+    # Propagate that to rc.conf...
+    gen-rc-conf
+  fi
+
+  if [ -z "$if" ]; then
+    # No interface passed as parameter. Return the /48 ULA
+    echo "$IPV6_SITE_ULA_PREFIX"
+  else
+    # Interface provided... create a /64 and return that.
+    subnetnew="$(printf '%x' 0x$(get_dhcpv6_subnet $if $prefix_len $subnet))"
+    # subnetnew comes back set to a hex string
+    if [ -n "$subnetnew" ]; then
+      # if returns empty then error occurred
+      if [ -n "$DHCPV6_ULA_SUBNET_BASE" ]; then
+        # fixup the subnet base so that it always ends in the right number of
+        # zeros for the prefix length (e.g. integer divide by 16 multiply by 16)
+        subnetmax="$((2 ** (64 - $prefix_len)))"
+        subnetbase="$((0x${DHCPV6_ULA_SUBNET_BASE%%/*} / $subnetmax * $subnetmax ))"
+        subnetnew="$(printf '%x' $((0x$subnetnew + $subnetbase)))"
+      fi
+      echo "${IPV6_SITE_ULA_PREFIX%%:/*}$subnetnew::1/64"
+    fi
+  fi
+}
+
+# cleanup_dhcpv6_subnet_list
+# deletes any interfaces from file that are not valid interfaces
+cleanup_dhcpv6_subnet_list()
+{
+  declare -A IF_SUBNET_IDS
+  local if if_list if_str=""
+  local changes=0
+
+  # read in saved list of subnet ids
+  if [ -e "$SUBNETCONFFILE" ]; then
+    while IFS==/ read -r key val1 val2; do
+      IF_SUBNET_IDS[$key]="$val1/$val2"
+    done < "$SUBNETCONFFILE"
+    unset IFS
+  fi
+
+  # get list of all interfaces
+  if_list="$(ip -o link show | awk -F': ' '{print $2}')"
+  for if in $if_list; do
+    # strip out part of name that follows @ in vlans
+    if_str="$if_str ${if%%@*}"
+  done
+
+  # check each interface name to see if it exists right now
+  for if in "${!IF_SUBNET_IDS[@]}"; do
+    echo "$if_str" | grep -w "$if" > /dev/null
+    if [ $? -eq 1 ]; then
+      # this interface does not exist, so delete from our list
+      unset IF_SUBNET_IDS[$if]
+      changes=1
+    fi
+  done
+
+  if [ "$changes" -ne "0" ]; then
+    # something changed in our list of subnets.  Need to write out new
+    # values to the subnet file.
+    rm -f "$SUBNETCONFFILE.new"
+    for if in "${!IF_SUBNET_IDS[@]}"; do
+      echo "$if=${IF_SUBNET_IDS[$if]}" >> "$SUBNETCONFFILE.new"
+    done
+    mv -f "$SUBNETCONFFILE.new" "$SUBNETCONFFILE"
+  fi
+}
+
 isextppp()
 {
   local ext="$1"
