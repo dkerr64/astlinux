@@ -44,14 +44,16 @@ addINTERNALnet()
   # args: IF, IP, NM
   local NETWORK PREFIX
 
-  if [ -n "$1" -a "$1" != "none" -a -n "$2" -a -n "$3" ]; then
-    eval $(ipcalc -np $2 $3)
-
+  if [ -n "$1" -a "$1" != "none" ]; then
     INT_IF="$INT_IF${INT_IF:+ }$1"
-    INTERNAL_NET="$INTERNAL_NET${INTERNAL_NET:+ }$NETWORK/$PREFIX"
-    if isNATinterface $1; then
-      NAT_INTERNAL_NET="$NAT_INTERNAL_NET${NAT_INTERNAL_NET:+ }$NETWORK/$PREFIX"
-      NAT=1
+
+    if [ -n "$2" -a -n "$3" ]; then
+      eval $(ipcalc -np $2 $3)
+      INTERNAL_NET="$INTERNAL_NET${INTERNAL_NET:+ }$NETWORK/$PREFIX"
+      if isNATinterface $1; then
+        NAT_INTERNAL_NET="$NAT_INTERNAL_NET${NAT_INTERNAL_NET:+ }$NETWORK/$PREFIX"
+        NAT=1
+      fi
     fi
   fi
 }
@@ -61,11 +63,13 @@ addNOnatINTERNALnet()
   # args: IF, IP, NM
   local NETWORK PREFIX
 
-  if [ -n "$1" -a "$1" != "none" -a -n "$2" -a -n "$3" ]; then
-    eval $(ipcalc -np $2 $3)
-
+  if [ -n "$1" -a "$1" != "none" ]; then
     INT_IF="$INT_IF${INT_IF:+ }$1"
-    INTERNAL_NET="$INTERNAL_NET${INTERNAL_NET:+ }$NETWORK/$PREFIX"
+
+    if [ -n "$2" -a -n "$3" ]; then
+      eval $(ipcalc -np $2 $3)
+      INTERNAL_NET="$INTERNAL_NET${INTERNAL_NET:+ }$NETWORK/$PREFIX"
+    fi
   fi
 }
 
