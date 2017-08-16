@@ -40,6 +40,7 @@
 // 05-15-2017, Added IPv6 Prefixes/Address
 // 07-16-2017, Added ACME Certificates
 // 07-31-2017, Added interface identifier to IPv6 prefix/address display
+// 08-12-2017, Added IPv6 DHCP lease file listing
 //
 // System location of OpenVPN Client logfile
 $OVPNCLOGFILE = '/var/log/openvpnclient-status.log';
@@ -425,12 +426,18 @@ function parseDNSMASQleases($log) {
     while (! feof($ph)) {
       if (($line = trim(fgets($ph, 1024))) !== '') {
         $linetokens = explode(' ', $line);
-        if (isset($linetokens[0]) && ($linetokens[0] > $cur_time)) {
-          $status['clients'][$cid]['expire'] = $linetokens[0];
-          $status['clients'][$cid]['mac'] = $linetokens[1];
-          $status['clients'][$cid]['ip'] = $linetokens[2];
-          $status['clients'][$cid]['name'] = $linetokens[3];
-          $cid++;
+        if (isset($linetokens[0])) {
+          if ($linetokens[0] === "duid") {
+            $status['duid'] = $linetokens[1];
+          }
+          elseif ($linetokens[0] > $cur_time) {
+            $status['clients'][$cid]['expire'] = $linetokens[0];
+            $status['clients'][$cid]['mac'] = $linetokens[1];
+            $status['clients'][$cid]['ip'] = $linetokens[2];
+            $status['clients'][$cid]['name'] = $linetokens[3];
+            $status['clients'][$cid]['duid'] = $linetokens[4];
+            $cid++;
+          }
         }
       }
     }
@@ -439,7 +446,7 @@ function parseDNSMASQleases($log) {
   // Sort by IP Address
   if ($cid > 1) {
     foreach ($status['clients'] as $key => $row) {
-      $ip[$key] = pad_ipv4_str($row['ip']);
+      $ip[$key] = expandIPV6addr($row['ip']);
     }
     array_multisort($ip, SORT_ASC, SORT_STRING, $status['clients']);
   }
@@ -851,31 +858,85 @@ if ($daemon['dnsmasq'] > 0) {
       putHtml("</pre>");
     } else {
       $is_mac2vendor = is_mac2vendor();
-      putHtml('<pre><table class="statusdatatable">');
-      putHtml("<tr>");
+      putHtml("<pre>");
       if (($n = count($dhcp['clients'])) > 0) {
-        echo "<td>", "IPv4 Address", "</td>";
-        echo "<td>", "MAC Address", "</td>";
-        echo "<td>", "Host Name", "</td>";
-        echo "<td>", "Expire Time", "</td>";
-        if ($is_mac2vendor) {
-          echo "<td>", "Vendor Name", "</td>";
-        }
+        $headers = 0; // 1=DHCPv4 table header printed, 2=DHCPv6 table header printed
+        $dhcpv4 = 0; // Count of number of DHCPv4 leases issued
+        // DHCP leases come back sorted by IP address.
+        // IPv4 addresses will be first followed by IPv6.
         for ($i = 0; $i < $n; $i++) {
-          putHtml("</tr><tr>");
-          echo "<td>", $dhcp['clients'][$i]['ip'], "</td>";
-          echo "<td>", $dhcp['clients'][$i]['mac'], "</td>";
-          echo "<td>", $dhcp['clients'][$i]['name'], "</td>";
-          echo "<td>", date('Y-m-d H:i:s', $dhcp['clients'][$i]['expire']), "</td>";
-          if ($is_mac2vendor) {
-            echo "<td>", htmlspecialchars(mac2vendor($dhcp['clients'][$i]['mac'])), "</td>";
+          if (is_IPV6addr($dhcp['clients'][$i]['ip'])) {
+            // IPv6 address
+            if ($headers === 1) {
+              // Close out the IPv4 table
+              putHtml("</tr><tr>");
+              echo '<td colspan="5">'.$i.' Active DHCPv4 Leases</td>';
+              putHtml("</tr></table>");
+              $dhcpv4 = $i;
+              $headers = 0;
+            }
+            if ($headers === 0) {
+              putHtml('<table class="statusdatatable">');
+              putHtml("<tr>");
+              echo "<td>", "IPv6 Address", "</td>";
+              echo "<td>", "Device Unique ID (DUID)", "</td>";
+              echo "<td>", "Client IAID", "</td>";
+              echo "<td>", "Host Name", "</td>";
+              echo "<td>", "Expire Time", "</td>";
+              $headers = 2;
+            }
+            putHtml("</tr><tr>");
+            echo "<td>", $dhcp['clients'][$i]['ip'], "</td>";
+            echo "<td>", $dhcp['clients'][$i]['duid'], "</td>";
+            echo "<td>", $dhcp['clients'][$i]['mac'], "</td>";
+            echo "<td>", $dhcp['clients'][$i]['name'], "</td>";
+            echo "<td>", date('Y-m-d H:i:s', $dhcp['clients'][$i]['expire']), "</td>";
+          }
+          else {
+            // IPv4 address
+            if ($headers === 0) {
+              putHtml('<table class="statusdatatable">');
+              putHtml("<tr>");
+              echo "<td>", "IPv4 Address", "</td>";
+              echo "<td>", "MAC Address", "</td>";
+              echo "<td>", "Host Name", "</td>";
+              echo "<td>", "Expire Time", "</td>";
+              if ($is_mac2vendor) {
+                echo "<td>", "Vendor Name", "</td>";
+              }
+              $headers = 1;
+            }
+            putHtml("</tr><tr>");
+            echo "<td>", $dhcp['clients'][$i]['ip'], "</td>";
+            echo "<td>", $dhcp['clients'][$i]['mac'], "</td>";
+            echo "<td>", $dhcp['clients'][$i]['name'], "</td>";
+            echo "<td>", date('Y-m-d H:i:s', $dhcp['clients'][$i]['expire']), "</td>";
+            if ($is_mac2vendor) {
+              echo "<td>", htmlspecialchars(mac2vendor($dhcp['clients'][$i]['mac'])), "</td>";
+            }
           }
         }
-        putHtml("</tr><tr>");
-        echo '<td colspan="5">'.$n.' Active DHCP Leases</td>';
+        if ($headers === 2) {
+          // We ended with a list of IPv6 addresses
+          // Add DUID for the DHCPv6 server to end of the list
+          putHtml("</tr><tr>");
+          echo '<td>DHCPv6 Server</td>';
+          echo '<td>'.$dhcp['duid'].'</td>';
+          echo '<td>n/a</td>';
+          echo '<td>'.$_SERVER['SERVER_NAME'].'</td>';
+          echo '<td>n/a</td>';
+          putHtml("</tr><tr>");
+          echo '<td colspan="5">'.($n-$dhcpv4).' Active DHCPv6 Leases</td>';
+        }
+        else {
+          // We ended with a list of IPv4 addresses
+          // Which means no IPv6 leases issued, only IPv4
+          putHtml("</tr><tr>");
+          echo '<td colspan="5">'.$n.' Active DHCP Leases</td>';
+        }
+        putHtml("</tr></table>");
       }
-      putHtml("</tr>");
-      putHtml("</table></pre>");
+      putHtml("</pre>");
     }
   }
 }
