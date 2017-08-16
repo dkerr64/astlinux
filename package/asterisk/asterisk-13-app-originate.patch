@@ -1,0 +1,299 @@
+From ddc951060ad748c31fb5c37b82d258ef6bfaa7f2 Mon Sep 17 00:00:00 2001
+From: David Kerr <david@kerr.net>
+Date: Mon, 21 Nov 2016 16:43:47 -0500
+Subject: [PATCH] app_originate: Add option to execute gosub prior to dial
+
+Issue/patch ASTERISK-26587 was inspired by issue ASTERISK-22992
+that requested ability to add callerid into app_originate.
+Comments in that issue suggested that it was better solved by
+adding an option to gosub prior to originating the call.  The
+attached patch implements this much like app_dial with two
+options one to gosub on the originating channel and one to gosub
+on the newly created channel and behaves just like app_dial.
+I have tested this patch by adding callerid info to the new
+channel and also SIPAddHeader (to e.g. add header to force auto
+answer) and confirmed it works.  Have also tested both 'exten'
+and 'app' versions of app_originate.
+
+Opened by: dkerr
+Patch by: dkerr
+
+Change-Id: I36abc39b58567ffcab4a636ea196ef48be234c57
+---
+
+diff --git a/CHANGES b/CHANGES
+index cb3fe95..448657d 100644
+--- a/CHANGES
++++ b/CHANGES
+@@ -62,6 +62,12 @@
+    when you use more than 32 formats and calls are not accepted by a remote
+    implementation, please report this and go back to rtp_pt_dynamic = 96.
+ 
++app_originate
++------------------
++ * Added support to gosub predial routines on both original channel and on the
++   created channel using options parameter (like app_dial) B() and b().  This
++   allows for adding variables to newly created channel or, e.g. setting callerid.
++
+ ------------------------------------------------------------------------------
+ --- Functionality changes from Asterisk 14.1.0 to Asterisk 14.2.0 ----------
+ ------------------------------------------------------------------------------
+diff --git a/apps/app_originate.c b/apps/app_originate.c
+index 99984f5..cf4ef8e 100644
+--- a/apps/app_originate.c
++++ b/apps/app_originate.c
+@@ -72,6 +72,30 @@
+ 			<parameter name="timeout" required="false">
+ 				<para>Timeout in seconds. Default is 30 seconds.</para>
+ 			</parameter>
++			<parameter name="options" required="false">
++				<optionlist>
++				<option name="b" argsep="^">
++					<para>Before originating the outgoing call, Gosub to the specified
++					location using the newly created channel.</para>
++					<argument name="context" required="false" />
++					<argument name="exten" required="false" />
++					<argument name="priority" required="true" hasparams="optional" argsep="^">
++						<argument name="arg1" multiple="true" required="true" />
++						<argument name="argN" />
++					</argument>
++				</option>
++				<option name="B" argsep="^">
++					<para>Before originating the outgoing call, Gosub to the specified
++					location using the current channel.</para>
++					<argument name="context" required="false" />
++					<argument name="exten" required="false" />
++					<argument name="priority" required="true" hasparams="optional" argsep="^">
++						<argument name="arg1" multiple="true" required="true" />
++						<argument name="argN" />
++					</argument>
++				</option>
++				</optionlist>
++			</parameter>
+ 		</syntax>
+ 		<description>
+ 		<para>This application originates an outbound call and connects it to a specified extension or application.  This application will block until the outgoing call fails or gets answered.  At that point, this application will exit with the status variable set and dialplan processing will continue.</para>
+@@ -95,6 +119,25 @@
+ 	</application>
+  ***/
+ 
++
++enum {
++	OPT_PREDIAL_CALLEE =    (1 << 0),
++	OPT_PREDIAL_CALLER =    (1 << 1),
++};
++
++enum {
++	OPT_ARG_PREDIAL_CALLEE,
++	OPT_ARG_PREDIAL_CALLER,
++	/* note: this entry _MUST_ be the last one in the enum */
++	OPT_ARG_ARRAY_SIZE,
++};
++
++AST_APP_OPTIONS(originate_exec_options, BEGIN_OPTIONS
++	AST_APP_OPTION_ARG('b', OPT_PREDIAL_CALLEE, OPT_ARG_PREDIAL_CALLEE),
++	AST_APP_OPTION_ARG('B', OPT_PREDIAL_CALLER, OPT_ARG_PREDIAL_CALLER),
++END_OPTIONS );
++
++
+ static int originate_exec(struct ast_channel *chan, const char *data)
+ {
+ 	AST_DECLARE_APP_ARGS(args,
+@@ -104,7 +147,11 @@
+ 		AST_APP_ARG(arg2);
+ 		AST_APP_ARG(arg3);
+ 		AST_APP_ARG(timeout);
++		AST_APP_ARG(options);
+ 	);
++	struct ast_flags64 opts = { 0, };
++	char *opt_args[OPT_ARG_ARRAY_SIZE];
++	char *predial_callee = NULL;
+ 	char *parse;
+ 	char *chantech, *chandata;
+ 	int res = -1;
+@@ -157,6 +204,25 @@
+ 		goto return_cleanup;
+ 	}
+ 
++	if (!ast_strlen_zero(args.options) &&
++		ast_app_parse_options64(originate_exec_options, &opts, opt_args, args.options)) {
++		ast_log(LOG_ERROR, "Invalid options: '%s'\n", args.options);
++		goto return_cleanup;
++	}
++
++	/* PREDIAL: Run gosub on the caller's channel */
++	if (ast_test_flag64(&opts, OPT_PREDIAL_CALLER)
++		&& !ast_strlen_zero(opt_args[OPT_ARG_PREDIAL_CALLER])) {
++		ast_replace_subargument_delimiter(opt_args[OPT_ARG_PREDIAL_CALLER]);
++		ast_app_exec_sub(NULL, chan, opt_args[OPT_ARG_PREDIAL_CALLER], 0);
++	}
++
++	if (ast_test_flag64(&opts, OPT_PREDIAL_CALLEE)
++		&& !ast_strlen_zero(opt_args[OPT_ARG_PREDIAL_CALLEE])) {
++		ast_replace_subargument_delimiter(opt_args[OPT_ARG_PREDIAL_CALLEE]);
++		predial_callee = opt_args[OPT_ARG_PREDIAL_CALLEE];
++	}
++
+ 	if (!strcasecmp(args.type, "exten")) {
+ 		int priority = 1; /* Initialized in case priority not specified */
+ 		const char *exten = args.arg2;
+@@ -175,16 +241,16 @@
+ 		ast_debug(1, "Originating call to '%s/%s' and connecting them to extension %s,%s,%d\n",
+ 				chantech, chandata, args.arg1, exten, priority);
+ 
+-		ast_pbx_outgoing_exten(chantech, cap_slin, chandata,
++		ast_pbx_outgoing_exten_predial(chantech, cap_slin, chandata,
+ 				timeout * 1000, args.arg1, exten, priority, &outgoing_status,
+-				AST_OUTGOING_WAIT, NULL, NULL, NULL, NULL, NULL, 0, NULL);
++				AST_OUTGOING_WAIT, NULL, NULL, NULL, NULL, NULL, 0, NULL, predial_callee);
+ 	} else if (!strcasecmp(args.type, "app")) {
+ 		ast_debug(1, "Originating call to '%s/%s' and connecting them to %s(%s)\n",
+ 				chantech, chandata, args.arg1, S_OR(args.arg2, ""));
+ 
+-		ast_pbx_outgoing_app(chantech, cap_slin, chandata,
++		ast_pbx_outgoing_app_predial(chantech, cap_slin, chandata,
+ 				timeout * 1000, args.arg1, args.arg2, &outgoing_status,
+-				AST_OUTGOING_WAIT, NULL, NULL, NULL, NULL, NULL, NULL);
++				AST_OUTGOING_WAIT, NULL, NULL, NULL, NULL, NULL, NULL, predial_callee);
+ 	} else {
+ 		ast_log(LOG_ERROR, "Incorrect type, it should be 'exten' or 'app': %s\n",
+ 				args.type);
+diff --git a/include/asterisk/pbx.h b/include/asterisk/pbx.h
+index 6da4470..00ca4ac 100644
+--- a/include/asterisk/pbx.h
++++ b/include/asterisk/pbx.h
+@@ -1176,6 +1176,12 @@
+ 	const char *account, struct ast_channel **locked_channel, int early_media,
+ 	const struct ast_assigned_ids *assignedids);
+ 
++int ast_pbx_outgoing_exten_predial(const char *type, struct ast_format_cap *cap, const char *addr,
++	int timeout, const char *context, const char *exten, int priority, int *reason,
++	int synchronous, const char *cid_num, const char *cid_name, struct ast_variable *vars,
++	const char *account, struct ast_channel **locked_channel, int early_media,
++	const struct ast_assigned_ids *assignedids, const char *predial_callee);
++
+ /*!
+  * \brief Synchronously or asynchronously make an outbound call and execute an
+  *  application on the channel.
+@@ -1211,6 +1217,12 @@
+ 	const char *account, struct ast_channel **locked_channel,
+ 	const struct ast_assigned_ids *assignedids);
+ 
++int ast_pbx_outgoing_app_predial(const char *type, struct ast_format_cap *cap, const char *addr,
++	int timeout, const char *app, const char *appdata, int *reason, int synchronous,
++	const char *cid_num, const char *cid_name, struct ast_variable *vars,
++	const char *account, struct ast_channel **locked_channel,
++	const struct ast_assigned_ids *assignedids, const char *predial_callee);
++
+ /*!
+  * \brief Evaluate a condition
+  *
+diff --git a/main/pbx.c b/main/pbx.c
+index e5c3d3c..208c230 100644
+--- a/main/pbx.c
++++ b/main/pbx.c
+@@ -7631,11 +7631,13 @@
+ 	const char *app, const char *appdata, int *reason, int synchronous,
+ 	const char *cid_num, const char *cid_name, struct ast_variable *vars,
+ 	const char *account, struct ast_channel **locked_channel, int early_media,
+-	const struct ast_assigned_ids *assignedids)
++	const struct ast_assigned_ids *assignedids, const char *predial_callee)
+ {
+ 	RAII_VAR(struct pbx_outgoing *, outgoing, NULL, ao2_cleanup);
+ 	struct ast_channel *dialed;
+ 	pthread_t thread;
++	char tmp_cid_name[128];
++	char tmp_cid_num[128];
+ 
+ 	outgoing = ao2_alloc(sizeof(*outgoing), pbx_outgoing_destroy);
+ 	if (!outgoing) {
+@@ -7662,6 +7664,11 @@
+ 
+ 	ast_dial_set_global_timeout(outgoing->dial, timeout);
+ 
++	if (!ast_strlen_zero(predial_callee)) {
++		/* note casting to void * here to suppress compiler warning message (passing const to non-const function) */
++		ast_dial_option_global_enable(outgoing->dial, AST_DIAL_OPTION_PREDIAL, (void *)predial_callee);
++	}
++
+ 	if (ast_dial_prerun(outgoing->dial, NULL, cap)) {
+ 		if (synchronous && reason) {
+ 			*reason = pbx_dial_reason(AST_DIAL_RESULT_FAILED,
+@@ -7686,6 +7693,25 @@
+ 		ast_channel_stage_snapshot_done(dialed);
+ 	}
+ 	ast_set_flag(ast_channel_flags(dialed), AST_FLAG_ORIGINATED);
++
++	if (!ast_strlen_zero(predial_callee)) {
++		char *tmp = NULL;
++		/*
++		 * The predial sub routine may have set callerid so set this into the new channel
++		 * Note... cid_num and cid_name parameters to this function will always be NULL if
++		 * predial_callee is non-NULL so we are not overwriting anything here.
++		 */
++		tmp = S_COR(ast_channel_caller(dialed)->id.number.valid, ast_channel_caller(dialed)->id.number.str, NULL);
++		if (tmp) {
++			ast_copy_string(tmp_cid_num, tmp, sizeof(tmp_cid_num));
++			cid_num = tmp_cid_num;
++		}
++		tmp = S_COR(ast_channel_caller(dialed)->id.name.valid, ast_channel_caller(dialed)->id.name.str, NULL);
++		if (tmp) {
++			ast_copy_string(tmp_cid_name, tmp, sizeof(tmp_cid_name));
++			cid_name = tmp_cid_name;
++		}
++	}
+ 	ast_channel_unlock(dialed);
+ 
+ 	if (!ast_strlen_zero(cid_num) || !ast_strlen_zero(cid_name)) {
+@@ -7794,6 +7820,16 @@
+ 	const char *account, struct ast_channel **locked_channel, int early_media,
+ 	const struct ast_assigned_ids *assignedids)
+ {
++	return ast_pbx_outgoing_exten_predial(type, cap, addr, timeout, context, exten, priority, reason,
++		synchronous, cid_num, cid_name, vars, account, locked_channel, early_media, assignedids, NULL);
++}
++
++int ast_pbx_outgoing_exten_predial(const char *type, struct ast_format_cap *cap, const char *addr,
++	int timeout, const char *context, const char *exten, int priority, int *reason,
++	int synchronous, const char *cid_num, const char *cid_name, struct ast_variable *vars,
++	const char *account, struct ast_channel **locked_channel, int early_media,
++	const struct ast_assigned_ids *assignedids, const char *predial_callee)
++{
+ 	int res;
+ 	int my_reason;
+ 
+@@ -7807,7 +7843,7 @@
+ 
+ 	res = pbx_outgoing_attempt(type, cap, addr, timeout, context, exten, priority,
+ 		NULL, NULL, reason, synchronous, cid_num, cid_name, vars, account, locked_channel,
+-		early_media, assignedids);
++		early_media, assignedids, predial_callee);
+ 
+ 	if (res < 0 /* Call failed to get connected for some reason. */
+ 		&& 1 < synchronous
+@@ -7848,6 +7884,16 @@
+ 	const char *account, struct ast_channel **locked_channel,
+ 	const struct ast_assigned_ids *assignedids)
+ {
++	return ast_pbx_outgoing_app_predial(type, cap, addr, timeout, app, appdata, reason, synchronous,
++		cid_num, cid_name, vars, account, locked_channel, assignedids, NULL);
++}
++
++int ast_pbx_outgoing_app_predial(const char *type, struct ast_format_cap *cap, const char *addr,
++	int timeout, const char *app, const char *appdata, int *reason, int synchronous,
++	const char *cid_num, const char *cid_name, struct ast_variable *vars,
++	const char *account, struct ast_channel **locked_channel,
++	const struct ast_assigned_ids *assignedids, const char *predial_callee)
++{
+ 	if (reason) {
+ 		*reason = 0;
+ 	}
+@@ -7860,7 +7906,7 @@
+ 
+ 	return pbx_outgoing_attempt(type, cap, addr, timeout, NULL, NULL, 0, app, appdata,
+ 		reason, synchronous, cid_num, cid_name, vars, account, locked_channel, 0,
+-		assignedids);
++		assignedids, predial_callee);
+ }
+ 
+ /* this is the guts of destroying a context --
