@@ -103,44 +103,44 @@ id-assoc pd 1 {"
       echo "  prefix ::/$len infinity;"
     fi
 
-    id=0
     unset IFS
     for iname in $IPV6_PREFIX_DELEGATION; do
       int=""
       case $iname in
         INTIF)
-          if [ -n "$INTIF" -a "$INTIF" != "none" -a -n "$INTIP" -a -n "$INTNM" ]; then
+          if [ -n "$INTIF" -a "$INTIF" != "none" ]; then
             int="$INTIF"
           fi
           ;;
         INT2IF)
-          if [ -n "$INT2IF" -a "$INT2IF" != "none" -a -n "$INT2IP" -a -n "$INT2NM" ]; then
+          if [ -n "$INT2IF" -a "$INT2IF" != "none" ]; then
             int="$INT2IF"
           fi
           ;;
         INT3IF)
-          if [ -n "$INT3IF" -a "$INT3IF" != "none" -a -n "$INT3IP" -a -n "$INT3NM" ]; then
+          if [ -n "$INT3IF" -a "$INT3IF" != "none" ]; then
             int="$INT3IF"
           fi
           ;;
         INT4IF)
-          if [ -n "$INT4IF" -a "$INT4IF" != "none" -a -n "$INT4IP" -a -n "$INT4NM" ]; then
+          if [ -n "$INT4IF" -a "$INT4IF" != "none" ]; then
             int="$INT4IF"
           fi
           ;;
         DMZIF)
-          if [ -n "$DMZIF" -a "$DMZIF" != "none" -a -n "$DMZIP" -a -n "$DMZNM" ]; then
+          if [ -n "$DMZIF" -a "$DMZIF" != "none" ]; then
             int="$DMZIF"
           fi
           ;;
       esac
       if [ -n "$int" ]; then
+        # subnet comes back set to a 4 digit hex string, convert to decimal
+        id="$(printf '%d' 0x$(get_dhcpv6_subnet $int $len))"
         echo "  prefix-interface $int {
     sla-id $id;
     sla-len $((64-len));
     ifid 1;
   };"
-        id=$((id+1))
 
         # Only assign one interface given only a /64 prefix
         if [ $len -eq 64 ]; then
@@ -332,6 +332,9 @@ start () {
       sysctl -w "$line=0" >/dev/null
     done
     unset IFS
+
+    # Generate a ULA/48 site prefix
+    get_ipv6_site_ula_prefix > /dev/null
   fi
 
   SYS_gen_etc_hosts > /tmp/etc/hosts
@@ -459,48 +462,139 @@ start () {
     phyeth_disable_offload "$PHYETH_DISABLE_OFFLOAD"
   fi
 
-  if [ -n "$INTIF" -a -n "$INTIP" -a -n "$INTNM" -a "$INTIF" != "none" ]; then
-    ip addr add $INTIP/$INTNM brd + dev $INTIF
-    if [ "$IPV6" = "yes" -a -n "$INTIPV6" ]; then
-      ip -6 addr add $INTIPV6 dev $INTIF
+  # Now assign IP addresses to internal interfaces.
+  # For IPv4 this is manualy assigned with a netmask.
+  # For IPv6 there are three ways to assign an address, all of which
+  # may be combined (so multiple addresses on a single interface)
+  # 1) Manually assigned,
+  # 2) Auto assigned from a site ULA prefix,
+  # 3) Auto assigned from DHCPv6 client prefix delegation.
+  if [ -n "$INTIF" -a "$INTIF" != "none" ]; then
+    bringup=""
+    if [ -n "$INTIP" -a -n "$INTNM" ]; then
+      ip addr add $INTIP/$INTNM brd + dev $INTIF
+      if [ "$NTPBROADCAST" = "yes" ]; then
+        ip route add 224.0.0.0/4 dev $INTIF
+      fi
+      bringup="yes"
     fi
-    ip link set dev $INTIF up
-
-    if [ "$NTPBROADCAST" = "yes" ]; then
-      ip route add 224.0.0.0/4 dev $INTIF
+    if [ "$IPV6" = "yes" ]; then
+      if [ -n "$INTIPV6" ]; then
+        ip -6 addr add $INTIPV6 dev $INTIF
+        bringup="yes"
+      fi
+      regex="\bINTIF\b"
+      if [[ "$IPV6_PREFIX_ULA" =~ $regex ]]; then
+        ip -6 addr add $(get_ipv6_site_ula_prefix $INTIF) dev $INTIF
+        bringup="yes"
+      fi
+      if [[ "$IPV6_PREFIX_DELEGATION" =~ $regex && "$DHCPV6_CLIENT_REQUEST_PREFIX" != "no" ]]; then
+        bringup="yes"
+      fi
+    fi
+    if [ "$bringup" = "yes" ]; then
+      ip link set dev $INTIF up
     fi
   fi
 
-  if [ -n "$INT2IF" -a -n "$INT2IP" -a -n "$INT2NM" -a "$INT2IF" != "none" ]; then
-    ip addr add $INT2IP/$INT2NM brd + dev $INT2IF
-    if [ "$IPV6" = "yes" -a -n "$INT2IPV6" ]; then
-      ip -6 addr add $INT2IPV6 dev $INT2IF
+  if [ -n "$INT2IF" -a "$INT2IF" != "none" ]; then
+    bringup=""
+    if [ -n "$INT2IP" -a -n "$INT2NM" ]; then
+      ip addr add $INT2IP/$INT2NM brd + dev $INT2IF
+      bringup="yes"
     fi
-    ip link set dev $INT2IF up
+    if [ "$IPV6" = "yes" ]; then
+      if [ -n "$INT2IPV6" ]; then
+        ip -6 addr add $INT2IPV6 dev $INT2IF
+        bringup="yes"
+      fi
+      regex="\bINT2IF\b"
+      if [[ "$IPV6_PREFIX_ULA" =~ $regex ]]; then
+        ip -6 addr add $(get_ipv6_site_ula_prefix $INT2IF) dev $INT2IF
+        bringup="yes"
+      fi
+      if [[ "$IPV6_PREFIX_DELEGATION" =~ $regex && "$DHCPV6_CLIENT_REQUEST_PREFIX" != "no" ]]; then
+        bringup="yes"
+      fi
+    fi
+    if [ "$bringup" = "yes" ]; then
+      ip link set dev $INT2IF up
+    fi
   fi
 
-  if [ -n "$INT3IF" -a -n "$INT3IP" -a -n "$INT3NM" -a "$INT3IF" != "none" ]; then
-    ip addr add $INT3IP/$INT3NM brd + dev $INT3IF
-    if [ "$IPV6" = "yes" -a -n "$INT3IPV6" ]; then
-      ip -6 addr add $INT3IPV6 dev $INT3IF
+  if [ -n "$INT3IF" -a "$INT3IF" != "none" ]; then
+    bringup=""
+    if [ -n "$INT3IP" -a -n "$INT3NM" ]; then
+      ip addr add $INT3IP/$INT3NM brd + dev $INT3IF
+      bringup="yes"
     fi
-    ip link set dev $INT3IF up
+    if [ "$IPV6" = "yes" ]; then
+      if [ -n "$INT3IPV6" ]; then
+        ip -6 addr add $INT3IPV6 dev $INT3IF
+        bringup="yes"
+      fi
+      regex="\bINT3IF\b"
+      if [[ "$IPV6_PREFIX_ULA" =~ $regex ]]; then
+        ip -6 addr add $(get_ipv6_site_ula_prefix $INT3IF) dev $INT3IF
+        bringup="yes"
+      fi
+      if [[ "$IPV6_PREFIX_DELEGATION" =~ $regex && "$DHCPV6_CLIENT_REQUEST_PREFIX" != "no" ]]; then
+        bringup="yes"
+      fi
+    fi
+    if [ "$bringup" = "yes" ]; then
+      ip link set dev $INT3IF up
+    fi
   fi
 
-  if [ -n "$INT4IF" -a -n "$INT4IP" -a -n "$INT4NM" -a "$INT4IF" != "none" ]; then
-    ip addr add $INT4IP/$INT4NM brd + dev $INT4IF
-    if [ "$IPV6" = "yes" -a -n "$INT4IPV6" ]; then
-      ip -6 addr add $INT4IPV6 dev $INT4IF
+  if [ -n "$INT4IF" -a "$INT4IF" != "none" ]; then
+    bringup=""
+    if [ -n "$INT4IP" -a -n "$INT4NM" ]; then
+      ip addr add $INT4IP/$INT4NM brd + dev $INT4IF
+      bringup="yes"
     fi
-    ip link set dev $INT4IF up
+    if [ "$IPV6" = "yes" ]; then
+      if [ -n "$INT4IPV6" ]; then
+        ip -6 addr add $INT4IPV6 dev $INT4IF
+        bringup="yes"
+      fi
+      regex="\bINT4IF\b"
+      if [[ "$IPV6_PREFIX_ULA" =~ $regex ]]; then
+        ip -6 addr add $(get_ipv6_site_ula_prefix $INT4IF) dev $INT4IF
+        bringup="yes"
+      fi
+      if [[ "$IPV6_PREFIX_DELEGATION" =~ $regex && "$DHCPV6_CLIENT_REQUEST_PREFIX" != "no" ]]; then
+        bringup="yes"
+      fi
+    fi
+    if [ "$bringup" = "yes" ]; then
+      ip link set dev $INT4IF up
+    fi
   fi
 
-  if [ -n "$DMZIF" -a -n "$DMZIP" -a -n "$DMZNM" -a "$DMZIF" != "none" ]; then
-    ip addr add $DMZIP/$DMZNM brd + dev $DMZIF
-    if [ "$IPV6" = "yes" -a -n "$DMZIPV6" ]; then
-      ip -6 addr add $DMZIPV6 dev $DMZIF
+  if [ -n "$DMZIF" -a "$DMZIF" != "none" ]; then
+    bringup=""
+    if [ -n "$DMZIP" -a -n "$DMZNM" ]; then
+      ip addr add $DMZIP/$DMZNM brd + dev $DMZIF
+      bringup="yes"
     fi
-    ip link set dev $DMZIF up
+    if [ "$IPV6" = "yes" ]; then
+      if [ -n "$DMZIPV6" ]; then
+        ip -6 addr add $DMZIPV6 dev $DMZIF
+        bringup="yes"
+      fi
+      regex="\bDMZIF\b"
+      if [[ "$IPV6_PREFIX_ULA" =~ $regex ]]; then
+        ip -6 addr add $(get_ipv6_site_ula_prefix $DMZIF) dev $DMZIF
+        bringup="yes"
+      fi
+      if [[ "$IPV6_PREFIX_DELEGATION" =~ $regex && "$DHCPV6_CLIENT_REQUEST_PREFIX" != "no" ]]; then
+        bringup="yes"
+      fi
+    fi
+    if [ "$bringup" = "yes" ]; then
+      ip link set dev $DMZIF up
+    fi
   fi
 
   if [ -n "$WANDELAY" ]; then
@@ -735,6 +829,10 @@ PPPOE_EXTRA=\"\"" > /tmp/etc/ppp/pppoe.conf
   if [ "$IPV6" = "yes" -a -n "$IPV6_TUNNEL" ]; then
     ipv6_tunnel start
   fi
+
+  # Now cleanup the file that holds list of IPv6 prefix subnet ids
+  # so that it only contains interfaces that actually exist
+  cleanup_dhcpv6_subnet_list
 
   echo "Network UP"
   sleep 1
