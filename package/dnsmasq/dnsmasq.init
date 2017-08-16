@@ -5,44 +5,6 @@
 . /etc/init.d/functions.d/network
 . /etc/init.d/functions.d/misc
 
-is_prefix_delegation()
-{
-  local dhcpv6_pd="" x IFS
-
-  if [ "$DHCPV6_CLIENT_ENABLE" = "yes" ]; then
-    unset IFS
-    for x in $IPV6_PREFIX_DELEGATION; do
-      if [ "$x" = "$1" ]; then
-        dhcpv6_pd="yes"
-        break
-      fi
-    done
-  fi
-
-  echo "$dhcpv6_pd"
-}
-
-addr_to_prefix64()
-{
-  local cnt=1 prefix="" next
-  
-  if [ -n "$1" ]; then
-    while [ $cnt -le 4 ]; do
-      next="$(echo "$1" | cut -s -d':' -f$cnt)"
-      if [ -z "$next" ]; then
-        break
-      fi
-      prefix="${prefix}${prefix:+:}${next}"
-      cnt=$((cnt + 1))
-    done
-    if [ -n "$prefix" ]; then
-      prefix="${prefix}::"
-    fi
-  fi
-
-  echo "$prefix"
-}
-
 directive_exists_with_file() {
   local directive="$1" file="$2"
 
@@ -128,68 +90,57 @@ dhcp-option=$1,150,$2"
 falseDNSMASQnet()
 {
   # args: IF
-  echo "# DHCP disabled on $1
+  echo "# IPv4 DHCP disabled on $1
 no-dhcp-interface=$1"
 }
 
 addIPV6net()
 {
-  # args: IF, tag, leasetime
-  local interface="$1" tag="$2" leasetime="$3" dhcpv6_pd="" prefix="" iname IFS
+  # args: IFname, tag, leasetime
+  local iname="$1" tag="$2"
+  local manualIPv6="" interface="" regex
 
-  if [ "$IPV6" != "yes" ]; then
+  # find interface name (e.g. eth1) from interface ID (e.g. INTIF)
+  eval interface='$'$iname
+  if [ -n "$interface" -a "$interface" != "none" -a "$IPV6" != "yes" ]; then
     return 2
   fi
 
-  unset IFS
-  for iname in $IPV6_AUTOCONF; do
-    case $iname in
-      INTIF)
-        if [ "$tag" = "lan" ]; then
-          dhcpv6_pd="$(is_prefix_delegation "$iname")"
-          prefix="$(addr_to_prefix64 "$INTIPV6")"
-          break
-        fi
-        ;;
-      INT2IF)
-        if [ "$tag" = "lan2" ]; then
-          dhcpv6_pd="$(is_prefix_delegation "$iname")"
-          prefix="$(addr_to_prefix64 "$INT2IPV6")"
-          break
-        fi
-        ;;
-      INT3IF)
-        if [ "$tag" = "lan3" ]; then
-          dhcpv6_pd="$(is_prefix_delegation "$iname")"
-          prefix="$(addr_to_prefix64 "$INT3IPV6")"
-          break
-        fi
-        ;;
-      INT4IF)
-        if [ "$tag" = "lan4" ]; then
-          dhcpv6_pd="$(is_prefix_delegation "$iname")"
-          prefix="$(addr_to_prefix64 "$INT4IPV6")"
-          break
-        fi
-        ;;
-      DMZIF)
-        if [ "$tag" = "dmz" ]; then
-          dhcpv6_pd="$(is_prefix_delegation "$iname")"
-          prefix="$(addr_to_prefix64 "$DMZIPV6")"
-          break
-        fi
-        ;;
-    esac
-  done
+  # find manually assigned IPv6 address from e.g. INTIPV6)
+  eval manualIPv6='$'${iname/%IF/IPV6}
 
-  if [ "$dhcpv6_pd" = "yes" -a "$DHCPV6_CLIENT_REQUEST_PREFIX" != "no" ]; then
-    echo "
-dhcp-range=$tag,::1,constructor:$interface,ra-only,$leasetime"
-    return 0
-  elif [ -n "$prefix" ]; then
-    echo "
-dhcp-range=$tag,$prefix,ra-only,64,$leasetime"
-    return 0
+  # We will use regex to find word in a string, e.g. INTIF in "DMZIF INTIF INT2IF"
+  regex="\b$iname\b"
+  if [[ "$IPV6_PREFIX_DELEGATION" =~ $regex && "$DHCPV6_CLIENT_REQUEST_PREFIX" != "no" ]] ||
+     [[ "$IPV6_PREFIX_ULA" =~ $regex ]] || [ -n "$manualIPv6" ]; then
+    # an IPv6 is assigned to this interface.  Proceed.
+    if [[ "$IPV6_AUTOCONF_DHCP" =~ $regex ]]; then
+      if [ -z "$DHCPV6RANGE" ]; then
+        DHCPV6RANGE="::1000,::ffff"
+      fi
+      echo ""
+      echo "# Enable IPv6 Stateful DHCP and Router Advertisements on $interface"
+      echo "dhcp-range=$tag,$DHCPV6RANGE,constructor:$interface,ra-names,slaac,${DHCP_LEASETIME:-24}h"
+      echo "dhcp-option=$tag,option6:dns-server,[fe80::]"
+      echo "dhcp-option=$tag,option6:domain-search,$DOMAIN"
+      return 0
+    elif [[ "$IPV6_AUTOCONF" =~ $regex ]]; then
+      echo ""
+      echo "# Enable IPv6 Stateless DHCP and Router Advertisements on $interface"
+      echo "dhcp-range=$tag,::,constructor:$interface,ra-names,ra-stateless,${DHCP_LEASETIME:-24}h"
+      echo "dhcp-option=$tag,option6:dns-server,[fe80::]"
+      echo "dhcp-option=$tag,option6:domain-search,$DOMAIN"
+      return 0
+    elif [[ "$IPV6_AUTOCONF_RAONLY" =~ $regex ]]; then
+      echo ""
+      echo "# Enable IPv6 Router Advertisements only on $interface"
+      echo "dhcp-range=$tag,::,constructor:$interface,ra-only,${DHCP_LEASETIME:-24}h"
+      return 0
+    else
+      echo ""
+      echo "# No IPv6 Router Advertisements on $interface"
+      return 0
+    fi
   fi
 
   return 1
@@ -232,11 +183,8 @@ addDNSMASQnet()
 
       trueDNSMASQnet $4 $2 "$ip_min" "$ip_max" $leasetime
 
-      addIPV6net $1 $4 $leasetime
     else
-      if ! addIPV6net $1 $4 $leasetime; then
-        falseDNSMASQnet $1
-      fi
+      falseDNSMASQnet $1
     fi
   fi
 }
@@ -370,6 +318,15 @@ is_DHCP_active()
   return 1
 }
 
+is_IPV6RA_active()
+{
+  if [ -n "IPV6_AUTOCONF_DHCP" -o -n "IPV6_AUTOCONF" -o -n "IPV6_AUTOCONF_RAONLY" ]; then
+    return 1
+  fi
+
+  return 0
+}
+
 init () {
   if tftpd_check; then
     if [ -d /mnt/kd/tftpboot ]; then
@@ -429,18 +386,23 @@ nameserver 127.0.0.1" > /tmp/etc/resolv.conf
     return
   fi
 
-  if is_DHCP_active || is_EXTDHCP_active; then
+  if is_DHCP_active || is_EXTDHCP_active || is_IPV6RA_active; then
     createDNSMASQbasic dhcp >> /tmp/etc/dnsmasq.conf
 
     addDNSMASQnet "$INTIF" "$INTIP" "$INTNM" lan >> /tmp/etc/dnsmasq.conf
+    addIPV6net "INTIF" lan >> /tmp/etc/dnsmasq.conf
 
     addDNSMASQnet "$INT2IF" "$INT2IP" "$INT2NM" lan2 >> /tmp/etc/dnsmasq.conf
+    addIPV6net "INT2IF" lan2 >> /tmp/etc/dnsmasq.conf
 
     addDNSMASQnet "$INT3IF" "$INT3IP" "$INT3NM" lan3 >> /tmp/etc/dnsmasq.conf
+    addIPV6net "INT3IF" lan3 >> /tmp/etc/dnsmasq.conf
 
     addDNSMASQnet "$INT4IF" "$INT4IP" "$INT4NM" lan4 >> /tmp/etc/dnsmasq.conf
+    addIPV6net "INT4IF" lan4 >> /tmp/etc/dnsmasq.conf
 
     addDNSMASQnet "$DMZIF" "$DMZIP" "$DMZNM" dmz >> /tmp/etc/dnsmasq.conf
+    addIPV6net "DMZIF" dmz >> /tmp/etc/dnsmasq.conf
 
     if is_EXTDHCP_active; then
       addDNSMASQnet "$EXTIF" "$EXTIP" "$EXTNM" ext >> /tmp/etc/dnsmasq.conf
