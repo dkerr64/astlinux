@@ -858,7 +858,7 @@ if ($daemon['dnsmasq'] > 0) {
       putHtml("</pre>");
     } else {
       $is_mac2vendor = is_mac2vendor();
-      putHtml("<pre>");
+      echo '<pre>';
       if (($n = count($dhcp['clients'])) > 0) {
         $headers = 0; // 1=DHCPv4 table header printed, 2=DHCPv6 table header printed
         $dhcpv4 = 0; // Count of number of DHCPv4 leases issued
@@ -934,7 +934,7 @@ if ($daemon['dnsmasq'] > 0) {
           putHtml("</tr><tr>");
           echo '<td colspan="5">'.$n.' Active DHCP Leases</td>';
         }
-        putHtml("</tr></table>");
+        echo '</tr></table>';
       }
       putHtml("</pre>");
     }
