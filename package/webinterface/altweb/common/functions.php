@@ -17,6 +17,8 @@
 // 12-12-2009, Added systemSHUTDOWN()
 // 01-12-2012, Added asteriskURLrepo()
 // 01-04-2014, Added statusPROCESS()
+// 08-12-2017, Added is_IPV6addr()
+// 08-15-2017, Added expandIPV6addr()
 //
 // System location of prefs file                                 
 $KD_PREFS_LOCATION = '/mnt/kd/webgui-prefs.txt';           
@@ -821,6 +823,28 @@ function compressIPV6addr($addr) {
     return(inet_ntop(inet_pton($addr)));
   }
   return($addr);
+}
+
+// Function: expandIPV6addr
+// Accepts both IPv4 and IPv6
+function expandIPV6addr($addr){
+	if (filter_var($addr, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+		$addr='::'.$addr;
+	}
+  if (filter_var($addr, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+    $hex = unpack("H*hex", inet_pton($addr));
+    $addr = substr(preg_replace("/([A-f0-9]{4})/", "$1:", $hex['hex']), 0, -1);
+  }
+  return $addr;
+}
+
+// Function: is_IPV6addr
+//
+function is_IPV6addr($addr) {
+  if (filter_var($addr, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+    return(true);
+  }
+  return(false);
 }
 
 // Function: is_addon_package
