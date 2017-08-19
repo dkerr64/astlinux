@@ -448,9 +448,9 @@ function saveNETWORKsettings($conf_dir, $conf_file) {
   $value = 'IPV6_PREFIX_DELEGATION="'.trim($value).'"';
   fwrite($fp, "### IPv6 Prefix Delegation\n".$value."\n");
 
-//  $value = 'IPV6_AUTOCONF_RAONLY="'.getDHCPV6_value('raonly').'"';
-//  fwrite($fp, "### IPv6 Router Advertisements\n".$value."\n");
-  $value = 'IPV6_AUTOCONF="'.getDHCPV6_value('stateless').'"';
+  $value = 'IPV6_AUTOCONF="'.getDHCPV6_value('raonly').'"';
+  fwrite($fp, "### IPv6 Router Advertisements\n".$value."\n");
+  $value = 'IPV6_AUTOCONF_STATELESS_DHCP="'.getDHCPV6_value('stateless').'"';
   fwrite($fp, "### IPv6 Stateless DHCP\n".$value."\n");
   $value = 'IPV6_AUTOCONF_DHCP="'.getDHCPV6_value('stateful').'"';
   fwrite($fp, "### IPv6 Stateful DHCP\n".$value."\n");
@@ -1031,7 +1031,7 @@ function putDNS_DHCPV6_Html($db, $cur_db, $varif, $name) {
       }
     }
     if ($sel_stateful === '' &&
-        ($value = getVARdef($db, 'IPV6_AUTOCONF', $cur_db)) !== '') {
+        ($value = getVARdef($db, 'IPV6_AUTOCONF_STATELESS_DHCP', $cur_db)) !== '') {
       $tokens = explode(' ', $value);
       foreach ($tokens as $token) {
         if ($token === $varif) {
@@ -1041,7 +1041,7 @@ function putDNS_DHCPV6_Html($db, $cur_db, $varif, $name) {
       }
     }
     if ($sel_stateful === '' && $sel_stateless === '' &&
-        ($value = getVARdef($db, 'IPV6_AUTOCONF_RAONLY', $cur_db)) !== '') {
+        ($value = getVARdef($db, 'IPV6_AUTOCONF', $cur_db)) !== '') {
       $tokens = explode(' ', $value);
       foreach ($tokens as $token) {
         if ($token === $varif) {
@@ -1054,7 +1054,7 @@ function putDNS_DHCPV6_Html($db, $cur_db, $varif, $name) {
   putHtml('&ndash;');
   putHtml('<select name="'.$name.'">');
   putHtml('<option value="">No Router Advertisements</option>');
-//  putHtml('<option value="raonly"'.$sel_raonly.'>RA Only</option>');
+  putHtml('<option value="raonly"'.$sel_raonly.'>RA Only</option>');
   putHtml('<option value="stateless"'.$sel_stateless.'>RA &amp; Stateless DHCP</option>');
   putHtml('<option value="stateful"'.$sel_stateful.'>Stateful DHCP &amp; RA</option>');
   putHtml('</select>');
