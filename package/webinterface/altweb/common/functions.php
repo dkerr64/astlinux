@@ -19,6 +19,7 @@
 // 01-04-2014, Added statusPROCESS()
 // 08-12-2017, Added is_IPV6addr()
 // 08-15-2017, Added expandIPV6addr()
+// 08-19-2017, Added getAstDB()
 //
 // System location of prefs file                                 
 $KD_PREFS_LOCATION = '/mnt/kd/webgui-prefs.txt';           
@@ -266,11 +267,17 @@ function updateCRON($user, $ret_good, $ret_fail) {
 
 // Function: includeTOPICinfo
 //
-function includeTOPICinfo($topic) {
-
-  $str = '&nbsp;';
-  $str .= '<a href="/info.php?topic='.$topic.'" target="_blank">';
-  $str .= '<img src="/common/topicinfo.gif" alt="" title="Topic: '.$topic.'" class="topicinfo" /></a>';
+function includeTOPICinfo($topic,$tooltip = '') {
+  global $global_prefs;
+  if ($tooltip === '') $tooltip = 'topic: '.$topic;
+  if (strlen($tooltip) < 50) $class = 'tooltip';
+  else $class = 'tooltipwide';
+  $str = '';
+  // $str = '&nbsp;';
+  $onclick = '';
+  if (getPREFdef($global_prefs, 'use_javascript') === 'yes') $onclick = 'onclick="delayPopup(event,this.href,650,250,\''.$topic.'\',true,0); return false;"';
+  $str .= '<a href="/info.php?topic='.$topic.'" '.$onclick.' target="_blank" class="'.$class.'">';
+  $str .= '<img src="/common/topicinfo.gif" alt="Info"/><b><em></em>'.$tooltip.'</b></a>';
   
   return($str);
 }
@@ -881,6 +888,26 @@ function mac2vendor($mac) {
     }
   }
   return($vendor);
+}
+
+// Function: getAstDB
+//
+function getAstDB($family, $key) {
+  $tmpfile = tempnam("/tmp", "PHP_");
+  $result = null;
+  if ((asteriskCMD('database get '.$family.' '.$key.'"', $tmpfile)) == 0) {
+    $ph = @fopen($tmpfile, "r");
+    while (! feof($ph)) {
+      if ($line = trim(fgets($ph, 1024))) {
+        if (strncasecmp($line, 'Value: ', 6) == 0) {
+          $result = substr($line,7);
+        }
+      }
+    }
+    fclose($ph);
+    @unlink($tmpfile);
+  }
+  return($result);
 }
 
 // Function: getPREFdef

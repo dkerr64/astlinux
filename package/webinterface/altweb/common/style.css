@@ -14,6 +14,10 @@ body {
 
 pre {
   font-weight: normal;
+  padding: 1em;
+}
+.sysstatus {
+  font-weight: normal;
   border: 2px solid #54545C;
   background: #E7E5E2;
   padding: 10px;
@@ -179,7 +183,22 @@ p {
   padding-left: 12px;
   padding-right: 12px;
 }
-
+.datatable th {
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 12px;
+  padding-right: 12px;
+}
+img {
+  border: 0 none;
+}
+.datatable a {
+  color: black;
+  text-decoration: none;
+}
+.datatable a:hover {
+  color:blue;
+}
 .headerTable {
   font-family: "Lucida Grande", "Bitstream Vera Sans", "Trebuchet MS", Verdana, Helvetica, sans-serif;
   font-size: 100%;
@@ -324,6 +343,171 @@ p {
   padding-bottom: 1px;
   padding-left: 0px;
   padding-right: 1px;
+}
+
+a.tooltip b {
+  display:none;
+  text-align: left;
+}
+
+a.tooltip:hover {
+  border:0;
+  position:relative;
+  z-index:500;
+  text-decoration:none;
+  text-align: left;
+}
+
+a.tooltip:hover b {
+  display:block;
+  position:absolute;
+  bottom:20px;
+  left:-25px;
+  padding:5px;
+  font-weight:normal;
+  font-family: Verdana, Arial, Helvetica, sans-serif;
+  font-size: 8pt;
+  text-decoration:none;
+  color:#000;
+  border:1px solid #888;
+  background:#FFFFCC;
+  width:150px;
+}
+
+a.tooltip:hover b em {
+  position:absolute;
+  left:20px;
+  bottom:-6px;
+  width:11px;
+  height:6px;
+  background:url("tooltip.gif") 0 0;
+  display:block;
+  font-size:1px;
+}
+
+.tooltipwide b {
+  display:none;
+  text-align: left;
+}
+
+.tooltipwide:hover {
+  border:0;
+  position:relative;
+  z-index:500;
+  text-decoration:none;
+  text-align: left;
+}
+
+.tooltipwide:hover b {
+  display:block;
+  position:absolute;
+  bottom:20px;
+  left:-25px;
+  padding:5px;
+  font-weight:normal;
+  font-family: Verdana, Arial, Helvetica, sans-serif;
+  font-size: 8pt;
+  text-decoration:none;
+  color:#000;
+  border:1px solid #888;
+  background:#FFFFCC;
+  width:350px;
+}
+
+.tooltipwide:hover b em {
+  position:absolute;
+  left:20px;
+  bottom:-6px;
+  width:11px;
+  height:6px;
+  background:url("tooltip.gif") 0 0;
+  display:block;
+  font-size:1px;
+}
+
+.popup {
+  margin:1px;
+  position: absolute;
+  background-color:#FFFFCC;
+  border-width: 1px;
+  border-color: #9E978D;
+  border-style: solid; 
+  z-index: 1000;
+  font-family: Verdana, Arial, Helvetica, sans-serif;
+  text-align: left;
+}
+
+.popup_text {
+  width:620px;
+  height:160px;
+  overflow:auto;
+  margin: 3px 3px 3px 3px;
+}
+
+.popup_text p {
+  margin: 8px 0px 0px 0px;
+}
+
+.popup_title {
+  padding: 0px 0px 0px 0px;
+  width: 100%;
+  font-weight: bold;
+}
+.popup_title td {
+  padding: 0px 0px 0px 0px;
+  font-weight: bold;
+}
+
+.popup_title_tr {
+  background: #898077;
+  font-weight: bold;
+}
+
+.popup_title_text {
+  height: 20px;
+  cursor: move;
+  color:#FFA500;
+  text-align: left;
+  font-size: 13px;
+  font-weight:bold;
+  font-family: Verdana, Arial, Helvetica, sans-serif;
+}
+
+.popup_title_X {
+  color: #FFA500;
+  font-size: 14px;
+  font-weight:bold;
+  cursor: pointer;
+  font-family: Verdana, Arial, Helvetica, sans-serif;
+  text-align: center;
+  width: 30px;
+}
+
+.popup_title_loading {
+  width: 30px;
+  cursor: move;
+  text-align:center;
+}
+
+.dragged {
+  cursor: move;
+  border-color: black;
+}
+
+.popup_button {
+  text-decoration:none;
+  padding : 0px 0px 0px 0px;
+  border-style : solid ;
+  border-top-color : #BDC7E7;
+  border-bottom-color : #182052;
+  border-left-color : #BDC7E7;
+  border-right-color : #182052;
+  border-width : 1px 1px 1px 1px;
+  cursor: pointer;
+  color: black;
+  background-color : #EFEFEF;
+  font-weight :normal;
+  position: relative;
 }
 
 /* Pagination */

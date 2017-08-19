@@ -2,7 +2,7 @@ Web Interface Information Topics
 
 
 [[followme-dialplan]]
-
+<pre>
 Follow-Me Tab:
 
 The Follow-Me tab uses Asterisk's internal database (astdb) to maintain a list of
@@ -87,9 +87,9 @@ For this "without callee prompt" case, the Followme() application does not retur
 Dial() ${DIALSTATUS} values either need to be handled in your dialplan when dialing Follow-Me numbers,
 or use the destination device (Cell/Mobile Phone Voicemail) to handle exceptions.
 
-
+</pre>
 [[sysdial-dialplan]]
-
+<pre>
 Speed Dial Tab:
 
 The Speed Dial tab adds a web dialog interface to the asterisk
@@ -128,9 +128,9 @@ exten => s,n,Hangup
 
 ---- /etc/asterisk/extensions.conf snippet ----
 
-
+</pre>
 [[cidname-dialplan]]
-
+<pre>
 Caller*ID Tab:
 
 The Caller*ID tab adds a web dialog interface to the asterisk
@@ -161,9 +161,9 @@ exten => s,200,NoOp(${CALLERID(num)})
 
 ---- /etc/asterisk/extensions.conf snippet ----
 
-
+</pre>
 [[blacklist-dialplan]]
-
+<pre>
 Blacklist Tab:
 
 The Blacklist tab adds a web dialog interface to the asterisk
@@ -199,9 +199,9 @@ exten => s,200,NoOp(Valid TN:${CALLERID(num)})
 
 ---- /etc/asterisk/extensions.conf snippet ----
 
-
+</pre>
 [[whitelist-dialplan]]
-
+<pre>
 Whitelist Tab:
 
 The Whitelist tab adds a web dialog interface to the asterisk
@@ -241,9 +241,49 @@ exten => s,200,NoOp(Valid TN:${CALLERID(num)})
 
 ---- /etc/asterisk/extensions.conf snippet ----
 
+</pre>
+[[cdrlog]]
+<pre>
+CDR Log tab
 
+Displays Call Detail Records from the Asterisk master CDR log file. The default view will
+display the most recent calls sorted from newest to older, but you can sort the view by any
+field by clicking on the column header.
+
+Astlinux supports three formats for the CDR log file saved by asterisk. These can be selected
+in the Prefs tab...
+
+[Standard cdr-csv]
+The asterisk standard and default format logged to /var/log/asterisk/cdr-csv/Master.csv.
+This is the preferred setting as all call record fields are saved and available to astlinux
+for searching and sorting.
+
+[Default cdr-custom]
+The default format described in the cdr_custom.conf file, commented-out by default.
+(Yes, it is different from the [Standard cdr-csv])
+
+[Special cdr-custom]
+A very much simplified and shorter format for Astlinux. Selecting this format limits the
+features available on the CDR Log page. To use this format you must edit the cdr_custom.conf
+file to specify the following Master.csv definition.
+
+---- /etc/asterisk/cdr_custom.conf snippet ----
+
+Master.csv => "${CDR(start)}","${CDR(clid)}","${CDR(dst)}","${CDR(dcontext)}","${CDR(billsec)}"
+
+---- /etc/asterisk/cdr_custom.conf snippet ----
+
+The CDR Log Path field defaults to /var/log/asterisk/cdr-csv/Master.csv. If you save your
+asterisk CDR log somewhere else you should edit this field accordingly.
+
+Columns displayed: The CDR Log page displays the following call details:
+
+    Start Time, Duration, Source, Destination, Caller ID and call Disposition.
+
+You can chose to add additional columns in the Prefs page.
+</pre>
 [[actionlist-dialplan]]
-
+<pre>
 Actionlist Tab:
 
 The Actionlist tab adds a web dialog interface to the asterisk
@@ -282,10 +322,9 @@ exten => s,n,Monitor(wav49,${CALLFILENAME},mb) ; record only when bridged + mix 
 exten => s,n(end),MacroExit()
 
 ---- /etc/asterisk/extensions.conf snippet ----
-
-
+</pre>
 [[sqldata-dialplan]]
-
+<pre>
 SQL-Data Tab:
 
 The SQL-Data Tab adds a web dialog to edit the SQLite3 database (added in AstLinux 1.1.1).
@@ -326,10 +365,9 @@ same => n,NoOp(ODBC-ReturnValue: ${val})
 same => n,Hangup()
 
 ---- /etc/asterisk/extensions.conf snippet ----
-
-
+</pre>
 [[xmpp-shared-groups]]
-
+<pre>
 XMPP Shared Groups:
 
 Groups were designed to allow administrators to create virtual groups of users that automatically
@@ -357,9 +395,9 @@ other.dev@example.com=Mel
 --
 You can see the last two entries here have custom names, if no name is given then it is up to
 the user's client to find a suitable name (e.g. take it from the contact's vcard/profile).
-
+</pre>
 [[Fossil-Commands]]
-
+<pre>
 Fossil Commands:
 
 ------------------------------------------------------------------------------
@@ -447,9 +485,9 @@ and the renamed file are reverted.
 
 Options:
   hex_revision_num    revert given FILE back to given REVISION
-
+</pre>
 [[ACME-Certificate]]
-
+<pre>
 ---------------------------------
 ACME (Let's Encrypt) Certificates
 ---------------------------------
@@ -593,5 +631,4 @@ Example /mnt/kd/acme/account.opts file with persistent options added by acme-cli
 log-level 3
 log /var/log/acme-client.log
 --
-
-
+</pre>
