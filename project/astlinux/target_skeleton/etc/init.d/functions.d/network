@@ -214,7 +214,7 @@ get_ipv6_site_ula_prefix()
   # just in case not passed in as a parameter...
   prefix_len="${prefix_len:-$sys_prefix_len}"
 
-  if [ -z "$IPV6_SITE_ULA_PREFIX" ]; then
+  if [ -z "${IPV6_SITE_ULA_PREFIX%%/*}" ]; then
     # Site ULA prefix not set yet...
     IPV6_SITE_ULA_PREFIX="$(/usr/sbin/unique-local-ipv6)"
     # escape the colons and slashes so that sed doesn't try and parse them
