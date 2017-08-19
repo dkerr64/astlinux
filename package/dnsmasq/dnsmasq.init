@@ -124,14 +124,14 @@ addIPV6net()
       echo "dhcp-option=$tag,option6:dns-server,[fe80::]"
       echo "dhcp-option=$tag,option6:domain-search,$DOMAIN"
       return 0
-    elif [[ "$IPV6_AUTOCONF" =~ $regex ]]; then
+    elif [[ "$IPV6_AUTOCONF_STATELESS_DHCP" =~ $regex ]]; then
       echo ""
       echo "# Enable IPv6 Stateless DHCP and Router Advertisements on $interface"
       echo "dhcp-range=$tag,::,constructor:$interface,ra-names,ra-stateless,${DHCP_LEASETIME:-24}h"
       echo "dhcp-option=$tag,option6:dns-server,[fe80::]"
       echo "dhcp-option=$tag,option6:domain-search,$DOMAIN"
       return 0
-    elif [[ "$IPV6_AUTOCONF_RAONLY" =~ $regex ]]; then
+    elif [[ "$IPV6_AUTOCONF" =~ $regex ]]; then
       echo ""
       echo "# Enable IPv6 Router Advertisements only on $interface"
       echo "dhcp-range=$tag,::,constructor:$interface,ra-only,${DHCP_LEASETIME:-24}h"
@@ -320,7 +320,7 @@ is_DHCP_active()
 
 is_IPV6RA_active()
 {
-  if [ -n "IPV6_AUTOCONF_DHCP" -o -n "IPV6_AUTOCONF" -o -n "IPV6_AUTOCONF_RAONLY" ]; then
+  if [ -n "IPV6_AUTOCONF_DHCP" -o -n "IPV6_AUTOCONF" -o -n "IPV6_AUTOCONF_STATELESS_DHCP" ]; then
     return 1
   fi
 
