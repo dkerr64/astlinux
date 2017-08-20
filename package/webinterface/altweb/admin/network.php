@@ -322,9 +322,7 @@ function saveNETWORKsettings($conf_dir, $conf_file) {
       $ula_prefix = $_POST['ipv6_ula_prefix'];
       $value = substr($ula_prefix,0,strrpos($ula_prefix,':')-1).$value;
     }
-    strtok($value,"/");
-//    $value = exec('netcalc -n '.$value.' | sed -n -r -e \'s/^Compressed IPv6 *: *([0-9a-fA-F:]+).*$/\\1/p\'').'/'.strtok('/');
-    $value = compressIPV6addr($value).'/'.strtok('/');
+    $value = compressIPV6addr($value);
   }
   $value = 'INTIPV6="'.$value.'"';
   fwrite($fp, "### 1st LAN IPv6\n".$value."\n");
@@ -347,9 +345,7 @@ function saveNETWORKsettings($conf_dir, $conf_file) {
       $ula_prefix = $_POST['ipv6_ula_prefix'];
       $value = substr($ula_prefix,0,strrpos($ula_prefix,':')-1).$value;
     }
-    strtok($value,"/");
-//    $value = exec('netcalc -n '.$value.' | sed -n -r -e \'s/^Compressed IPv6 *: *([0-9a-fA-F:]+).*$/\\1/p\'').'/'.strtok('/');
-    $value = compressIPV6addr($value).'/'.strtok('/');
+    $value = compressIPV6addr($value);
   }
   $value = 'INT2IPV6="'.$value.'"';
   fwrite($fp, "### 2nd LAN IPv6\n".$value."\n");
@@ -372,9 +368,7 @@ function saveNETWORKsettings($conf_dir, $conf_file) {
       $ula_prefix = $_POST['ipv6_ula_prefix'];
       $value = substr($ula_prefix,0,strrpos($ula_prefix,':')-1).$value;
     }
-    strtok($value,"/");
-//    $value = exec('netcalc -n '.$value.' | sed -n -r -e \'s/^Compressed IPv6 *: *([0-9a-fA-F:]+).*$/\\1/p\'').'/'.strtok('/');
-    $value = compressIPV6addr($value).'/'.strtok('/');
+    $value = compressIPV6addr($value);
   }
   $value = 'INT3IPV6="'.$value.'"';
   fwrite($fp, "### 3rd LAN IPv6\n".$value."\n");
@@ -397,9 +391,7 @@ function saveNETWORKsettings($conf_dir, $conf_file) {
       $ula_prefix = $_POST['ipv6_ula_prefix'];
       $value = substr($ula_prefix,0,strrpos($ula_prefix,':')-1).$value;
     }
-    strtok($value,"/");
-//    $value = exec('netcalc -n '.$value.' | sed -n -r -e \'s/^Compressed IPv6 *: *([0-9a-fA-F:]+).*$/\\1/p\'').'/'.strtok('/');
-    $value = compressIPV6addr($value).'/'.strtok('/');
+    $value = compressIPV6addr($value);
   }
   $value = 'INT4IPV6="'.$value.'"';
   fwrite($fp, "### 4th LAN IPv6\n".$value."\n");
@@ -422,9 +414,7 @@ function saveNETWORKsettings($conf_dir, $conf_file) {
       $ula_prefix = $_POST['ipv6_ula_prefix'];
       $value = substr($ula_prefix,0,strrpos($ula_prefix,':')-1).$value;
     }
-    strtok($value,"/");
-//    $value = exec('netcalc -n '.$value.' | sed -n -r -e \'s/^Compressed IPv6 *: *([0-9a-fA-F:]+).*$/\\1/p\'').'/'.strtok('/');
-    $value = compressIPV6addr($value).'/'.strtok('/');
+    $value = compressIPV6addr($value);
   }
   $value = 'DMZIPV6="'.$value.'"';
   fwrite($fp, "### DMZ IPv6\n".$value."\n");
@@ -694,12 +684,7 @@ function saveNETWORKsettings($conf_dir, $conf_file) {
   fwrite($fp, "### VPN Type\n".$value."\n");
   
   fwrite($fp, "### IPv6 DHCPv6 Client Options\n");
-  $value = $_POST['ipv6_ula_prefix'];
-  if ($value !== '') {
-    strtok($value,"/");
-//    $value = exec('netcalc -n '.$value.' | sed -n -r -e \'s/^Compressed IPv6 *: *([0-9a-fA-F:]+).*$/\\1/p\'').'/'.strtok('/');
-    $value = compressIPV6addr($value).'/'.strtok('/');
-  }
+  $value = compressIPV6addr($_POST['ipv6_ula_prefix']);
   $value = 'IPV6_SITE_ULA_PREFIX="'.$value.'"';
   fwrite($fp, $value."\n");
   $value = 'DHCPV6_CLIENT_REQUEST_ADDRESS="'.$_POST['dhcpv6_client_request_address'].'"';

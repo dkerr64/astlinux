@@ -17,6 +17,7 @@
 // 12-12-2009, Added systemSHUTDOWN()
 // 01-12-2012, Added asteriskURLrepo()
 // 01-04-2014, Added statusPROCESS()
+// 08-19-2017, Modify compressIPV6addr() to accept /xx prefix lenths
 //
 // System location of prefs file                                 
 $KD_PREFS_LOCATION = '/mnt/kd/webgui-prefs.txt';           
@@ -818,7 +819,11 @@ function pad_ipv4_str($ip) {
 //
 function compressIPV6addr($addr) {
   if (strpos($addr, ':') !== FALSE) {
-    return(inet_ntop(inet_pton($addr)));
+    $parts=explode("/",$addr);
+    $addr=inet_ntop(inet_pton($parts[0]));
+    if (!empty($parts[1])) {
+      $addr=$addr."/".$parts[1];
+    }
   }
   return($addr);
 }
