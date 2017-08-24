@@ -20,7 +20,7 @@
 // 08-12-2017, Added is_IPV6addr()
 // 08-15-2017, Added expandIPV6addr()
 // 08-19-2017, Added getAstDB()
-// 08-19-2017, Modify compressIPV6addr() to accept /xx prefix lenths
+// 08-19-2017, Modify compressIPV6addr() to accept /xx prefix lengths
 //
 // System location of prefs file                                 
 $KD_PREFS_LOCATION = '/mnt/kd/webgui-prefs.txt';           
@@ -267,7 +267,8 @@ function updateCRON($user, $ret_good, $ret_fail) {
 }
 
 // Function: includeTOPICinfo
-//
+// can be called as tt('topic','tooltip') to keep things compact
+use function includeTOPICinfo as tt;
 function includeTOPICinfo($topic,$tooltip = '') {
   global $global_prefs;
   if ($tooltip === '') $tooltip = 'topic: '.$topic;
@@ -276,8 +277,14 @@ function includeTOPICinfo($topic,$tooltip = '') {
   $str = '';
   // $str = '&nbsp;';
   $onclick = '';
+  if (filter_var($topic, FILTER_VALIDATE_URL)) {
+    $link = $topic;
+  }
+  else {
+    $link = "/info.php?topic='.$topic.'";
+  }
   if (getPREFdef($global_prefs, 'use_javascript') === 'yes') $onclick = 'onclick="delayPopup(event,this.href,650,250,\''.$topic.'\',true,0); return false;"';
-  $str .= '<a href="/info.php?topic='.$topic.'" '.$onclick.' target="_blank" class="'.$class.'">';
+  $str .= '<a href="'.$link.'" '.$onclick.' target="_blank" class="'.$class.'">';
   $str .= '<img src="/common/topicinfo.gif" alt="Info"/><b><em></em>'.$tooltip.'</b></a>';
   
   return($str);
@@ -825,35 +832,47 @@ function pad_ipv4_str($ip) {
 }
 
 // Function: compressIPV6addr
-//
+// Accepts both IPv4 and IPv6 with/without CIDR/prefix lengths
+// Returns compressed IPv4 or compressed IPv6
 function compressIPV6addr($addr) {
-  if (strpos($addr, ':') !== FALSE) {
-    $parts=explode("/",$addr);
-    $addr=inet_ntop(inet_pton($parts[0]));
-    if (!empty($parts[1])) {
-      $addr=$addr."/".$parts[1];
-    }
+  $addr=preg_replace('/\b0+(?=\d)/', '', $addr); // remove leading zeros
+  $parts=explode("/",$addr); // separate CIDR/prefix length
+  $addr=inet_ntop(inet_pton($parts[0])); // compress the address
+  if (!empty($parts[1])) {
+    $addr=$addr."/".$parts[1];  // add back in the CIDR/prefix length
   }
   return($addr);
 }
 
 // Function: expandIPV6addr
-// Accepts both IPv4 and IPv6
+// Accepts both IPv4 and IPv6 with/without CIDR/prefix lengths
+// Returns IPv6 for both with adjusted prefix lengths for IPv4 input
 function expandIPV6addr($addr){
-	if (filter_var($addr, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
-		$addr='::'.$addr;
-	}
+	$addr=preg_replace('/\b0+(?=\d)/', '', $addr); // remove leading zeros
+  $parts=explode("/",$addr); // separate CIDR/prefix length
+  $addr=$parts[0];
+  if (filter_var($addr, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+    $addr='::'.$addr;  // convert IPv4 address to IPv6 notation
+    if (!empty($parts[1])) {
+	    $parts[1]=$parts[1]+96;  // adjust the CIDR to IPv6 prefix length
+	  }
+  }
   if (filter_var($addr, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
     $hex = unpack("H*hex", inet_pton($addr));
     $addr = substr(preg_replace("/([A-f0-9]{4})/", "$1:", $hex['hex']), 0, -1);
   }
+  if (!empty($parts[1])) {
+    $addr=$addr."/".$parts[1];  // add back in the CIDR/prefix length
+  }
   return $addr;
 }
+
 
 // Function: is_IPV6addr
 //
 function is_IPV6addr($addr) {
-  if (filter_var($addr, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+  $parts=explode("/",$addr); // separate CIDR/prefix length
+  if (filter_var($parts[0], FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
     return(true);
   }
   return(false);
