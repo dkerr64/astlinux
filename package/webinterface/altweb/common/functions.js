@@ -5,147 +5,175 @@
 
 // functions.js for AstLinux
 //   June 2009 - David Kerr
+//   August 2017 - Updated
+
+
 
 // The JX object is a modified version of V3.01.A obtained from the OpenJS website. The original
 // source script contained no copyright notice, but comments on the OpenJS web site indicate that it
 // is licensed under terms of the BSD license and therefore free to use and redistribute
-// 
+//
 // jx is a simple object that lets us build AJAX like web experience.
 //
 //V3.01.A - http://www.openjs.com/scripts/jx/
 jx = {
-	//Create a xmlHttpRequest object - this is the constructor. 
-	getHTTPObject : function() {
-		var http = false;
-		//Use the XMLHttpRequest of Firefox/Mozilla etc. to load the document.
-		if (window.XMLHttpRequest) {
-			try {http = new XMLHttpRequest();}
-			catch (e) {http = false;}
-		} else
-		//Use IE's ActiveX items to load the file.
-		if (typeof ActiveXObject != 'undefined') {
-			try {http = new ActiveXObject("Msxml2.XMLHTTP");}
-			catch (e) {
-				try {http = new ActiveXObject("Microsoft.XMLHTTP");}
-				catch (E) {http = false;}
-			}
-		}
-		return http;
-	},
-	
-	// This function is called from the user's script. 
-	//Arguments - 
-	//	url	- The url of the serverside script that is to be called. Append all the arguments to 
-	//			this url - eg. 'get_data.php?id=5&car=benz'
-	//	callback - Function that must be called once the data is ready.
-	//	format - The return type for this function. Could be 'xml','json' or 'text'. If it is json, 
-	//			the string will be 'eval'ed before returning it. Default:'text'
-	//	method - GET or POST. Default 'GET'
-	load : function (url,callback,format,method, opt) {
-		var http = this.init(); //The XMLHttpRequest object is recreated at every call - to defeat Cache problem in IE
-		if(!http||!url) return;
-		//XML Format need this for some Mozilla Browsers
-		if (http.overrideMimeType) http.overrideMimeType('text/xml');
+  //Create a xmlHttpRequest object - this is the constructor.
+  getHTTPObject : function() {
+    var http = false;
+    //Use the XMLHttpRequest of Firefox/Mozilla etc. to load the document.
+    if (window.XMLHttpRequest) {
+      try {http = new XMLHttpRequest();}
+      catch (e) {http = false;}
+    } else
+    //Use IE's ActiveX items to load the file.
+    if (typeof ActiveXObject != 'undefined') {
+      try {http = new ActiveXObject("Msxml2.XMLHTTP");}
+      catch (e) {
+        try {http = new ActiveXObject("Microsoft.XMLHTTP");}
+        catch (E) {http = false;}
+      }
+    }
+    return http;
+  },
 
-		if(!method) method = "GET";//Default method is GET
-		if(!format) format = "text";//Default return type is 'text'
-		if(!opt) opt = {};
-		format = format.toLowerCase();
-		method = method.toUpperCase();
-		
-		//Kill the Cache problem in IE.
-		// DAK - Commented out as we would actually like caching if it is done by the browser for our use case.
-		//var now = "uid=" + new Date().getTime();
-		//url += (url.indexOf("?")+1) ? "&" : "?";
-		//url += now;
+  // This function is called from the user's script.
+  //Arguments -
+  //  url - The url of the serverside script that is to be called. Append all the arguments to
+  //      this url - eg. 'get_data.php?id=5&car=benz'
+  //  callback - Function that must be called once the data is ready.
+  //  format - The return type for this function. Could be 'xml','json' or 'text'. If it is json,
+  //      the string will be 'eval'ed before returning it. Default:'text'
+  //  method - GET or POST. Default 'GET'
+  load : function (url,callback,format,method, opt) {
+    var http = this.init(); //The XMLHttpRequest object is recreated at every call - to defeat Cache problem in IE
+    if(!http||!url) return;
+    //XML Format need this for some Mozilla Browsers
+    if (http.overrideMimeType) http.overrideMimeType('text/xml');
 
-		var parameters = null;
-		var nParams = 0;
+    if(!method) method = "GET";//Default method is GET
+    if(!format) format = "text";//Default return type is 'text'
+    if(!opt) opt = {};
+    format = format.toLowerCase();
+    method = method.toUpperCase();
 
-		if(method=="POST") {
-			var parts = url.split("\?");
-			url = parts[0];
+    //Kill the Cache problem in IE.
+    // DAK - Commented out as we would actually like caching if it is done by the browser for our use case.
+    //var now = "uid=" + new Date().getTime();
+    //url += (url.indexOf("?")+1) ? "&" : "?";
+    //url += now;
+
+    var parameters = null;
+    var nParams = 0;
+
+    if(method=="POST") {
+      var parts = url.split("\?");
+      url = parts[0];
                         if ((nParams = parts.length-1) > 0) parameters = parts[1];
-		}
-		http.open(method, url, true);
+    }
+    http.open(method, url, true);
 
-		if(method=="POST") {
-			http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-			http.setRequestHeader("Content-length", nParams);
-			http.setRequestHeader("Connection", "close");
-		}
+    if(method=="POST") {
+      http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+      http.setRequestHeader("Content-length", nParams);
+      http.setRequestHeader("Connection", "close");
+    }
 
-		var ths = this;// Closure
-		if(opt.handler) { //If a custom handler is defined, use it
-			http.onreadystatechange = function() { opt.handler(http); };
-		} else {
-			http.onreadystatechange = function () {//Call a function when the state changes.
-				if (http.readyState == 4) {//Ready State will be 4 when the document is loaded.
-					if(http.status == 200) {
-						var result = "";
-						if(http.responseText) result = http.responseText;
-						//If the return is in JSON format, eval the result before returning it.
-						if(format.charAt(0) == "j") {
-							//\n's in JSON string, when evaluated will create errors in IE
-							result = result.replace(/[\n\r]/g,"");
-							result = eval('('+result+')');
+    var ths = this;// Closure
+    if(opt.handler) { //If a custom handler is defined, use it
+      http.onreadystatechange = function() { opt.handler(http); };
+    } else {
+      http.onreadystatechange = function () {//Call a function when the state changes.
+        if (http.readyState == 4) {//Ready State will be 4 when the document is loaded.
+          if(http.status == 200) {
+            var result = "";
+            if(http.responseText) result = http.responseText;
+            //If the return is in JSON format, eval the result before returning it.
+            if(format.charAt(0) == "j") {
+              //\n's in JSON string, when evaluated will create errors in IE
+              result = result.replace(/[\n\r]/g,"");
+              result = eval('('+result+')');
 
-						} else if(format.charAt(0) == "x") { //XML Return
-							result = http.responseXML;
-						}
+            } else if(format.charAt(0) == "x") { //XML Return
+              result = http.responseXML;
+            }
 
-						//Give the data to the callback function.
-						if(callback) callback(result);
-					} else {
-						if(opt.loadingIndicator) document.getElementsByTagName("body")[0].removeChild(opt.loadingIndicator); //Remove the loading indicator
-						if(opt.loading) document.getElementById(opt.loading).style.display="none"; //Hide the given loading indicator.
-						
-						if(error) error(http.status);
-					}
-				}
-			}
-		}
-		http.send(parameters);
-	},
-	bind : function(user_options) {
-		var opt = {
-			'url':'', 			//URL to be loaded
-			'onSuccess':false,	//Function that should be called at success
-			'onError':false,	//Function that should be called at error
-			'format':"text",	//Return type - could be 'xml','json' or 'text'
-			'method':"GET",		//GET or POST
-			'update':"",		//The id of the element where the resulting data should be shown. 
-			'loading':"",		//The id of the loading indicator. This will be set to display:block when the url is loading and to display:none when the data has finished loading.
-			'loadingIndicator':"" //HTML that would be inserted into the document once the url starts loading and removed when the data has finished loading. This will be inserted into a div with class name 'loading-indicator' and will be placed at 'top:0px;left:0px;'
-		}
-		for(var key in opt) {
-			if(user_options[key]) {//If the user given options contain any valid option, ...
-				opt[key] = user_options[key];// ..that option will be put in the opt array.
-			}
-		}
-		
-		if(!opt.url) return; //Return if a url is not provided
+            //Give the data to the callback function.
+            if(callback) callback(result);
+          } else {
+            if(opt.loadingIndicator) document.getElementsByTagName("body")[0].removeChild(opt.loadingIndicator); //Remove the loading indicator
+            if(opt.loading) document.getElementById(opt.loading).style.display="none"; //Hide the given loading indicator.
 
-		var div = false;
-		if(opt.loadingIndicator) { //Show a loading indicator from the given HTML
-			div = document.createElement("div");
-			div.setAttribute("style","position:absolute;top:0px;left:0px;");
-			div.setAttribute("class","loading-indicator");
-			div.innerHTML = opt.loadingIndicator;
-			document.getElementsByTagName("body")[0].appendChild(div);
-			this.opt.loadingIndicator=div;
-		}
-		if(opt.loading) document.getElementById(opt.loading).style.display="block"; //Show the given loading indicator.
-		
-		this.load(opt.url,function(data){
-			if(opt.onSuccess) opt.onSuccess(data);
-			if(opt.update) document.getElementById(opt.update).innerHTML = data;
-			
-			if(div) document.getElementsByTagName("body")[0].removeChild(div); //Remove the loading indicator
-			if(opt.loading) document.getElementById(opt.loading).style.display="none"; //Hide the given loading indicator.
-		},opt.format,opt.method, opt);
-	},
-	init : function() {return this.getHTTPObject();}
+            if(error) error(http.status);
+          }
+        }
+      }
+    }
+    http.send(parameters);
+  },
+  bind : function(user_options) {
+    var opt = {
+      'url':'',       //URL to be loaded
+      'onSuccess':false,  //Function that should be called at success
+      'onError':false,  //Function that should be called at error
+      'format':"text",  //Return type - could be 'xml','json' or 'text'
+      'method':"GET",   //GET or POST
+      'update':"",    //The id of the element where the resulting data should be shown.
+      'loading':"",   //The id of the loading indicator. This will be set to display:block when the url is loading and to display:none when the data has finished loading.
+      'loadingIndicator':"" //HTML that would be inserted into the document once the url starts loading and removed when the data has finished loading. This will be inserted into a div with class name 'loading-indicator' and will be placed at 'top:0px;left:0px;'
+    }
+    for(var key in opt) {
+      if(user_options[key]) {//If the user given options contain any valid option, ...
+        opt[key] = user_options[key];// ..that option will be put in the opt array.
+      }
+    }
+
+    if(!opt.url) return; //Return if a url is not provided
+
+    var div = false;
+    if(opt.loadingIndicator) { //Show a loading indicator from the given HTML
+      div = document.createElement("div");
+      div.setAttribute("style","position:absolute;top:0px;left:0px;");
+      div.setAttribute("class","loading-indicator");
+      div.innerHTML = opt.loadingIndicator;
+      document.getElementsByTagName("body")[0].appendChild(div);
+      this.opt.loadingIndicator=div;
+    }
+    if(opt.loading) document.getElementById(opt.loading).style.display="block"; //Show the given loading indicator.
+
+    this.load(opt.url,function(data){
+      if(opt.update) {
+        document.getElementById(opt.update).innerHTML = data;
+        // If the URL we are loading into this <div> comes from a different web
+        // server then we will need to fixup any relative URLs that will have
+        // been set relative to the base URL of the containing browser window.
+        // We only do this for anchor href's and image src's as for our use
+        // case that is all we need.
+        var baseurl = window.location.href.split('/').slice(0, 3).join('/');
+        var targetbaseurl = opt.url.split('/').slice(0, 3).join('/');
+        if (baseurl != targetbaseurl) {
+          var anchors = document.getElementById(opt.update).getElementsByTagName("a");
+          var i;
+          for (i=0; i < anchors.length; i++) {
+            if (anchors[i].href.includes("#")) anchors[i].href = opt.url + "#" + anchors[i].href.split('#')[1];
+            else anchors[i].href = anchors[i].href.replace(baseurl, targetbaseurl);
+            anchors[i].target = "_blank";
+          }
+          var images = document.getElementById(opt.update).getElementsByTagName("img");
+          for (i=0; i < images.length; i++) {
+            images[i].src = images[i].src.replace(baseurl, targetbaseurl);
+          }
+        }
+        if(opt.onSuccess) {
+          // By calling onSuccess after update we pick up any URL fixups done above.
+          if (opt.update) opt.onSuccess(document.getElementById(opt.update).innerHTML);
+          else opt.onSuccess(data);
+        }
+      }
+      if(div) document.getElementsByTagName("body")[0].removeChild(div); //Remove the loading indicator
+      if(opt.loading) document.getElementById(opt.loading).style.display="none"; //Hide the given loading indicator.
+    },opt.format,opt.method, opt);
+  },
+  init : function() {return this.getHTTPObject();}
 }
 
 
@@ -153,17 +181,17 @@ jx = {
 // The original source examples contain no copyright notice or license. The Quirksmode web site states
 // that all examples, including these, may be copied, modified, redistributed, etc. freely.
 function addEventSimple(obj,evt,fn) {
-	if (obj.addEventListener)
-		obj.addEventListener(evt,fn,false);
-	else if (obj.attachEvent)
-		obj.attachEvent('on'+evt,fn);
+  if (obj.addEventListener)
+    obj.addEventListener(evt,fn,false);
+  else if (obj.attachEvent)
+    obj.attachEvent('on'+evt,fn);
 }
 
 function removeEventSimple(obj,evt,fn) {
-	if (obj.removeEventListener)
-		obj.removeEventListener(evt,fn,false);
-	else if (obj.detachEvent)
-		obj.detachEvent('on'+evt,fn);
+  if (obj.removeEventListener)
+    obj.removeEventListener(evt,fn,false);
+  else if (obj.detachEvent)
+    obj.detachEvent('on'+evt,fn);
 }
 
 function findPos(obj) {
@@ -179,49 +207,49 @@ function findPos(obj) {
 }
 
 dragDrop = {
-	initialMouseX: undefined,
-	initialMouseY: undefined,
-	startX: undefined,
-	startY: undefined,
-	draggedObject: undefined,
-	dragElem: undefined,
-	initElement: function (element,dragObj) {
-		if (typeof element == 'string')	element = document.getElementById(element);
-		if (typeof dragObj == 'string') dragObj = document.getElementById(dragObj);
-		if (dragObj) dragDrop.dragElem = dragObj;
-		element.onmousedown = dragDrop.startDragMouse;
-	},
-	startDragMouse: function (e) {
-		if (dragDrop.dragElem) dragDrop.startDrag(dragDrop.dragElem);
-		else dragDrop.startDrag(this);
-		var evt = e || window.event;
-		dragDrop.initialMouseX = evt.clientX;
-		dragDrop.initialMouseY = evt.clientY;
-		addEventSimple(document,'mousemove',dragDrop.dragMouse);
-		addEventSimple(document,'mouseup',dragDrop.releaseElement);
-		return false;
-	},
-	startDrag: function (obj) {
-		if (dragDrop.draggedObject) dragDrop.releaseElement();
-		dragDrop.startX = obj.offsetLeft;
-		dragDrop.startY = obj.offsetTop;
-		dragDrop.draggedObject = obj;
-		obj.className += ' dragged';
-	},
-	dragMouse: function (e) {
-		var evt = e || window.event;
-		var dX = evt.clientX - dragDrop.initialMouseX;
-		var dY = evt.clientY - dragDrop.initialMouseY;
-		dragDrop.draggedObject.style.left = dragDrop.startX + dX + 'px';
-		dragDrop.draggedObject.style.top = dragDrop.startY + dY + 'px';
-		return false;
-	},
-	releaseElement: function() {
-		removeEventSimple(document,'mousemove',dragDrop.dragMouse);
-		removeEventSimple(document,'mouseup',dragDrop.releaseElement);
-		dragDrop.draggedObject.className = dragDrop.draggedObject.className.replace(/dragged/,'');
-		dragDrop.draggedObject = null;
-	}
+  initialMouseX: undefined,
+  initialMouseY: undefined,
+  startX: undefined,
+  startY: undefined,
+  draggedObject: undefined,
+  dragElem: undefined,
+  initElement: function (element,dragObj) {
+    if (typeof element == 'string') element = document.getElementById(element);
+    if (typeof dragObj == 'string') dragObj = document.getElementById(dragObj);
+    if (dragObj) dragDrop.dragElem = dragObj;
+    element.onmousedown = dragDrop.startDragMouse;
+  },
+  startDragMouse: function (e) {
+    if (dragDrop.dragElem) dragDrop.startDrag(dragDrop.dragElem);
+    else dragDrop.startDrag(this);
+    var evt = e || window.event;
+    dragDrop.initialMouseX = evt.clientX;
+    dragDrop.initialMouseY = evt.clientY;
+    addEventSimple(document,'mousemove',dragDrop.dragMouse);
+    addEventSimple(document,'mouseup',dragDrop.releaseElement);
+    return false;
+  },
+  startDrag: function (obj) {
+    if (dragDrop.draggedObject) dragDrop.releaseElement();
+    dragDrop.startX = obj.offsetLeft;
+    dragDrop.startY = obj.offsetTop;
+    dragDrop.draggedObject = obj;
+    obj.className += ' dragged';
+  },
+  dragMouse: function (e) {
+    var evt = e || window.event;
+    var dX = evt.clientX - dragDrop.initialMouseX;
+    var dY = evt.clientY - dragDrop.initialMouseY;
+    dragDrop.draggedObject.style.left = dragDrop.startX + dX + 'px';
+    dragDrop.draggedObject.style.top = dragDrop.startY + dY + 'px';
+    return false;
+  },
+  releaseElement: function() {
+    removeEventSimple(document,'mousemove',dragDrop.dragMouse);
+    removeEventSimple(document,'mouseup',dragDrop.releaseElement);
+    dragDrop.draggedObject.className = dragDrop.draggedObject.className.replace(/dragged/,'');
+    dragDrop.draggedObject = null;
+  }
 }
 
 
@@ -239,7 +267,7 @@ var triggerElement = null;
 // w = width, h = height,
 // title = string title for the popup
 // fixed = boolean true (popup will not scroll with document) or false (will scroll with document)
-// delay = 0 to display imediately or time in miliseconds after which to display the popup (unless cancelled) 
+// delay = 0 to display imediately or time in miliseconds after which to display the popup (unless cancelled)
 function delayPopup(e, url, w, h, title, fixed, delay) {
   // if delay is negative, then don't do anything.
   if (delay < 0) return;
@@ -264,7 +292,7 @@ function delayPopup(e, url, w, h, title, fixed, delay) {
   if (delay == 0) loadPopup();
   else popupOpenTimer = setTimeout(loadPopup,delay);
 
-  // The rest we do inside the loadPopup() function 
+  // The rest we do inside the loadPopup() function
   function loadPopup() {
     // clear timer that (may) have triggered this
     popupOpenTimer = 0;
@@ -325,14 +353,14 @@ function delayPopup(e, url, w, h, title, fixed, delay) {
     // First find by how much the page is scrolled. We will use this to adjust the position of the
     // popup so that the title bar is not above the top of the visible area.
     var sXY = getScrollXY();
-  
+
     // Find size of window. We use this to adjust the position of the popup so that the right side
     // is still visible (and therefore the X to close is visible)
     // and also to make sure that the width is no wider than the brower window (but at least 100 pixels)
     var wXY = windowSize();
 
-    popupText.style.width = Math.max(Math.min(w,wXY[0]-40),100)+'px'; 
-    popupText.style.height = h+'px'; 
+    popupText.style.width = Math.max(Math.min(w,wXY[0]-40),100)+'px';
+    popupText.style.height = h+'px';
 
     // Now find out whether the position style of the popup is absolute (will scroll with page) or fixed (will not scroll)
     if (fixed != null) {
@@ -350,10 +378,10 @@ function delayPopup(e, url, w, h, title, fixed, delay) {
       }
       if (pv == "fixed") fixed = true;
     }
-  
+
     // Now find position of the element we clicked on.
     var pos = findPos(targ);
-  
+
     // Set the position of the popup on the screen
     popup.style.left = (Math.min(wXY[0] - w - 20, ((pos[0]+targ.offsetWidth/2)) - ((fixed==true)?sXY[0]:0)))+'px';
     popup.style.top =  (Math.max(sXY[1], (pos[1]- h - 22)) - ((fixed==true)?sXY[1]:0))+'px';
@@ -406,10 +434,10 @@ function delayPopupCancel() {
   // if popup is already visible because of user mouse hovering over the element longer than the timeout delay
   // then we will hide the popup.  Note that we put in a 100ms delay here. This is because the user may have
   // moved the mouse over the top of the popup, in which case we don't want to hide it. The 100ms delay gives
-  // time for events (mouseover, mouseout) to propogate before we try and hide it. 
+  // time for events (mouseover, mouseout) to propogate before we try and hide it.
   if (popupOnHover) popupCloseTimer = setTimeout(delayHidePopup,100);
   else popupCloseTimer = 0;
- 
+
   // delayHidePopup called after 100ms.
   function delayHidePopup() {
     // If the mouse is NOT hovering over the popup DIV then hide the popup.
@@ -443,7 +471,7 @@ function popupMouseOut(e, t) {
   if (!e) var e = window.event;
   // Find related target (where we are moving out to)
   var reltg = (e.relatedTarget) ? e.relatedTarget : ((e.toElement) ? e.toElement : e.currentTarget);
-  
+
   // If we moved back onto the element that triggered the popup then don't hide it.
   if (reltg != triggerElement) {
     // Find out if this is a child of the popup DIV by searching up the parent tree until we
@@ -486,12 +514,12 @@ function submitForm(e, url, div, loadindicator, method) {
     if (targ.nodeType == 3) targ = targ.parentNode;
 
     url += (url.indexOf("?")+1) ? "&" : "?";
-    url += clickedElement.name+'='+clickedElement.value; 
+    url += clickedElement.name+'='+clickedElement.value;
     var elem = null;
     var i = 0;
     for (i = 0; i < targ.elements.length; i++) {
       elem = targ.elements[i];
-      if ( ((elem.type == 'hidden') && (elem.value != '')) 
+      if ( ((elem.type == 'hidden') && (elem.value != ''))
         || ((elem.type == 'text') && (elem.value != ''))
         || ((elem.type == 'select-one') && (elem.value != ''))
         || ((elem.type == 'checkbox') && (elem.checked == true)) ) {

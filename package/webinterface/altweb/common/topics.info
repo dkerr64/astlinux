@@ -2,7 +2,7 @@ Web Interface Information Topics
 
 
 [[followme-dialplan]]
-<pre>
+<pre class="popup">
 Follow-Me Tab:
 
 The Follow-Me tab uses Asterisk's internal database (astdb) to maintain a list of
@@ -89,7 +89,7 @@ or use the destination device (Cell/Mobile Phone Voicemail) to handle exceptions
 
 </pre>
 [[sysdial-dialplan]]
-<pre>
+<pre class="popup">
 Speed Dial Tab:
 
 The Speed Dial tab adds a web dialog interface to the asterisk
@@ -130,7 +130,7 @@ exten => s,n,Hangup
 
 </pre>
 [[cidname-dialplan]]
-<pre>
+<pre class="popup">
 Caller*ID Tab:
 
 The Caller*ID tab adds a web dialog interface to the asterisk
@@ -163,7 +163,7 @@ exten => s,200,NoOp(${CALLERID(num)})
 
 </pre>
 [[blacklist-dialplan]]
-<pre>
+<pre class="popup">
 Blacklist Tab:
 
 The Blacklist tab adds a web dialog interface to the asterisk
@@ -201,7 +201,7 @@ exten => s,200,NoOp(Valid TN:${CALLERID(num)})
 
 </pre>
 [[whitelist-dialplan]]
-<pre>
+<pre class="popup">
 Whitelist Tab:
 
 The Whitelist tab adds a web dialog interface to the asterisk
@@ -243,7 +243,7 @@ exten => s,200,NoOp(Valid TN:${CALLERID(num)})
 
 </pre>
 [[cdrlog]]
-<pre>
+<pre class="popup">
 CDR Log tab
 
 Displays Call Detail Records from the Asterisk master CDR log file. The default view will
@@ -276,14 +276,35 @@ Master.csv => "${CDR(start)}","${CDR(clid)}","${CDR(dst)}","${CDR(dcontext)}","$
 The CDR Log Path field defaults to /var/log/asterisk/cdr-csv/Master.csv. If you save your
 asterisk CDR log somewhere else you should edit this field accordingly.
 
+Maximum Records: When Astlinux displays the CDR information it reads the most recent records from
+the log file. Astlinux defaults to reading the most recent 1000 records, but you can specify a
+different value in the Prefs tab. Note that this value affects CDR load performance, memory use
+and temporary file system space on the AstLinux server so take care not to specify to large a value.
+Loading from Compact Flash cards can be particularly slow.
+On the Prefs page you specify a maxiumum value. You can, however, select from a number of choices
+on the CDR Log page itself up to the maximum value specified. This value defaults to 500. Actual
+times and memory used are reported at the end of the CDR display table. Searching for call records
+is not affected by this setting as the entire log file will be searched. However, the number of
+matching records is limited to the number you set here. Also, the setting has negligible impact on
+time to sort records and no affect on paging up/down. In addition to setting the number of records
+to load from the log, you can also select the number of records to view on a single page, then
+page up/down within the total available. This can improve display performance when searching for
+calls. You can chose from 10, 25, 50 or 100 records per page. Astlinux defaults to 50.
+
 Columns displayed: The CDR Log page displays the following call details:
 
     Start Time, Duration, Source, Destination, Caller ID and call Disposition.
 
-You can chose to add additional columns in the Prefs page.
+You can chose to add additional columns in the Prefs page, however you can view the complete record
+for any call by clicking on any call Start Time.
+
+Phone Number Actions: If you click on any valid phone number in the Source, Destination or Caller ID
+columns then a window will open with options to edit the asterisk Caller ID database, blacklist
+database or whitelist database. Selecting any of these options takes you to the respective web
+interface panel with the respective fields pre-filled for you.
 </pre>
 [[actionlist-dialplan]]
-<pre>
+<pre class="popup">
 Actionlist Tab:
 
 The Actionlist tab adds a web dialog interface to the asterisk
@@ -324,7 +345,7 @@ exten => s,n(end),MacroExit()
 ---- /etc/asterisk/extensions.conf snippet ----
 </pre>
 [[sqldata-dialplan]]
-<pre>
+<pre class="popup">
 SQL-Data Tab:
 
 The SQL-Data Tab adds a web dialog to edit the SQLite3 database (added in AstLinux 1.1.1).
@@ -367,7 +388,7 @@ same => n,Hangup()
 ---- /etc/asterisk/extensions.conf snippet ----
 </pre>
 [[xmpp-shared-groups]]
-<pre>
+<pre class="popup">
 XMPP Shared Groups:
 
 Groups were designed to allow administrators to create virtual groups of users that automatically
@@ -397,7 +418,7 @@ You can see the last two entries here have custom names, if no name is given the
 the user's client to find a suitable name (e.g. take it from the contact's vcard/profile).
 </pre>
 [[Fossil-Commands]]
-<pre>
+<pre class="popup">
 Fossil Commands:
 
 ------------------------------------------------------------------------------
@@ -487,7 +508,7 @@ Options:
   hex_revision_num    revert given FILE back to given REVISION
 </pre>
 [[ACME-Certificate]]
-<pre>
+<pre class="popup">
 ---------------------------------
 ACME (Let's Encrypt) Certificates
 ---------------------------------

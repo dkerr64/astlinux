@@ -23,6 +23,11 @@ pre {
   width: inherit;
   overflow: auto; /*--If the Code exceeds the width, a scrolling is available--*/
 }
+.popup {
+  border: 0px;
+  background: #FFFFFF;
+  font-size: 10px;
+}
 
 /* Defaults for all tables */
 table {
@@ -173,28 +178,7 @@ p {
   border: 0;
   text-align: left;
 }
-.datatable td {
-  padding-top: 4px;
-  padding-bottom: 4px;
-  padding-left: 12px;
-  padding-right: 12px;
-}
-.datatable th {
-  padding-top: 4px;
-  padding-bottom: 4px;
-  padding-left: 12px;
-  padding-right: 12px;
-}
-img {
-  border: 0 none;
-}
-.datatable a {
-  color: black;
-  text-decoration: none;
-}
-.datatable a:hover {
-  color:blue;
-}
+
 .headerTable {
   font-family: "Lucida Grande", "Bitstream Vera Sans", "Trebuchet MS", Verdana, Helvetica, sans-serif;
   font-size: 100%;
@@ -424,7 +408,7 @@ a.tooltip:hover b em {
 .popup {
   margin:1px;
   position: absolute;
-  background-color:#FFFFCC;
+  background-color:#FFFFFF;
   border-width: 1px;
   border-color: #9E978D;
   border-style: solid; 
@@ -465,7 +449,7 @@ a.tooltip:hover b em {
   color:#FFA500;
   text-align: left;
   font-size: 13px;
-  font-weight:bold;
+/*  font-weight:bold; */
   font-family: Verdana, Arial, Helvetica, sans-serif;
 }
 

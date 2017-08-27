@@ -268,7 +268,10 @@ function updateCRON($user, $ret_good, $ret_fail) {
 
 // Function: includeTOPICinfo
 // can be called as tt('topic','tooltip') to keep things compact
-use function includeTOPICinfo as tt;
+function tt($topic,$tooltip = '') {
+  return(includeTOPICinfo($topic,$tooltip));
+}
+
 function includeTOPICinfo($topic,$tooltip = '') {
   global $global_prefs;
   if ($tooltip === '') $tooltip = 'topic: '.$topic;
@@ -281,7 +284,7 @@ function includeTOPICinfo($topic,$tooltip = '') {
     $link = $topic;
   }
   else {
-    $link = "/info.php?topic='.$topic.'";
+    $link = '/info.php?topic='.$topic;
   }
   if (getPREFdef($global_prefs, 'use_javascript') === 'yes') $onclick = 'onclick="delayPopup(event,this.href,650,250,\''.$topic.'\',true,0); return false;"';
   $str .= '<a href="'.$link.'" '.$onclick.' target="_blank" class="'.$class.'">';
