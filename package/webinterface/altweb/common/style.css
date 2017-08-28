@@ -23,11 +23,6 @@ pre {
   width: inherit;
   overflow: auto; /*--If the Code exceeds the width, a scrolling is available--*/
 }
-.popup {
-  border: 0px;
-  background: #FFFFFF;
-  font-size: 10px;
-}
 
 /* Defaults for all tables */
 table {
@@ -325,16 +320,19 @@ p {
   padding-right: 1px;
 }
 
-a.tooltip b {
-  display:none;
-  text-align: left;
-}
-
+/* Define styles for tooltips, that can appear when hovering above a 
+ * anchor link
+ */
 a.tooltip:hover {
   border:0;
   position:relative;
   z-index:500;
   text-decoration:none;
+  text-align: left;
+}
+
+a.tooltip b {
+  display:none;
   text-align: left;
 }
 
@@ -365,47 +363,14 @@ a.tooltip:hover b em {
   font-size:1px;
 }
 
-.tooltipwide b {
-  display:none;
-  text-align: left;
-}
-
-.tooltipwide:hover {
-  border:0;
-  position:relative;
-  z-index:500;
-  text-decoration:none;
-  text-align: left;
-}
-
-.tooltipwide:hover b {
-  display:block;
-  position:absolute;
-  bottom:20px;
-  left:-25px;
-  padding:5px;
-  font-weight:normal;
-  font-family: Verdana, Arial, Helvetica, sans-serif;
-  font-size: 8pt;
-  text-decoration:none;
-  color:#000;
-  border:1px solid #888;
-  background:#FFFFCC;
+a.tooltipwide:hover b {
   width:350px;
 }
 
-.tooltipwide:hover b em {
-  position:absolute;
-  left:20px;
-  bottom:-6px;
-  width:11px;
-  height:6px;
-  background:url("tooltip.gif") 0 0;
-  display:block;
-  font-size:1px;
-}
-
-.popup {
+/* Define styles for help / information windows that can popup over
+ * a web interface page when click on a tooltip.
+ */
+div.popup {
   margin:1px;
   position: absolute;
   background-color:#FFFFFF;
@@ -417,33 +382,45 @@ a.tooltip:hover b em {
   text-align: left;
 }
 
-.popup_text {
+pre.popup {
+  font-weight: normal;
+  border: none;
+  background: #FFFFFF;
+  padding: 0px;
+  font-family: "Bitstream Vera Sans Mono", "Lucida Console", "Lucida Sans Typewriter", Monaco, "Courier New", monospace;
+  font-size: 11px;
+  line-height: 125%;
+  width: inherit;
+  overflow: auto; /*--If the Code exceeds the width, a scrolling is available--*/
+}
+
+div.popup_text {
   width:620px;
   height:160px;
   overflow:auto;
   margin: 3px 3px 3px 3px;
 }
 
-.popup_text p {
+div.popup_text p {
   margin: 8px 0px 0px 0px;
 }
 
-.popup_title {
+table.popup_title {
   padding: 0px 0px 0px 0px;
   width: 100%;
   font-weight: bold;
 }
-.popup_title td {
+td.popup_title td {
   padding: 0px 0px 0px 0px;
   font-weight: bold;
 }
 
-.popup_title_tr {
+tr.popup_title_tr {
   background: #898077;
   font-weight: bold;
 }
 
-.popup_title_text {
+td.popup_title_text {
   height: 20px;
   cursor: move;
   color:#FFA500;
@@ -453,7 +430,7 @@ a.tooltip:hover b em {
   font-family: Verdana, Arial, Helvetica, sans-serif;
 }
 
-.popup_title_X {
+td.popup_title_X {
   color: #FFA500;
   font-size: 14px;
   font-weight:bold;
@@ -463,7 +440,7 @@ a.tooltip:hover b em {
   width: 30px;
 }
 
-.popup_title_loading {
+td.popup_title_loading {
   width: 30px;
   cursor: move;
   text-align:center;
@@ -472,22 +449,6 @@ a.tooltip:hover b em {
 .dragged {
   cursor: move;
   border-color: black;
-}
-
-.popup_button {
-  text-decoration:none;
-  padding : 0px 0px 0px 0px;
-  border-style : solid ;
-  border-top-color : #BDC7E7;
-  border-bottom-color : #182052;
-  border-left-color : #BDC7E7;
-  border-right-color : #182052;
-  border-width : 1px 1px 1px 1px;
-  cursor: pointer;
-  color: black;
-  background-color : #EFEFEF;
-  font-weight :normal;
-  position: relative;
 }
 
 /* Pagination */

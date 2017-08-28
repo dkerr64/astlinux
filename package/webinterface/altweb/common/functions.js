@@ -34,7 +34,7 @@ jx = {
       }
     }
     return http;
-  },
+  }, // end of getHTTPObject()
 
   // This function is called from the user's script.
   //Arguments -
@@ -44,12 +44,12 @@ jx = {
   //  format - The return type for this function. Could be 'xml','json' or 'text'. If it is json,
   //      the string will be 'eval'ed before returning it. Default:'text'
   //  method - GET or POST. Default 'GET'
-  load : function (url,callback,format,method, opt) {
+  load : function (url, callback, format, method, opt) {
     var http = this.init(); //The XMLHttpRequest object is recreated at every call - to defeat Cache problem in IE
     if(!http||!url) return;
+
     //XML Format need this for some Mozilla Browsers
     if (http.overrideMimeType) http.overrideMimeType('text/xml');
-
     if(!method) method = "GET";//Default method is GET
     if(!format) format = "text";//Default return type is 'text'
     if(!opt) opt = {};
@@ -57,7 +57,7 @@ jx = {
     method = method.toUpperCase();
 
     //Kill the Cache problem in IE.
-    // DAK - Commented out as we would actually like caching if it is done by the browser for our use case.
+    // DAK - Commented out
     //var now = "uid=" + new Date().getTime();
     //url += (url.indexOf("?")+1) ? "&" : "?";
     //url += now;
@@ -68,7 +68,7 @@ jx = {
     if(method=="POST") {
       var parts = url.split("\?");
       url = parts[0];
-                        if ((nParams = parts.length-1) > 0) parameters = parts[1];
+      if ((nParams = parts.length-1) > 0) parameters = parts[1];
     }
     http.open(method, url, true);
 
@@ -78,7 +78,8 @@ jx = {
       http.setRequestHeader("Connection", "close");
     }
 
-    var ths = this;// Closure
+    var ths = this; // Closure
+
     if(opt.handler) { //If a custom handler is defined, use it
       http.onreadystatechange = function() { opt.handler(http); };
     } else {
@@ -99,7 +100,8 @@ jx = {
 
             //Give the data to the callback function.
             if(callback) callback(result);
-          } else {
+          }
+          else {
             if(opt.loadingIndicator) document.getElementsByTagName("body")[0].removeChild(opt.loadingIndicator); //Remove the loading indicator
             if(opt.loading) document.getElementById(opt.loading).style.display="none"; //Hide the given loading indicator.
 
@@ -109,7 +111,8 @@ jx = {
       }
     }
     http.send(parameters);
-  },
+  }, // end of load()
+
   bind : function(user_options) {
     var opt = {
       'url':'',       //URL to be loaded
@@ -140,39 +143,15 @@ jx = {
     }
     if(opt.loading) document.getElementById(opt.loading).style.display="block"; //Show the given loading indicator.
 
-    this.load(opt.url,function(data){
-      if(opt.update) {
-        document.getElementById(opt.update).innerHTML = data;
-        // If the URL we are loading into this <div> comes from a different web
-        // server then we will need to fixup any relative URLs that will have
-        // been set relative to the base URL of the containing browser window.
-        // We only do this for anchor href's and image src's as for our use
-        // case that is all we need.
-        var baseurl = window.location.href.split('/').slice(0, 3).join('/');
-        var targetbaseurl = opt.url.split('/').slice(0, 3).join('/');
-        if (baseurl != targetbaseurl) {
-          var anchors = document.getElementById(opt.update).getElementsByTagName("a");
-          var i;
-          for (i=0; i < anchors.length; i++) {
-            if (anchors[i].href.includes("#")) anchors[i].href = opt.url + "#" + anchors[i].href.split('#')[1];
-            else anchors[i].href = anchors[i].href.replace(baseurl, targetbaseurl);
-            anchors[i].target = "_blank";
-          }
-          var images = document.getElementById(opt.update).getElementsByTagName("img");
-          for (i=0; i < images.length; i++) {
-            images[i].src = images[i].src.replace(baseurl, targetbaseurl);
-          }
-        }
-        if(opt.onSuccess) {
-          // By calling onSuccess after update we pick up any URL fixups done above.
-          if (opt.update) opt.onSuccess(document.getElementById(opt.update).innerHTML);
-          else opt.onSuccess(data);
-        }
-      }
+    this.load(opt.url,function(data) {
+      if(opt.onSuccess) opt.onSuccess(data);
+      if(opt.update) document.getElementById(opt.update).innerHTML = data;
       if(div) document.getElementsByTagName("body")[0].removeChild(div); //Remove the loading indicator
       if(opt.loading) document.getElementById(opt.loading).style.display="none"; //Hide the given loading indicator.
     },opt.format,opt.method, opt);
-  },
+
+  }, // end of bind()
+
   init : function() {return this.getHTTPObject();}
 }
 
@@ -252,7 +231,6 @@ dragDrop = {
   }
 }
 
-
 // Following globals are to manage the popup window into which we can display anything we want.
 var popupOpenTimer = 0;
 var popupCloseTimer = 0;
@@ -279,8 +257,8 @@ function delayPopup(e, url, w, h, title, fixed, delay) {
   else if (e.target) targ = e.target;
   else if (e.srcElement) targ = e.srcElement;
   if (targ.nodeType == 3) targ = targ.parentNode;
-
   triggerElement = targ;
+
   // Now call the loadPopup() function. Either immediately or after a specified delay (in milliseconds)
   // first cancel any existing timer
   if (popupOpenTimer) {
@@ -406,25 +384,44 @@ function delayPopup(e, url, w, h, title, fixed, delay) {
       jx.bind( { "url" : url,
              "method" : "GET",
              "onSuccess" : addToCache,
-             "update" : "popup_text",
              "loading" : "popup_loading" } );
     }
-  }
 
-  // addToCache saves the result of all requests for popup text from the server. Thus improving performance
-  // for popups generated by user hovering over an element.
-  // Cache will be cleared by the browser on page reload.
-  function addToCache(result) {
-    popupCache[url] = result;
-  }
+    // addToCache saves the result of all requests for popup text from the server. Thus improving performance
+    // for popups generated by user hovering over an element.
+    // Cache will be cleared by the browser on page reload.
+    function addToCache(result) {
+      var i;
+      popupText.innerHTML = result;
+      var anchors = popupText.getElementsByTagName("a");
+      // Make all links open in new browser tab/window as we are in a "popup"
+      for (i=0; i < anchors.length; i++) anchors[i].target = "_blank";
 
-}
-
+      // If the URL we are loading into this <div> comes from a different web
+      // server then we will need to fixup any relative URLs that will have
+      // been set relative to the base URL of the containing browser window.
+      var baseurl = window.location.href.split('/').slice(0, 3).join('/');
+      var targetbaseurl = url.split('/').slice(0, 3).join('/');
+      if (baseurl != targetbaseurl) {
+        // We only do this for anchor href's and image src's as for our use
+        // case that is all we need.
+        for (i=0; i < anchors.length; i++) {
+          if (anchors[i].href.includes("#")) anchors[i].href = url + "#" + anchors[i].href.split('#')[1];
+          else anchors[i].href = anchors[i].href.replace(baseurl, targetbaseurl);
+        }
+        var images = popupText.getElementsByTagName("img");
+        for (i=0; i < images.length; i++) {
+          images[i].src = images[i].src.replace(baseurl, targetbaseurl);
+        }
+      }
+      popupCache[url] = popupText.innerHTML;
+    } // end of addToCache()
+  } // end of loadPopup()
+} // end of delayPopup()
 
 // delayPopupCancel is registered to onmouseout on any element that has a popup that can be triggered by hovering over it.
 // Function is to cause the popup not to display (if timeout has not expired yet) or to hide the popup (if it is already visible)
 function delayPopupCancel() {
-
   // If a timer is active then cancel it so that popup will not display on timeout.
   if (popupOpenTimer) {
     clearTimeout(popupOpenTimer);
@@ -547,7 +544,6 @@ function getScrollXY() {
   }
   return [ scrOfX, scrOfY ];
 }
-
 
 function windowSize() {
   var myWidth = 0, myHeight = 0;

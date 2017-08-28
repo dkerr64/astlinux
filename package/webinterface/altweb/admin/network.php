@@ -1703,7 +1703,7 @@ require_once '../common/header.php';
   putHtml('<tr class="dtrow0"><td colspan="6">&nbsp;</td></tr>');
   
   putHtml('<tr class="dtrow0"><td class="dialogText" style="text-align: left;" colspan="6">');
-  putHtml('<strong>Internal Interfaces:</strong>'.tt('https://doc.astlinux-project.org/userdoc:system-config?do=export_xhtmlbody','Configure internal interfaces with IPv4 and/or IPv6 addresses and DHCP server support. More...'));
+  putHtml('<strong>Internal Interfaces:</strong>'.tt('https://doc.astlinux-project.org/userdoc:system-config?do=export_xhtmlbody','Configure internal interfaces with IPv4 and/or IPv6 addresses and DHCP server support. <strong>More...</strong>'));
   putHtml('</td></tr>');
   putHtml('<tr class="dtrow1"><td style="text-align: left;" colspan="6">');
   putHtml('&nbsp;&nbsp;<strong>Site IPv6 ULA Prefix:</strong>');

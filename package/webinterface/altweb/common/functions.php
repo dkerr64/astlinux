@@ -275,8 +275,8 @@ function tt($topic,$tooltip = '') {
 function includeTOPICinfo($topic,$tooltip = '') {
   global $global_prefs;
   if ($tooltip === '') $tooltip = 'topic: '.$topic;
-  if (strlen($tooltip) < 50) $class = 'tooltip';
-  else $class = 'tooltipwide';
+  $class = 'tooltip';
+  if (strlen($tooltip) >= 50) $class .= ' tooltipwide';
   $str = '';
   // $str = '&nbsp;';
   $onclick = '';
@@ -286,7 +286,9 @@ function includeTOPICinfo($topic,$tooltip = '') {
   else {
     $link = '/info.php?topic='.$topic;
   }
-  if (getPREFdef($global_prefs, 'use_javascript') === 'yes') $onclick = 'onclick="delayPopup(event,this.href,650,250,\''.$topic.'\',true,0); return false;"';
+  if (getPREFdef($global_prefs, 'use_javascript') === 'yes') {
+    $onclick = 'onclick="delayPopup(event,this.href,650,250,\''.$topic.'\',true,0); return false;"';
+  }
   $str .= '<a href="'.$link.'" '.$onclick.' target="_blank" class="'.$class.'">';
   $str .= '<img src="/common/topicinfo.gif" alt="Info"/><b><em></em>'.$tooltip.'</b></a>';
   
