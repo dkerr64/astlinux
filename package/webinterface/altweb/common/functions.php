@@ -19,10 +19,12 @@
 // 01-04-2014, Added statusPROCESS()
 // 08-12-2017, Added is_IPV6addr()
 // 08-15-2017, Added expandIPV6addr()
-// 08-19-2017, Modify compressIPV6addr() to accept /xx prefix lenths
+// 08-19-2017, Added getAstDB()
+// 08-19-2017, Modify compressIPV6addr() to accept /xx prefix lengths
 //
 // System location of prefs file                                 
-$KD_PREFS_LOCATION = '/mnt/kd/webgui-prefs.txt';           
+$KD_PREFS_LOCATION = '/mnt/kd/webgui-prefs.txt';
+$ONLINE_DOCS_URL = 'https://doc.astlinux-project.org?do=export_xhtmlbody';
 
 // Function: putHtml
 // Put html string, with new-line
@@ -266,12 +268,76 @@ function updateCRON($user, $ret_good, $ret_fail) {
 }
 
 // Function: includeTOPICinfo
+// can be called as tt('topic','tooltip') to keep things compact
 //
-function includeTOPICinfo($topic) {
+// Render an information (i) icon and a tooltip if you hover over it.
+// Display help information in a popup window (if JavaScript enabled)
+// or in a separate browser window/tab.
+// if $topic is...
+// - A valid URL (e.g. https://doc.astlinux-project.org/whatever) then
+//   help page content is downloaded from that web site.
+// - A relative link (first character is a /) then the topic is a
+//   doc.astlinux-project.org dokuwiki page which may be saved locally.
+//   If local version exists use that.  If not then wrap the topic in
+//   full URL and get it from the astlinux dokuwiki web site.
+// - Neither of the above, plain text.  Use the legacy mechanism to
+//   find the help info by requesting the content from info.php script.
+function tt($topic,$tooltip = '') {
+  return(includeTOPICinfo($topic,$tooltip));
+}
+function includeTOPICinfo($topic,$tooltip = '') {
+  global $global_prefs;
+  global $ONLINE_DOCS_URL;
 
-  $str = '&nbsp;';
-  $str .= '<a href="/info.php?topic='.$topic.'" target="_blank">';
-  $str .= '<img src="/common/topicinfo.gif" alt="" title="Topic: '.$topic.'" class="topicinfo" /></a>';
+  if ($tooltip === '') $tooltip = 'topic: '.$topic;
+  $class = 'tooltip';
+  if (strlen($tooltip) >= 50) $class .= ' tooltipwide';
+  $str = '';
+  // $str = '&nbsp;';
+  $onclick = '';
+  if (filter_var($topic, FILTER_VALIDATE_URL)) {
+    // we were passed in a full valid URL. Use it.
+    $link = $topic;
+  }
+  else if (strpos($topic,'/') === 0) {
+    // We were passed a relative URL. Check if the file exists.
+    // Link will start with either /userdoc:xxx or /devdoc:xxx  This
+    // identifies which directory the local version will have been
+    // saved in.
+    $parts = explode('#',$topic);
+    $topic = substr($parts[0],1); // remove slash at front
+    $parts = explode(':',$topic); // capture part before colon
+    $subdir = $parts[0];
+    // This __FILE__ executes in /var/www/common so to get to the
+    // right subdir need to look for e.g /var/www/common/../userdoc
+    $file = dirname(__FILE__).'/../'.$subdir.'/'.$topic.'.html';
+    if (is_file($file)) {
+      // while file is in /var/www/userdoc/* we cannot include /userdoc/
+      // in the URL path as that is not what native dokuwiki uses for
+      // embedded links.  We will update lighttpd config to detect
+      // userdoc:topic-name and get file from the right directory.
+      $link='/'.$topic;
+    }
+    else {
+      // File is not abailable on local AstLinux box.  We will expand
+      // the topic name to a full URL and get of from the online
+      // doc.astlinux-project.org dokuwiki web site.
+      $docsite=getPREFdef($global_prefs, 'online_docs_url');
+      if (empty($docsite)) $docsite=$ONLINE_DOCS_URL;
+      $parts = explode('?',$docsite);
+      if (substr($parts[0],-1) === "/") $parts[0] = substr($parts[0],0,-1); // remove trailing slash if present
+      $link=$parts[0].'/'.$topic.'?'.$parts[1];
+    }
+  }
+  else {
+    // The original way of getting help information for the (i) anchors.
+    $link = '/info.php?topic='.$topic;
+  }
+  if (getPREFdef($global_prefs, 'use_javascript') === 'yes') {
+    $onclick = 'onclick="delayPopup(event,this.href,650,250,\''.$topic.'\',true,0); return false;"';
+  }
+  $str .= '<a href="'.$link.'" '.$onclick.' target="_blank" class="'.$class.'">';
+  $str .= '<img src="/common/topicinfo.gif" alt="Info"/><b><em></em>'.$tooltip.'</b></a>';
   
   return($str);
 }
@@ -818,35 +884,47 @@ function pad_ipv4_str($ip) {
 }
 
 // Function: compressIPV6addr
-//
+// Accepts both IPv4 and IPv6 with/without CIDR/prefix lengths
+// Returns compressed IPv4 or compressed IPv6
 function compressIPV6addr($addr) {
-  if (strpos($addr, ':') !== FALSE) {
-    $parts=explode("/",$addr);
-    $addr=inet_ntop(inet_pton($parts[0]));
-    if (!empty($parts[1])) {
-      $addr=$addr."/".$parts[1];
-    }
+  $addr=preg_replace('/\b0+(?=\d)/', '', $addr); // remove leading zeros
+  $parts=explode("/",$addr); // separate CIDR/prefix length
+  $addr=inet_ntop(inet_pton($parts[0])); // compress the address
+  if (!empty($parts[1])) {
+    $addr=$addr."/".$parts[1];  // add back in the CIDR/prefix length
   }
   return($addr);
 }
 
 // Function: expandIPV6addr
-// Accepts both IPv4 and IPv6
+// Accepts both IPv4 and IPv6 with/without CIDR/prefix lengths
+// Returns IPv6 for both with adjusted prefix lengths for IPv4 input
 function expandIPV6addr($addr){
-	if (filter_var($addr, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
-		$addr='::'.$addr;
-	}
+	$addr=preg_replace('/\b0+(?=\d)/', '', $addr); // remove leading zeros
+  $parts=explode("/",$addr); // separate CIDR/prefix length
+  $addr=$parts[0];
+  if (filter_var($addr, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+    $addr='::'.$addr;  // convert IPv4 address to IPv6 notation
+    if (!empty($parts[1])) {
+	    $parts[1]=$parts[1]+96;  // adjust the CIDR to IPv6 prefix length
+	  }
+  }
   if (filter_var($addr, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
     $hex = unpack("H*hex", inet_pton($addr));
     $addr = substr(preg_replace("/([A-f0-9]{4})/", "$1:", $hex['hex']), 0, -1);
   }
+  if (!empty($parts[1])) {
+    $addr=$addr."/".$parts[1];  // add back in the CIDR/prefix length
+  }
   return $addr;
 }
+
 
 // Function: is_IPV6addr
 //
 function is_IPV6addr($addr) {
-  if (filter_var($addr, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+  $parts=explode("/",$addr); // separate CIDR/prefix length
+  if (filter_var($parts[0], FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
     return(true);
   }
   return(false);
@@ -886,6 +964,26 @@ function mac2vendor($mac) {
     }
   }
   return($vendor);
+}
+
+// Function: getAstDB
+//
+function getAstDB($family, $key) {
+  $tmpfile = tempnam("/tmp", "PHP_");
+  $result = null;
+  if ((asteriskCMD('database get '.$family.' '.$key.'"', $tmpfile)) == 0) {
+    $ph = @fopen($tmpfile, "r");
+    while (! feof($ph)) {
+      if ($line = trim(fgets($ph, 1024))) {
+        if (strncasecmp($line, 'Value: ', 6) == 0) {
+          $result = substr($line,7);
+        }
+      }
+    }
+    fclose($ph);
+    @unlink($tmpfile);
+  }
+  return($result);
 }
 
 // Function: getPREFdef

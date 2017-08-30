@@ -1462,7 +1462,9 @@ require_once '../common/header.php';
   <form id="iform" method="post" action="<?php echo $myself;?>">
   <table width="100%" class="stdtable">
   <tr><td style="text-align: center;" colspan="2">
-  <h2>Network Configuration Settings:</h2>
+<?php
+  putHtml('<h2>Network Configuration Settings:'.tt("/userdoc:system-config",'Configure external and internal interfaces and all network features. <strong>More...</strong>').'</h2>');
+?>
   </td></tr><tr><td width="240" style="text-align: center;">
   <input type="submit" class="formbtn" value="Save Settings" name="submit_save" />
   </td><td class="dialogText" style="text-align: center;">
@@ -1703,7 +1705,7 @@ require_once '../common/header.php';
   putHtml('<tr class="dtrow0"><td colspan="6">&nbsp;</td></tr>');
   
   putHtml('<tr class="dtrow0"><td class="dialogText" style="text-align: left;" colspan="6">');
-  putHtml('<strong>Internal Interfaces:</strong>');
+  putHtml('<strong>Internal Interfaces:</strong>'.tt('https://doc.astlinux-project.org/userdoc:system-config?do=export_xhtmlbody','Configure internal interfaces with IPv4 and/or IPv6 addresses and DHCP server support. <strong>More...</strong>'));
   putHtml('</td></tr>');
   putHtml('<tr class="dtrow1"><td style="text-align: left;" colspan="6">');
   putHtml('&nbsp;&nbsp;<strong>Site IPv6 ULA Prefix:</strong>');

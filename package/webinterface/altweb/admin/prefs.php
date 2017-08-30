@@ -22,6 +22,7 @@
 // 08-12-2015, Added Show Fossil Tab
 // 02-16-2017, Added Disable CLI Tab for "staff" user
 // 07-16-2017, Added Show ACME Certificates
+// 08-19-2017, Added CDR log enhancements (from 06-26-2009)
 //
 
 $myself = $_SERVER['PHP_SELF'];
@@ -268,6 +269,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       fwrite($fp, $value."\n");
     }
     $value = 'cdrlog_last_cmd = "'.$_POST['cdr_last_cmd'].'"';
+    fwrite($fp, $value."\n");
+    $value = 'cdrlog_log_maxlen = "'.trim($_POST['cdrlog_log_maxlen']).'"';
+    fwrite($fp, $value."\n");
+    $value = 'use_javascript = '.$_POST['use_javascript'];
+    fwrite($fp, $value."\n");
+    $value = 'popup_hover_delay = "'.trim($_POST['popup_hover_delay']).'"';
     fwrite($fp, $value."\n");
     
     if (isset($_POST['extern_notify'])) {
@@ -811,7 +818,8 @@ require_once '../common/header.php';
   putHtml('<tr class="dtrow0"><td colspan="6">&nbsp;</td></tr>');
   
   putHtml('<tr class="dtrow0"><td class="dialogText" style="text-align: left;" colspan="6">');
-  putHtml('<strong>CDR Log Tab Options:</strong>');
+  $tt = 'Settings for Call Detail Records display page.';
+  putHtml('<strong>CDR Log Tab Options:</strong>'.includeTOPICinfo('cdrlog',$tt));
   putHtml('</td></tr>');
   
   putHtml('<tr class="dtrow1"><td style="text-align: right;" colspan="2">CDR Log Format:</td><td colspan="4">');
@@ -834,7 +842,7 @@ require_once '../common/header.php';
   putHtml('<input type="checkbox" value="cdr_databases" name="cdr_databases"'.$sel.' /></td><td colspan="5">Show multiple *.csv CDR Databases in CDR Log Path</td></tr>');
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'cdrlog_extra_show') === 'yes') ? ' checked="checked"' : '';
-  putHtml('<input type="checkbox" value="cdr_extra" name="cdr_extra"'.$sel.' /></td><td colspan="5">Display channel, dstchannel and disposition CDR values</td></tr>');
+  putHtml('<input type="checkbox" value="cdr_extra" name="cdr_extra"'.$sel.' /></td><td colspan="5">Display context, channel and dstchannel CDR values</td></tr>');
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'cdrlog_last_show') === 'yes') ? ' checked="checked"' : '';
   putHtml('<input type="checkbox" value="cdr_last" name="cdr_last"'.$sel.' /></td><td colspan="5">Display');
@@ -859,6 +867,12 @@ require_once '../common/header.php';
   putHtml('</select>');
   putHtml('CDR value</td></tr>');
   
+  $value = getPREFdef($global_prefs, 'cdrlog_log_maxlen');
+  putHtml('<input type="hidden" value="'.$value.'" name="cdrlog_log_maxlen" />');
+  $value = getPREFdef($global_prefs, 'use_javascript');
+  putHtml('<input type="hidden" name="use_javascript" value="'.$value.'" />');
+  $value = getPREFdef($global_prefs, 'popup_hover_delay');
+  putHtml('<input type="hidden" value="'.$value.'" name="popup_hover_delay" />'); 
   putHtml('<tr class="dtrow0"><td colspan="6">&nbsp;</td></tr>');
   
   putHtml('<tr class="dtrow0"><td class="dialogText" style="text-align: left;" colspan="6">');
