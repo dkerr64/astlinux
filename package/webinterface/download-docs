@@ -1,0 +1,153 @@
+#!/bin/bash
+
+# Download documentation from the AstLinux dokuwiki site
+ONLINE_DOCS_URL="https://doc.astlinux-project.org?do=export_xhtmlbody" # does not end with a /
+# Prefixes and subdir names used in AstLinux's dokuwiki pages
+USERDOC_NAME="userdoc"
+DEVDOC_NAME="devdoc"
+MEDIA_NAME="_media"
+
+# Test if running on AstLinux box and set base www dir,
+# else use current directory as base dir.
+SYSVER="$(uname -r)"
+if [[ $SYSVER =~ .*astlinux.* ]]; then
+  BASE_DIR="/var/www/" # must end with a /
+else
+  BASE_DIR="./"
+fi
+
+# Split the AstLinux documentation URL at the question mark
+URL_FRONT="${ONLINE_DOCS_URL%%\?*}/"
+URL_BACK="${ONLINE_DOCS_URL##*\?}"
+if [ -n "$URL_BACK" ]; then 
+  URL_BACK="?${URL_BACK}"
+fi
+
+# Ao find what documents we need to download we are going to look at
+# AstLinux web inteface files in the base directory, admin and common.
+FILELIST="${BASE_DIR}*.php ${BASE_DIR}admin/*.php ${BASE_DIR}common/*.php ${BASE_DIR}common/*.inc"
+
+# Full paths to new directories into which we place downloaded files
+USERDOC_DIR="${BASE_DIR}$USERDOC_NAME/"
+DEVDOC_DIR="${BASE_DIR}$DEVDOC_NAME/"
+MEDIA_DIR="${BASE_DIR}$MEDIA_NAME/"
+
+# make the userdoc_dir/devdoc_dir if it does not exists
+mkdir -p "${USERDOC_DIR}"
+mkdir -p "${DEVDOC_DIR}"
+mkdir -p "${MEDIA_DIR}"
+
+# STEP 1
+# Scan all web interface source files looking to links to
+# /userdoc: or /devdoc: files.
+# In our source files these are identified by calls to either tt()
+# or includeTOPICinfo().  The first parameter of this function call
+# identifies the help topic.  If it begins with a slash and either
+# /userdoc:xxxx or /devdoc:xxxx then this identifies a AstLinux
+# documentation page that could be stored on local AstLinux box.
+# The topic name can be enclosed within either single ' or double "
+echo "====== STEP 1: Scan all web interface files looking for links to online documents"
+USERDOC_LIST="$(sed -n "s/.*includeTOPICinfo([\"']\/\(${USERDOC_NAME}:[^\"']*\)[\"'].*/\1/p" $FILELIST 2>/dev/null)"
+USERDOC_LIST="${USERDOC_LIST} $(sed -n "s/.*tt([\"']\/\(${USERDOC_NAME}:[^\"']*\)[\"'].*/\1/p" $FILELIST 2>/dev/null)"
+DEVDOC_LIST="$(sed -n "s/.*includeTOPICinfo([\"']\/\(${DEVDOC_NAME}:[^\"']*\)[\"'].*/\1/p" $FILELIST 2>/dev/null)"
+DEVDOC_LIST="${DEVDOC_LIST} $(sed -n "s/.*tt([\"']\/\(${DEVDOC_NAME}:[^\"']*\)[\"'].*/\1/p" $FILELIST 2>/dev/null)"
+USERDOC_DONE=""
+DEVDOC_DONE=""
+
+PASS=1
+TOTAL_BYTES=0
+PROCESSED_FILES=0
+# Downloaded html files may themselves contain href links to other
+# documentation pages that we will want to download to.  So we will
+# iterate a few times, downloading, scanning, repeating.
+# Within reason! lets stop at 5 passes (or sooner if all downloaded)
+while [ $PASS -le 5 ]; do
+  # remove duplicates
+  USERDOC_LIST="$(echo $USERDOC_LIST | xargs -n1 | sort -u | xargs)"
+  DEVDOC_LIST="$(echo $DEVDOC_LIST | xargs -n1 | sort -u | xargs)"
+  # count number to process
+  USER_COUNT="$(echo $USERDOC_LIST | wc -w)"
+  DEV_COUNT="$(echo $DEVDOC_LIST | wc -w)"
+  TOTAL_COUNT="$((USER_COUNT + DEV_COUNT - PROCESSED_FILES))"
+
+  if [ $TOTAL_COUNT -eq 0 ]; then
+    echo "====== STEP 2 (pass ${PASS}): No more dokuwiki files to download"
+    break
+  fi
+  echo "====== STEP 2 (pass ${PASS}): Download ${TOTAL_COUNT} dokuwiki files from ${URL_FRONT}"
+
+  COUNT=1
+  for doc in $USERDOC_LIST; do
+    regex="\b${doc}\b"
+    if [[ ! "$USERDOC_DONE" =~ $regex ]]; then
+      URL="${URL_FRONT}${doc}${URL_BACK}"
+      FILE="${USERDOC_DIR}${doc}.html"
+      echo "($COUNT of $TOTAL_COUNT) ${doc}"
+      # The -z on curl checks to only download files updated since last
+      # download, potentially saving some time and network bandwidth.
+      curl $URL -z $FILE -o $FILE 2>/dev/null
+      FILE_SIZE="$(stat -f -c%s $FILE)"
+      USERDOC_DONE="${USERDOC_DONE} ${doc}"
+      (( TOTAL_BYTES += FILE_SIZE ))
+      (( COUNT += 1 ))
+    fi
+  done
+  for doc in $DEVDOC_LIST; do
+    regex="\b${doc}\b"
+    if [[ ! "$DEVDOC_DONE" =~ $regex ]]; then
+      URL="${URL_FRONT}${doc}${URL_BACK}"
+      FILE="${DEVDOC_DIR}${doc}.html"
+      echo "($COUNT of $TOTAL_COUNT) ${doc}"
+      curl $URL -z $FILE -o $FILE 2>/dev/null
+      FILE_SIZE="$(stat -f -c%s $FILE)"
+      DEVDOC_DONE="${DEVDOC_DONE} ${doc}"
+      (( TOTAL_BYTES += FILE_SIZE ))
+      (( COUNT += 1 ))
+    fi
+  done
+  (( PASS += 1 ))
+  (( PROCESSED_FILES += TOTAL_COUNT ))
+
+  # We have completeted the first pass.  Now scann all downloaded files
+  # looking for href's to other pages that qualify (ie /userdoc:xxxx and
+  # /devdoc:xxxx).  These can be bound by either single ' or double "
+  # and in addition could include a ? or a #... we don't want that part
+  # so don't capture past that point.
+  echo "====== STEP 1 (pass ${PASS}): Scan downloaded files looking for links to online documents"
+  USERDOC_LIST="${USERDOC_DONE} $(sed -n "s/.*href=[\"']\/\(${USERDOC_NAME}:[^\"?#']*\).*/\1/p" ${USERDOC_DIR}*.html ${DEVDOC_DIR}*.html 2>/dev/null)"
+  DEVDOC_LIST="${DEVDOC_DONE} $(sed -n "s/.*href=[\"']\/\(${DEVDOC_NAME}:[^\"?#']*\).*/\1/p" ${DEVDOC_DIR}*.html ${USERDOC_DIR}*.html 2>/dev/null)"
+done
+echo "====== STEP 2 Total size of HTML files $TOTAL_BYTES bytes ======"
+
+
+# STEP 3
+# Scan all files looking to image sources that we will also need
+# to download
+# Now that all html files are downloaded, look for images that are
+# included in the files.  Anything that begins \_media we can download
+# and store locally.  Once again can be bound by single ' or double "
+echo "====== STEP 3: Scan downloaded files looking for image files to download"
+IMG_FILES="$(sed -n "/<img/s/.*src=[\"']\/\(${MEDIA_NAME}[^\"']*\)[\"'].*/\1/p" ${USERDOC_DIR}*.html ${DEVDOC_DIR}*.html 2>/dev/null)"
+# remove duplicates
+IMG_FILES="$(echo $IMG_FILES | xargs -n1 | sort -u | xargs)"
+
+# STEP 4
+# Download all images
+TOTAL_COUNT="$(echo $IMG_FILES | wc -w)"
+echo "====== STEP 4: Download ${TOTAL_COUNT} _media image files from ${URL_FRONT}"
+COUNT=1
+TOTAL_BYTES=0
+for img in $IMG_FILES; do
+  URL="${URL_FRONT}${img}"
+  FILE="${BASE_DIR}${img}"
+  echo "($COUNT of $TOTAL_COUNT) ${img}"
+  curl $URL -z $FILE -o $FILE 2>/dev/null
+  FILE_SIZE="$(stat -f -c%s $FILE)"
+  (( TOTAL_BYTES += FILE_SIZE ))
+  (( COUNT += 1 ))
+done
+echo "====== STEP 4 Total size of image files $TOTAL_BYTES bytes ======"
+echo "====== Download complete "
+exit
+
+
