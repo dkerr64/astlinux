@@ -148,6 +148,20 @@ for img in $IMG_FILES; do
 done
 echo "====== STEP 4 Total size of image files $TOTAL_BYTES bytes ======"
 echo "====== Download complete "
+
+# List image files not downloaded
+IMG_FILES="$(sed -n "/<img/s/.*src=[\"']\/\([^\"']*\)[\"'].*/\1/p" ${USERDOC_DIR}*.html ${DEVDOC_DIR}*.html 2>/dev/null | grep -v "^${MEDIA_NAME}" 2>/dev/null)"
+if [ -n "$IMG_FILES" ]; then
+  TOTAL_COUNT="$(echo $IMG_FILES | wc -w)"
+  echo "WARNING: ${TOTAL_COUNT} image file(s) not downloaded as they did not match ${MEDIA_NAME}"
+  COUNT=1
+  for img in $IMG_FILES; do
+    echo "($COUNT of $TOTAL_COUNT) ${img}"
+    (( COUNT += 1 ))
+  done
+  echo "Locate source html by grep for the file(s) in ${USERDOC_DIR}*.html and ${DEVDOC_DIR}*.html"
+fi
+
 exit
 
 
