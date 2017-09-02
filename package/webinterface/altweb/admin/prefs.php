@@ -1175,7 +1175,9 @@ require_once '../common/header.php';
   
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'tab_followme_show') === 'yes') ? ' checked="checked"' : '';
-  putHtml('<input type="checkbox" value="tab_followme" name="tab_followme"'.$sel.' /></td><td colspan="5">Show Follow-Me Tab'.includeTOPICinfo('followme-dialplan').'</td></tr>');
+  putHtml('<input type="checkbox" value="tab_followme" name="tab_followme"'.$sel.' /></td><td colspan="5">Show Follow-Me Tab');
+  putHtml(tt('followme-dialplan',"The Follow-Me tab uses Asterisk's internal database (astdb) to maintain a list of Follow-Me numbers and their state.  <strong>More...</strong>"));
+  putHtml('</td></tr>');
   putHtml('<tr class="dtrow1"><td>&nbsp;</td><td colspan="5">');
   $sel = (getPREFdef($global_prefs, 'tab_followme_disable_staff') === 'yes') ? ' checked="checked"' : '';
   putHtml('<input type="checkbox" value="followme_disable_staff" name="followme_disable_staff"'.$sel.' />&nbsp;Disable Follow-Me Tab for &quot;staff&quot; user</td></tr>');
@@ -1194,27 +1196,40 @@ require_once '../common/header.php';
   
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'tab_sysdial_show') !== 'no') ? ' checked="checked"' : '';
-  putHtml('<input type="checkbox" value="tab_sysdial" name="tab_sysdial"'.$sel.' /></td><td colspan="5">Show Speed Dial Tab'.includeTOPICinfo('sysdial-dialplan').'</td></tr>');
+  putHtml('<input type="checkbox" value="tab_sysdial" name="tab_sysdial"'.$sel.' /></td><td colspan="5">Show Speed Dial Tab');
+  putHtml(tt('sysdial-dialplan','The Speed Dial tab adds a web dialog interface to the asterisk astdb database, using Family: sysdial.  <strong>More...</strong>'));
+  putHtml('</td></tr>');
   
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'tab_cidname_show') !== 'no') ? ' checked="checked"' : '';
-  putHtml('<input type="checkbox" value="tab_cidname" name="tab_cidname"'.$sel.' /></td><td colspan="5">Show Caller*ID Tab'.includeTOPICinfo('cidname-dialplan').'</td></tr>');
+  putHtml('<input type="checkbox" value="tab_cidname" name="tab_cidname"'.$sel.' /></td><td colspan="5">Show Caller*ID Tab');
+  putHtml(tt('cidname-dialplan','The Caller*ID tab adds a web dialog interface to the asterisk astdb database, using Family: cidname.  <strong>More...</strong>'));
+  putHtml('</td></tr>');
   
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'tab_blacklist_show') !== 'no') ? ' checked="checked"' : '';
-  putHtml('<input type="checkbox" value="tab_blacklist" name="tab_blacklist"'.$sel.' /></td><td colspan="5">Show Blacklist Tab'.includeTOPICinfo('blacklist-dialplan').'</td></tr>');
+  putHtml('<input type="checkbox" value="tab_blacklist" name="tab_blacklist"'.$sel.' /></td><td colspan="5">Show Blacklist Tab');
+  putHtml(tt('blacklist-dialplan','The Blacklist tab adds a web dialog interface to the asterisk astdb database, using Family: blacklist.  <strong>More...</strong>'));
+  putHtml('</td></tr>');
   
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'tab_whitelist_show') === 'yes') ? ' checked="checked"' : '';
-  putHtml('<input type="checkbox" value="tab_whitelist" name="tab_whitelist"'.$sel.' /></td><td colspan="5">Show Whitelist Tab'.includeTOPICinfo('whitelist-dialplan').'</td></tr>');
+  putHtml('<input type="checkbox" value="tab_whitelist" name="tab_whitelist"'.$sel.' /></td><td colspan="5">Show Whitelist Tab');
+  putHtml(tt('whitelist-dialplan','The Whitelist tab adds a web dialog interface to the asterisk astdb database, using Family: whitelist.  <strong>More...</strong>'));
+  putHtml('</td></tr>');
   
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'tab_actionlist_show') === 'yes') ? ' checked="checked"' : '';
-  putHtml('<input type="checkbox" value="tab_actionlist" name="tab_actionlist"'.$sel.' /></td><td colspan="5">Show Actionlist Tab'.includeTOPICinfo('actionlist-dialplan').'</td></tr>');
+  putHtml('<input type="checkbox" value="tab_actionlist" name="tab_actionlist"'.$sel.' /></td><td colspan="5">Show Actionlist Tab');
+  putHtml(tt('actionlist-dialplan','The Actionlist tab adds a web dialog interface to the asterisk astdb database, using Family: actionlist.  <strong>More...</strong>'));
+  putHtml('</td></tr>');
   
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'tab_sqldata_show') === 'yes') ? ' checked="checked"' : '';
-  putHtml('<input type="checkbox" value="tab_sqldata" name="tab_sqldata"'.$sel.' /></td><td colspan="5">Show SQL-Data Tab'.includeTOPICinfo('sqldata-dialplan').'</td></tr>');
+  putHtml('<input type="checkbox" value="tab_sqldata" name="tab_sqldata"'.$sel.' /></td><td colspan="5">Show SQL-Data Tab');
+  putHtml(tt('sqldata-dialplan','The SQL-Data Tab adds a web dialog to edit the SQLite3 database.  <strong>More...</strong>'));
+  putHtml('</td></tr>');
+
   putHtml('<tr class="dtrow1"><td>&nbsp;</td><td colspan="5">');
   $sel = (getPREFdef($global_prefs, 'tab_sqldata_disable_staff') !== 'no') ? ' checked="checked"' : '';
   putHtml('<input type="checkbox" value="sqldata_disable_staff" name="sqldata_disable_staff"'.$sel.' />&nbsp;Disable SQL-Data Tab for &quot;staff&quot; user</td></tr>');
@@ -1237,7 +1252,9 @@ require_once '../common/header.php';
 
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'tab_monit_show') === 'yes') ? ' checked="checked"' : '';
-  putHtml('<input type="checkbox" value="tab_monit" name="tab_monit"'.$sel.' /></td><td colspan="5">Show Monit Tab</td></tr>');
+  putHtml('<input type="checkbox" value="tab_monit" name="tab_monit"'.$sel.' /></td><td colspan="5">Show Monit Tab');
+  putHtml(tt('/userdoc:tt_monit_monitoring','Monit is a free open source utility for managing and monitoring; networks, processes, programs, files, directories and filesystems on a UNIX system.  <Strong>More...</Strong>'));
+  putHtml('</td></tr>');
 
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'tab_network_show') !== 'no') ? ' checked="checked"' : '';
@@ -1263,7 +1280,9 @@ require_once '../common/header.php';
   
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'tab_fossil_show') === 'yes') ? ' checked="checked"' : '';
-  putHtml('<input type="checkbox" value="tab_fossil" name="tab_fossil"'.$sel.' /></td><td colspan="5">Show Fossil Tab</td></tr>');
+  putHtml('<input type="checkbox" value="tab_fossil" name="tab_fossil"'.$sel.' /></td><td colspan="5">Show Fossil Tab');
+  putHtml(tt('/userdoc:tt_fossil','AstLinux now supports the Fossil package, a simple, high-reliability, distributed software configuration management system.  <Strong>More...</Strong>'));
+  putHtml('</td></tr>');
 
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'tab_staff_disable_staff') !== 'yes') ? ' checked="checked"' : '';
