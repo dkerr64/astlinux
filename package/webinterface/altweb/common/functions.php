@@ -17,9 +17,11 @@
 // 12-12-2009, Added systemSHUTDOWN()
 // 01-12-2012, Added asteriskURLrepo()
 // 01-04-2014, Added statusPROCESS()
+// 09-02-2017, Updates to includeTOPICinfo()
 //
 // System location of prefs file                                 
 $KD_PREFS_LOCATION = '/mnt/kd/webgui-prefs.txt';           
+$ONLINE_DOCS_URL = 'https://doc.astlinux-project.org?do=export_xhtmlbody';
 
 // Function: putHtml
 // Put html string, with new-line
@@ -263,12 +265,93 @@ function updateCRON($user, $ret_good, $ret_fail) {
 }
 
 // Function: includeTOPICinfo
+// can be called as tt('topic','tooltip') to keep things compact
 //
-function includeTOPICinfo($topic) {
+// Render an information (i) icon and a tooltip if you hover over it.
+// Display help information in a popup window (if JavaScript enabled)
+// or in a separate browser window/tab.
+// if $topic is...
+// - A valid URL (e.g. https://doc.astlinux-project.org/whatever) then
+//   help page content is downloaded from that web site.
+// - A relative link (first character is a /) then the topic is a
+//   doc.astlinux-project.org dokuwiki page which may be saved locally.
+//   If local version exists use that.  If not then wrap the topic in
+//   full URL and get it from the astlinux dokuwiki web site.
+// - Empty then only the tooltip is displayed when mouse is over icon,
+//   clicking has no effect (no page to load).
+// - None of the above, plain text.  Use the legacy mechanism to
+//   find the help info by requesting the content from info.php script.
+//
+function tt($topic,$tooltip = '') {
+  return(includeTOPICinfo($topic,$tooltip));
+}
+function includeTOPICinfo($topic,$tooltip = '') {
+  global $global_prefs;
+  global $ONLINE_DOCS_URL;
 
-  $str = '&nbsp;';
-  $str .= '<a href="/info.php?topic='.$topic.'" target="_blank">';
-  $str .= '<img src="/common/topicinfo.gif" alt="" title="Topic: '.$topic.'" class="topicinfo" /></a>';
+  $target = ' target="_blank"';
+  if ($topic === '') {
+    $link = '#!'; // an invalid id on this page, so does nothing.
+    $target = ''; // make sure that new tab / window not opened.
+  }
+  else if (filter_var($topic, FILTER_VALIDATE_URL)) {
+    // we were passed in a full valid URL. Use it.
+    $link = $topic;
+  }
+  else if (strpos($topic,'/') === 0) {
+    // We were passed a relative URL. Check if the file exists.
+    // Link will start with either /userdoc:xxx or /devdoc:xxx  This
+    // identifies which directory the local version will have been
+    // saved in.
+    $parts = explode('#',$topic);
+    $topic = substr($parts[0],1); // remove slash at front
+    $parts = explode(':',$topic); // capture part before colon
+    $subdir = $parts[0];
+    // This __FILE__ executes in /var/www/common so to get to the
+    // right subdir need to look for e.g /var/www/common/../userdoc
+    $file = dirname(__FILE__).'/../'.$subdir.'/'.$topic.'.html';
+    if (is_file($file)) {
+      // while file is in /var/www/userdoc/* we cannot include /userdoc/
+      // in the URL path as that is not what native dokuwiki uses for
+      // embedded links.  We will update lighttpd config to detect
+      // userdoc:topic-name and get file from the right directory.
+      $link='/'.$topic;
+    }
+    else {
+      // File is not available on local AstLinux box.  We will expand
+      // the topic name to a full URL and get of from the online
+      // doc.astlinux-project.org dokuwiki web site.
+      $docsite=getPREFdef($global_prefs, 'online_docs_url');
+      if (empty($docsite)) $docsite=$ONLINE_DOCS_URL;
+      $parts = explode('?',$docsite);
+      if (substr($parts[0],-1) === "/") $parts[0] = substr($parts[0],0,-1); // remove trailing slash if present
+      $link=$parts[0].'/'.$topic.'?'.$parts[1];
+    }
+  }
+  else {
+    // The original way of getting help information for the (i) anchors.
+    $link = '/info.php?topic='.$topic;
+  }
+
+  // If we were passes a tooltip then set style properties and html
+  // tags to display the tooltip if mouse hovers over the (i) image
+  $class = '';
+  if ($tooltip !== '') {
+    $class = ' class="tooltip';
+    if (strlen($tooltip) >= 50) $class .= ' tooltipwide';
+    $class .= '"';
+    $tooltip = '<b><em></em>'.$tooltip.'</b>';
+  }
+
+  // If enabled display the help text in a popup window rather than
+  // displaying in another browser tab or window.
+  $onclick = '';
+  if ($topic !== '' && getPREFdef($global_prefs, 'help_in_popup_window') !== 'no') {
+    $onclick = ' onclick="delayPopup(event,this.href,650,250,\''.$topic.'\',true,0); return false;"';
+  }
+
+  $str = '<a href="'.$link.'"'.$target.$onclick.$class.'>';
+  $str .= '<img src="/common/topicinfo.gif" alt="Info"/>'.$tooltip.'</a>';
   
   return($str);
 }
