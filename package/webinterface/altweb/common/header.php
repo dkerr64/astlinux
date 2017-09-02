@@ -137,9 +137,7 @@ header('Content-Type: text/html; charset=utf-8');
 <meta http-equiv="Expires" content="0" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <?php
-    if (getPREFdef($global_prefs, 'use_javascript') === 'yes') {
-      putHtml('<script type="text/javascript" src="../common/functions.js"></script>');
-    }
+    putHtml('<script type="text/javascript" src="../common/functions.js"></script>');
     $status = (getPREFdef($global_prefs, 'status_require_auth') === 'yes') ? '/admin/status.php' : '/status.php';
     $directory = (getPREFdef($global_prefs, 'directory_require_auth') === 'yes') ? '/admin/directory.php' : '/directory.php';
     $tabname = getTABname();

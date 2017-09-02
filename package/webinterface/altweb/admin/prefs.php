@@ -22,7 +22,6 @@
 // 08-12-2015, Added Show Fossil Tab
 // 02-16-2017, Added Disable CLI Tab for "staff" user
 // 07-16-2017, Added Show ACME Certificates
-// 08-19-2017, Added CDR log enhancements (from 06-26-2009)
 //
 
 $myself = $_SERVER['PHP_SELF'];
@@ -46,7 +45,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     $result = 11;
     fwrite($fp, "### Preferences -- ".$prefs_loc." -- ###\n");
-    
+
+    if (! isset($_POST['help_in_popup_window'])) {
+      $value = 'help_in_popup_window = no';
+      fwrite($fp, $value."\n");
+    }
+    $value = 'popup_hover_delay = "'.trim($_POST['popup_hover_delay']).'"';
+    fwrite($fp, $value."\n");
+
     if (! isset($_POST['pppoe_connection'])) {
       $value = 'status_pppoe_connection = no';
       fwrite($fp, $value."\n");
@@ -269,12 +275,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       fwrite($fp, $value."\n");
     }
     $value = 'cdrlog_last_cmd = "'.$_POST['cdr_last_cmd'].'"';
-    fwrite($fp, $value."\n");
-    $value = 'cdrlog_log_maxlen = "'.trim($_POST['cdrlog_log_maxlen']).'"';
-    fwrite($fp, $value."\n");
-    $value = 'use_javascript = '.$_POST['use_javascript'];
-    fwrite($fp, $value."\n");
-    $value = 'popup_hover_delay = "'.trim($_POST['popup_hover_delay']).'"';
     fwrite($fp, $value."\n");
     
     if (isset($_POST['extern_notify'])) {
@@ -586,8 +586,24 @@ require_once '../common/header.php';
   <table class="stdtable">
   <tr class="dtrow0"><td width="50">&nbsp;</td><td width="90">&nbsp;</td><td>&nbsp;</td><td width="90">&nbsp;</td><td width="90">&nbsp;</td><td width="90">&nbsp;</td></tr>
   <tr class="dtrow0"><td class="dialogText" style="text-align: left;" colspan="6">
-  <strong>Status Tab Options:</strong>
 <?php
+  putHtml('<strong>Online Documentation Options:</strong>');
+  putHtml('</td></tr>');
+  putHtml('<tr class="dtrow1"><td style="text-align: right;">');
+  $sel = (getPREFdef($global_prefs, 'help_in_popup_window') !== 'no') ? ' checked="checked"' : '';
+  putHtml('<input type="checkbox" value="help_in_popup_window" name="help_in_popup_window"'.$sel.' /></td><td colspan="5">Display help information in-line in a popop window');
+  putHtml(tt('','When selected if you click on a <img src="/common/topicinfo.gif" alt="Info"/> icon then help text is displayed in-line in a popup window rather than in a new browser tab or window.  Requires javascript enabled browser.'));
+  putHtml('</td></tr>');
+// Not used...
+//  putHtml('<tr class="dtrow1"><td style="text-align: right;" colspan="4">Time delay before displaying help:</td><td colspan="3">');
+//  if (($value = getPREFdef($global_prefs, 'popup_hover_delay')) === '') {
+//    $value = '0';
+//  }
+//  putHtml('<input type="text" size="2" maxlength="2" value="'.$value.'" name="popup_hover_delay" /></td></tr>');
+  putHtml('<tr class="dtrow0"><td colspan="6">&nbsp;</td></tr>');
+
+  putHtml('<tr class="dtrow0"><td class="dialogText" style="text-align: left;" colspan="6">');
+  putHtml('<strong>Status Tab Options:</strong>');
   putHtml('</td></tr>');
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'status_require_auth') === 'yes') ? ' checked="checked"' : '';
@@ -818,8 +834,7 @@ require_once '../common/header.php';
   putHtml('<tr class="dtrow0"><td colspan="6">&nbsp;</td></tr>');
   
   putHtml('<tr class="dtrow0"><td class="dialogText" style="text-align: left;" colspan="6">');
-  $tt = 'Settings for Call Detail Records display page.';
-  putHtml('<strong>CDR Log Tab Options:</strong>'.includeTOPICinfo('cdrlog',$tt));
+  putHtml('<strong>CDR Log Tab Options:</strong>');
   putHtml('</td></tr>');
   
   putHtml('<tr class="dtrow1"><td style="text-align: right;" colspan="2">CDR Log Format:</td><td colspan="4">');
@@ -842,7 +857,7 @@ require_once '../common/header.php';
   putHtml('<input type="checkbox" value="cdr_databases" name="cdr_databases"'.$sel.' /></td><td colspan="5">Show multiple *.csv CDR Databases in CDR Log Path</td></tr>');
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'cdrlog_extra_show') === 'yes') ? ' checked="checked"' : '';
-  putHtml('<input type="checkbox" value="cdr_extra" name="cdr_extra"'.$sel.' /></td><td colspan="5">Display context, channel and dstchannel CDR values</td></tr>');
+  putHtml('<input type="checkbox" value="cdr_extra" name="cdr_extra"'.$sel.' /></td><td colspan="5">Display channel, dstchannel and disposition CDR values</td></tr>');
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'cdrlog_last_show') === 'yes') ? ' checked="checked"' : '';
   putHtml('<input type="checkbox" value="cdr_last" name="cdr_last"'.$sel.' /></td><td colspan="5">Display');
@@ -867,12 +882,6 @@ require_once '../common/header.php';
   putHtml('</select>');
   putHtml('CDR value</td></tr>');
   
-  $value = getPREFdef($global_prefs, 'cdrlog_log_maxlen');
-  putHtml('<input type="hidden" value="'.$value.'" name="cdrlog_log_maxlen" />');
-  $value = getPREFdef($global_prefs, 'use_javascript');
-  putHtml('<input type="hidden" name="use_javascript" value="'.$value.'" />');
-  $value = getPREFdef($global_prefs, 'popup_hover_delay');
-  putHtml('<input type="hidden" value="'.$value.'" name="popup_hover_delay" />'); 
   putHtml('<tr class="dtrow0"><td colspan="6">&nbsp;</td></tr>');
   
   putHtml('<tr class="dtrow0"><td class="dialogText" style="text-align: left;" colspan="6">');
@@ -1166,7 +1175,9 @@ require_once '../common/header.php';
   
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'tab_followme_show') === 'yes') ? ' checked="checked"' : '';
-  putHtml('<input type="checkbox" value="tab_followme" name="tab_followme"'.$sel.' /></td><td colspan="5">Show Follow-Me Tab'.includeTOPICinfo('followme-dialplan').'</td></tr>');
+  putHtml('<input type="checkbox" value="tab_followme" name="tab_followme"'.$sel.' /></td><td colspan="5">Show Follow-Me Tab');
+  putHtml(tt('followme-dialplan',"The Follow-Me tab uses Asterisk's internal database (astdb) to maintain a list of Follow-Me numbers and their state.  <strong>More...</strong>"));
+  putHtml('</td></tr>');
   putHtml('<tr class="dtrow1"><td>&nbsp;</td><td colspan="5">');
   $sel = (getPREFdef($global_prefs, 'tab_followme_disable_staff') === 'yes') ? ' checked="checked"' : '';
   putHtml('<input type="checkbox" value="followme_disable_staff" name="followme_disable_staff"'.$sel.' />&nbsp;Disable Follow-Me Tab for &quot;staff&quot; user</td></tr>');
@@ -1185,27 +1196,40 @@ require_once '../common/header.php';
   
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'tab_sysdial_show') !== 'no') ? ' checked="checked"' : '';
-  putHtml('<input type="checkbox" value="tab_sysdial" name="tab_sysdial"'.$sel.' /></td><td colspan="5">Show Speed Dial Tab'.includeTOPICinfo('sysdial-dialplan').'</td></tr>');
+  putHtml('<input type="checkbox" value="tab_sysdial" name="tab_sysdial"'.$sel.' /></td><td colspan="5">Show Speed Dial Tab');
+  putHtml(tt('sysdial-dialplan','The Speed Dial tab adds a web dialog interface to the asterisk astdb database, using Family: sysdial.  <strong>More...</strong>'));
+  putHtml('</td></tr>');
   
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'tab_cidname_show') !== 'no') ? ' checked="checked"' : '';
-  putHtml('<input type="checkbox" value="tab_cidname" name="tab_cidname"'.$sel.' /></td><td colspan="5">Show Caller*ID Tab'.includeTOPICinfo('cidname-dialplan').'</td></tr>');
+  putHtml('<input type="checkbox" value="tab_cidname" name="tab_cidname"'.$sel.' /></td><td colspan="5">Show Caller*ID Tab');
+  putHtml(tt('cidname-dialplan','The Caller*ID tab adds a web dialog interface to the asterisk astdb database, using Family: cidname.  <strong>More...</strong>'));
+  putHtml('</td></tr>');
   
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'tab_blacklist_show') !== 'no') ? ' checked="checked"' : '';
-  putHtml('<input type="checkbox" value="tab_blacklist" name="tab_blacklist"'.$sel.' /></td><td colspan="5">Show Blacklist Tab'.includeTOPICinfo('blacklist-dialplan').'</td></tr>');
+  putHtml('<input type="checkbox" value="tab_blacklist" name="tab_blacklist"'.$sel.' /></td><td colspan="5">Show Blacklist Tab');
+  putHtml(tt('blacklist-dialplan','The Blacklist tab adds a web dialog interface to the asterisk astdb database, using Family: blacklist.  <strong>More...</strong>'));
+  putHtml('</td></tr>');
   
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'tab_whitelist_show') === 'yes') ? ' checked="checked"' : '';
-  putHtml('<input type="checkbox" value="tab_whitelist" name="tab_whitelist"'.$sel.' /></td><td colspan="5">Show Whitelist Tab'.includeTOPICinfo('whitelist-dialplan').'</td></tr>');
+  putHtml('<input type="checkbox" value="tab_whitelist" name="tab_whitelist"'.$sel.' /></td><td colspan="5">Show Whitelist Tab');
+  putHtml(tt('whitelist-dialplan','The Whitelist tab adds a web dialog interface to the asterisk astdb database, using Family: whitelist.  <strong>More...</strong>'));
+  putHtml('</td></tr>');
   
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'tab_actionlist_show') === 'yes') ? ' checked="checked"' : '';
-  putHtml('<input type="checkbox" value="tab_actionlist" name="tab_actionlist"'.$sel.' /></td><td colspan="5">Show Actionlist Tab'.includeTOPICinfo('actionlist-dialplan').'</td></tr>');
+  putHtml('<input type="checkbox" value="tab_actionlist" name="tab_actionlist"'.$sel.' /></td><td colspan="5">Show Actionlist Tab');
+  putHtml(tt('actionlist-dialplan','The Actionlist tab adds a web dialog interface to the asterisk astdb database, using Family: actionlist.  <strong>More...</strong>'));
+  putHtml('</td></tr>');
   
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'tab_sqldata_show') === 'yes') ? ' checked="checked"' : '';
-  putHtml('<input type="checkbox" value="tab_sqldata" name="tab_sqldata"'.$sel.' /></td><td colspan="5">Show SQL-Data Tab'.includeTOPICinfo('sqldata-dialplan').'</td></tr>');
+  putHtml('<input type="checkbox" value="tab_sqldata" name="tab_sqldata"'.$sel.' /></td><td colspan="5">Show SQL-Data Tab');
+  putHtml(tt('sqldata-dialplan','The SQL-Data Tab adds a web dialog to edit the SQLite3 database.  <strong>More...</strong>'));
+  putHtml('</td></tr>');
+
   putHtml('<tr class="dtrow1"><td>&nbsp;</td><td colspan="5">');
   $sel = (getPREFdef($global_prefs, 'tab_sqldata_disable_staff') !== 'no') ? ' checked="checked"' : '';
   putHtml('<input type="checkbox" value="sqldata_disable_staff" name="sqldata_disable_staff"'.$sel.' />&nbsp;Disable SQL-Data Tab for &quot;staff&quot; user</td></tr>');
@@ -1228,7 +1252,9 @@ require_once '../common/header.php';
 
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'tab_monit_show') === 'yes') ? ' checked="checked"' : '';
-  putHtml('<input type="checkbox" value="tab_monit" name="tab_monit"'.$sel.' /></td><td colspan="5">Show Monit Tab</td></tr>');
+  putHtml('<input type="checkbox" value="tab_monit" name="tab_monit"'.$sel.' /></td><td colspan="5">Show Monit Tab');
+  putHtml(tt('/userdoc:tt_monit_monitoring','Monit is a free open source utility for managing and monitoring; networks, processes, programs, files, directories and filesystems on a UNIX system.  <Strong>More...</Strong>'));
+  putHtml('</td></tr>');
 
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'tab_network_show') !== 'no') ? ' checked="checked"' : '';
@@ -1254,7 +1280,9 @@ require_once '../common/header.php';
   
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'tab_fossil_show') === 'yes') ? ' checked="checked"' : '';
-  putHtml('<input type="checkbox" value="tab_fossil" name="tab_fossil"'.$sel.' /></td><td colspan="5">Show Fossil Tab</td></tr>');
+  putHtml('<input type="checkbox" value="tab_fossil" name="tab_fossil"'.$sel.' /></td><td colspan="5">Show Fossil Tab');
+  putHtml(tt('/userdoc:tt_fossil','AstLinux now supports the Fossil package, a simple, high-reliability, distributed software configuration management system.  <Strong>More...</Strong>'));
+  putHtml('</td></tr>');
 
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'tab_staff_disable_staff') !== 'yes') ? ' checked="checked"' : '';
