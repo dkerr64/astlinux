@@ -2,7 +2,7 @@ Web Interface Information Topics
 
 
 [[followme-dialplan]]
-<pre class="popup">
+
 Follow-Me Tab:
 
 The Follow-Me tab uses Asterisk's internal database (astdb) to maintain a list of
@@ -87,9 +87,9 @@ For this "without callee prompt" case, the Followme() application does not retur
 Dial() ${DIALSTATUS} values either need to be handled in your dialplan when dialing Follow-Me numbers,
 or use the destination device (Cell/Mobile Phone Voicemail) to handle exceptions.
 
-</pre>
+
 [[sysdial-dialplan]]
-<pre class="popup">
+
 Speed Dial Tab:
 
 The Speed Dial tab adds a web dialog interface to the asterisk
@@ -128,9 +128,9 @@ exten => s,n,Hangup
 
 ---- /etc/asterisk/extensions.conf snippet ----
 
-</pre>
+
 [[cidname-dialplan]]
-<pre class="popup">
+
 Caller*ID Tab:
 
 The Caller*ID tab adds a web dialog interface to the asterisk
@@ -161,9 +161,9 @@ exten => s,200,NoOp(${CALLERID(num)})
 
 ---- /etc/asterisk/extensions.conf snippet ----
 
-</pre>
+
 [[blacklist-dialplan]]
-<pre class="popup">
+
 Blacklist Tab:
 
 The Blacklist tab adds a web dialog interface to the asterisk
@@ -199,9 +199,9 @@ exten => s,200,NoOp(Valid TN:${CALLERID(num)})
 
 ---- /etc/asterisk/extensions.conf snippet ----
 
-</pre>
+
 [[whitelist-dialplan]]
-<pre class="popup">
+
 Whitelist Tab:
 
 The Whitelist tab adds a web dialog interface to the asterisk
@@ -241,70 +241,9 @@ exten => s,200,NoOp(Valid TN:${CALLERID(num)})
 
 ---- /etc/asterisk/extensions.conf snippet ----
 
-</pre>
-[[cdrlog]]
-<pre class="popup">
-CDR Log tab
 
-Displays Call Detail Records from the Asterisk master CDR log file. The default view will
-display the most recent calls sorted from newest to older, but you can sort the view by any
-field by clicking on the column header.
-
-Astlinux supports three formats for the CDR log file saved by asterisk. These can be selected
-in the Prefs tab...
-
-[Standard cdr-csv]
-The asterisk standard and default format logged to /var/log/asterisk/cdr-csv/Master.csv.
-This is the preferred setting as all call record fields are saved and available to astlinux
-for searching and sorting.
-
-[Default cdr-custom]
-The default format described in the cdr_custom.conf file, commented-out by default.
-(Yes, it is different from the [Standard cdr-csv])
-
-[Special cdr-custom]
-A very much simplified and shorter format for Astlinux. Selecting this format limits the
-features available on the CDR Log page. To use this format you must edit the cdr_custom.conf
-file to specify the following Master.csv definition.
-
----- /etc/asterisk/cdr_custom.conf snippet ----
-
-Master.csv => "${CDR(start)}","${CDR(clid)}","${CDR(dst)}","${CDR(dcontext)}","${CDR(billsec)}"
-
----- /etc/asterisk/cdr_custom.conf snippet ----
-
-The CDR Log Path field defaults to /var/log/asterisk/cdr-csv/Master.csv. If you save your
-asterisk CDR log somewhere else you should edit this field accordingly.
-
-Maximum Records: When Astlinux displays the CDR information it reads the most recent records from
-the log file. Astlinux defaults to reading the most recent 1000 records, but you can specify a
-different value in the Prefs tab. Note that this value affects CDR load performance, memory use
-and temporary file system space on the AstLinux server so take care not to specify to large a value.
-Loading from Compact Flash cards can be particularly slow.
-On the Prefs page you specify a maxiumum value. You can, however, select from a number of choices
-on the CDR Log page itself up to the maximum value specified. This value defaults to 500. Actual
-times and memory used are reported at the end of the CDR display table. Searching for call records
-is not affected by this setting as the entire log file will be searched. However, the number of
-matching records is limited to the number you set here. Also, the setting has negligible impact on
-time to sort records and no affect on paging up/down. In addition to setting the number of records
-to load from the log, you can also select the number of records to view on a single page, then
-page up/down within the total available. This can improve display performance when searching for
-calls. You can chose from 10, 25, 50 or 100 records per page. Astlinux defaults to 50.
-
-Columns displayed: The CDR Log page displays the following call details:
-
-    Start Time, Duration, Source, Destination, Caller ID and call Disposition.
-
-You can chose to add additional columns in the Prefs page, however you can view the complete record
-for any call by clicking on any call Start Time.
-
-Phone Number Actions: If you click on any valid phone number in the Source, Destination or Caller ID
-columns then a window will open with options to edit the asterisk Caller ID database, blacklist
-database or whitelist database. Selecting any of these options takes you to the respective web
-interface panel with the respective fields pre-filled for you.
-</pre>
 [[actionlist-dialplan]]
-<pre class="popup">
+
 Actionlist Tab:
 
 The Actionlist tab adds a web dialog interface to the asterisk
@@ -343,9 +282,10 @@ exten => s,n,Monitor(wav49,${CALLFILENAME},mb) ; record only when bridged + mix 
 exten => s,n(end),MacroExit()
 
 ---- /etc/asterisk/extensions.conf snippet ----
-</pre>
+
+
 [[sqldata-dialplan]]
-<pre class="popup">
+
 SQL-Data Tab:
 
 The SQL-Data Tab adds a web dialog to edit the SQLite3 database (added in AstLinux 1.1.1).
@@ -386,9 +326,10 @@ same => n,NoOp(ODBC-ReturnValue: ${val})
 same => n,Hangup()
 
 ---- /etc/asterisk/extensions.conf snippet ----
-</pre>
+
+
 [[xmpp-shared-groups]]
-<pre class="popup">
+
 XMPP Shared Groups:
 
 Groups were designed to allow administrators to create virtual groups of users that automatically
@@ -416,9 +357,9 @@ other.dev@example.com=Mel
 --
 You can see the last two entries here have custom names, if no name is given then it is up to
 the user's client to find a suitable name (e.g. take it from the contact's vcard/profile).
-</pre>
+
 [[Fossil-Commands]]
-<pre class="popup">
+
 Fossil Commands:
 
 ------------------------------------------------------------------------------
@@ -506,106 +447,60 @@ and the renamed file are reverted.
 
 Options:
   hex_revision_num    revert given FILE back to given REVISION
-</pre>
+
 [[ACME-Certificate]]
-<h1 class="sectionedit1" id="acme_let_s_encrypt_certificates">ACME (Let&#039;s Encrypt) Certificates</h1>
-<div class="level1">
 
-<p>
-AstLinux now supports generating <a href="https://letsencrypt.org" class="urlextern" target="_blank" title="https://letsencrypt.org"  rel="nofollow">Let&#039;s Encrypt</a> certificates using the <a href="https://en.wikipedia.org/wiki/Automated_Certificate_Management_Environment" class="interwiki iw_wp" title="https://en.wikipedia.org/wiki/Automated_Certificate_Management_Environment">ACME</a> protocol.
-</p>
+---------------------------------
+ACME (Let's Encrypt) Certificates
+---------------------------------
+AstLinux uses the "acme-client" command as a front-end to the core acme.sh script provided by the https://github.com/Neilpang/acme.sh project.
 
-<p>
-AstLinux uses the <code>acme-client</code> command as a front-end to the core <code>acme.sh</code> script provided by the <a href="https://github.com/Neilpang/acme.sh" class="urlextern" target="_blank" title="https://github.com/Neilpang/acme.sh"  rel="nofollow">acme.sh</a> project.  The <code>acme-client</code> command limits issued certificates to only use <abbr title="Domain Name System">DNS</abbr> challenge validation, as such you need a supported <abbr title="Domain Name System">DNS</abbr> provider, of which there are well over 20 as of this writing.
-</p>
+The acme-client command limits issued certificates to only use DNS challenge validation, as such you need a supported DNS provider, of which there are well over 20 as of this writing.
 
-<p>
 The Command Line Interface (CLI) must be used to initially issue and deploy ACME certificates.
-</p>
 
-<p>
-<span class="hilited">Note: AstLinux 1.3.0 or later is required</span>
-</p>
 
-<p>
-<br/>
+------------------
+ACME Configuration
+------------------
+Use the web interface "Network tab -> ACME (Let's Encrypt) Certificate:" section to define which services will be deployed ACME certificates.
 
-</p>
+The "ACME Account Email Address" registration email address is used for expiry notifications, while optional it seems like a good idea to specify.
 
-</div>
-<!-- EDIT1 SECTION "ACME (Let's Encrypt) Certificates" [1-712] -->
-<h2 class="sectionedit2" id="acme_configuration">ACME Configuration</h2>
-<div class="level2">
-
-<p>
-The generation of a Let&#039;s Encrypt Certificate does not require any special setup, but deployment options can be defined via the web interface:
-</p>
-
-<p>
-When the certificates are deployed the “ACME Deploy Service” services will receive the issued/renewed certificates and automatically restarted to make them active.
-</p>
-
-<p>
-The “ACME Account Email Address” registration email address is used for expiry notifications, while optional it seems like a good idea to specify.
-</p>
-
-<p>
-<span class="hilited">Tip →</span> Clicking on the blue <code>(i)</code> icon will display topic information text similar to this documentation page.
-</p>
-
-<p>
-<span class="hilited">Tip →</span> The “HTTPS Server” ACME Deploy Service also creates a <code>/mnt/kd/ssl/https_stunnel_server.pem</code> PEM file containing the ACME private key and full certificate chain, automatically used with the HTTPS Stunnel server and can be configured to be used with the FOP2 server for
-<strong><a href="/userdoc:tt_asterisk-fop2-ssl" class="wikilink1" title="userdoc:tt_asterisk-fop2-ssl">SSL/HTTPS with FOP2</a></strong>.
-</p>
-
-<p>
 In order to apply web interface settings changes, use the CLI command:
-</p>
-<pre class="code">gen-rc-conf</pre>
 
-<p>
-<br/>
+CLI> gen-rc-conf
 
-</p>
 
-</div>
-<!-- EDIT2 SECTION "ACME Configuration" [713-1930] -->
-<h2 class="sectionedit3" id="issuing_certificates">Issuing Certificates</h2>
-<div class="level2">
+--------------------
+Issuing Certificates
+--------------------
+This example on host pbx4 uses the acme-client command, the core acme.sh version can be obtained by issuing:
 
-<p>
-This example on host <code>pbx4</code> uses the <code>acme-client</code> wrapper around the core <code>acme.sh</code> script, the core version can be obtained by the command:
-</p>
-<pre class="code">pbx4 ~ # acme-client --version
+CLI> acme-client --version
 https://github.com/Neilpang/acme.sh
-v2.7.2</pre>
+v2.7.2
 
-<p>
-Only <abbr title="Domain Name System">DNS</abbr> challenge validation is supported within AstLinux, as such you need a supported <abbr title="Domain Name System">DNS</abbr> provider, in this example we are using Cloudflare.  We need to export the <code>CF_Key</code> and <code>CF_Email</code> variables, adjust to match your credentials …
-</p>
-<pre class="code">pbx4 ~ # export CF_Key=&quot;sdfdxxxxxxxosdfgje&quot;
-pbx4 ~ # export CF_Email=&quot;email@example.com&quot;</pre>
+Only DNS challenge validation is supported within AstLinux, as such you need a supported DNS provider, in this example we are using Cloudflare. We need to export the CF_Key and CF_Email variables, adjust to match your credentials ...
 
-<p>
-Other <abbr title="Domain Name System">DNS</abbr> providers require different exported variables, see the <a href="https://github.com/Neilpang/acme.sh/blob/master/dnsapi/README.md" class="urlextern" target="_blank" title="https://github.com/Neilpang/acme.sh/blob/master/dnsapi/README.md"  rel="nofollow">DNS API</a> documentation for the details.<br/>
+CLI> export CF_Key="sdfdxxxxxxxosdfgje"
+CLI> export CF_Email="email@example.com"
 
-<span class="hilited">Tip →</span> Mentally replace <code>acme.sh</code> with <code>acme-client</code> when referencing the acme.sh documentation.
-</p>
+Other DNS providers require different exported variables, see the acme.sh documentation for the details.
 
-<p>
-Now for the fundamental CLI command, where we issue a new certificate for the single domain “pbx4.example.org” …
-</p>
-<pre class="code">pbx4 ~ # acme-client --issue --dns dns_cf -d pbx4.example.org
+Now for the fundamental CLI command, where we issue a new certificate for the single domain "pbx4.example.org" ...
+
+CLI> acme-client --issue --dns dns_cf -d pbx4.example.org
 [Sat Jul  1 10:08:04 CDT 2017] Registering account
 [Sat Jul  1 10:08:06 CDT 2017] Registered
 [Sat Jul  1 10:08:06 CDT 2017] Update success.
-[Sat Jul  1 10:08:06 CDT 2017] ACCOUNT_THUMBPRINT=&#039;...&#039;
+[Sat Jul  1 10:08:06 CDT 2017] ACCOUNT_THUMBPRINT='...'
 [Sat Jul  1 10:08:06 CDT 2017] Creating domain key
 [Sat Jul  1 10:08:07 CDT 2017] The domain key is here: /mnt/kd/acme/pbx4.example.org/pbx4.example.org.key
-[Sat Jul  1 10:08:07 CDT 2017] Single domain=&#039;pbx4.example.org&#039;
+[Sat Jul  1 10:08:07 CDT 2017] Single domain='pbx4.example.org'
 [Sat Jul  1 10:08:07 CDT 2017] Getting domain auth token for each domain
-[Sat Jul  1 10:08:07 CDT 2017] Getting webroot for domain=&#039;pbx4.example.org&#039;
-[Sat Jul  1 10:08:07 CDT 2017] Getting new-authz for domain=&#039;pbx4.example.org&#039;
+[Sat Jul  1 10:08:07 CDT 2017] Getting webroot for domain='pbx4.example.org'
+[Sat Jul  1 10:08:07 CDT 2017] Getting new-authz for domain='pbx4.example.org'
 [Sat Jul  1 10:08:07 CDT 2017] The new-authz request is ok.
 [Sat Jul  1 10:08:08 CDT 2017] Found domain api file: /stat/etc/acme/dnsapi/dns_cf.sh
 [Sat Jul  1 10:08:09 CDT 2017] Adding record
@@ -622,138 +517,81 @@ Now for the fundamental CLI command, where we issue a new certificate for the si
 [Sat Jul  1 10:10:16 CDT 2017] Your cert is in  /mnt/kd/acme/pbx4.example.org/pbx4.example.org.cer 
 [Sat Jul  1 10:10:16 CDT 2017] Your cert key is in  /mnt/kd/acme/pbx4.example.org/pbx4.example.org.key 
 [Sat Jul  1 10:10:17 CDT 2017] The intermediate CA cert is in  /mnt/kd/acme/pbx4.example.org/ca.cer 
-[Sat Jul  1 10:10:17 CDT 2017] And the full chain certs is there:  /mnt/kd/acme/pbx4.example.org/fullchain.cer </pre>
+[Sat Jul  1 10:10:17 CDT 2017] And the full chain certs is there:  /mnt/kd/acme/pbx4.example.org/fullchain.cer 
 
-<p>
 After the certificates are issued, they need to be deployed to the various services that can utilize them.
-</p>
+In this example only "HTTPS Server" is checked after "ACME Deploy Service:" in the web interface.
 
-<p>
-In this example only “HTTPS Server” is checked after “ACME Deploy Service:” in the web interface.
-</p>
-<pre class="code">pbx4 ~ # acme-client --deploy --deploy-hook astlinux -d pbx4.example.org
+CLI> acme-client --deploy --deploy-hook astlinux -d pbx4.example.org
 Stopping lighttpd...
 Starting lighttpd...
-acme-client: New ACME certificates deployed for HTTPS and &#039;lighttpd&#039; restarted
-[Sat Jul  1 10:14:10 CDT 2017] Success</pre>
+acme-client: New ACME certificates deployed for HTTPS and 'lighttpd' restarted
+[Sat Jul  1 10:14:10 CDT 2017] Success
 
-<p>
-While not required, it is a good idea to <code>unset</code> the exported variables above that contain the <abbr title="Domain Name System">DNS</abbr> challenge validation credentials.
-</p>
-<pre class="code">pbx4 ~ # unset CF_Key
-pbx4 ~ # unset CF_Email</pre>
+While not required, it is a good idea to unset the exported variables above that contain the DNS challenge validation credentials.
 
-<p>
-<span class="hilited">Note →</span> The <abbr title="Domain Name System">DNS</abbr> challenge validation credentials remain stored in the <code>/mnt/kd/acme/account.conf</code> file so auto-renewals can be performed via <code>cron</code>.
-</p>
+CLI> unset CF_Key
+CLI> unset CF_Email
 
-<p>
-<br/>
+NOTE: The DNS challenge validation credentials remain stored in the /mnt/kd/acme/account.conf file so auto-renewals can be performed via cron.
 
-</p>
 
-</div>
-<!-- EDIT3 SECTION "Issuing Certificates" [1931-5501] -->
-<h2 class="sectionedit4" id="auto-renewing_certificates">Auto-Renewing Certificates</h2>
-<div class="level2">
+--------------------------
+Auto-Renewing Certificates
+--------------------------
+Let's Encrypt certificates are only valid for 90 days, renewable after 60 days from the issue date. As such it is important to automate the process of renewing the certificate, this can be done by installing a cron entry using the command:
 
-<p>
-Let&#039;s Encrypt certificates are only valid for 90 days, renewable after 60 days from the issue date.  As such it is important to automate the process of renewing the certificate, this can be done by installing a <code>cron</code> entry using the command:
-</p>
-<pre class="code">pbx4 ~ # acme-client --install-cronjob
-acme-client: Successfully added cron entry.</pre>
+CLI> acme-client --install-cronjob
+acme-client: Successfully added cron entry.
 
-<p>
-<br/>
 
-</p>
+----------------------------
+Multiple Domain Certificates
+----------------------------
+In the example above only one domain pbx4.example.org was specified. Let's Encrypt allows multiple domains to be specified with valid "Subject Alternative Name" entries in a single certificate. This assumes the DNS A and/or AAAA and/or SRV record of each domain points to the server with the issued certificate.
 
-</div>
-<!-- EDIT4 SECTION "Auto-Renewing Certificates" [5502-5878] -->
-<h2 class="sectionedit5" id="multiple_domain_certificates">Multiple Domain Certificates</h2>
-<div class="level2">
+As an additional example let's say both example.org and subdomain pbx4.example.org are valid DNS entries you want to include in the "Subject Alternative Name" of the issued certificate.
 
-<p>
-In the example above only one domain <code>pbx4.example.org</code> was specified.  Let&#039;s Encrypt allows multiple domains to be specified with valid “Subject Alternative Name” entries in a single certificate.  This assumes the <abbr title="Domain Name System">DNS</abbr> <code>A</code> and/or <code>AAAA</code> and/or <code>SRV</code> record of each domain points to the server with the issued certificate.
-</p>
+Proceed as above, but simply include -d example.org when issuing the certificate, (specify the more general domain first) ...
 
-<p>
-As an additional example let&#039;s say both <code>example.org</code> and subdomain <code>pbx4.example.org</code> are valid <abbr title="Domain Name System">DNS</abbr> entries you want to include in the “Subject Alternative Name” of the issued certificate.
-</p>
+CLI> acme-client --issue --dns dns_cf -d example.org -d pbx4.example.org
 
-<p>
-Proceed as above, but simply include <code>-d example.org</code> when issuing the certificate, (specify the more general domain first) …
-</p>
-<pre class="code">pbx4 ~ # acme-client --issue --dns dns_cf -d example.org -d pbx4.example.org</pre>
+Likewise, when deploying the certificate, though you only need to specify the first -d example.org domain ...
 
-<p>
-Likewise, when deploying the certificate, though you only need to specify the first <code>-d example.org</code> domain …
-</p>
-<pre class="code">pbx4 ~ # acme-client --deploy --deploy-hook astlinux -d example.org</pre>
+CLI> acme-client --deploy --deploy-hook astlinux -d example.org
 
-<p>
-<br/>
 
-</p>
+-----------------------
+Additional CLI Commands
+-----------------------
+Some additional commands that may be useful to know ...
 
-</div>
-<!-- EDIT5 SECTION "Multiple Domain Certificates" [5879-6846] -->
-<h2 class="sectionedit6" id="additional_cli_commands">Additional CLI Commands</h2>
-<div class="level2">
-
-<p>
-Some additional commands that may be useful to know …
-</p>
-
-<p>
 List the issued certificate(s):
-</p>
-<pre class="code">pbx4 ~ # acme-client --list</pre>
 
-<p>
+CLI> acme-client --list
+
 Revoke an issued certificate by domain:
-</p>
-<pre class="code">pbx4 ~ # acme-client --revoke -d pbx4.example.org</pre>
 
-<p>
+CLI> acme-client --revoke -d pbx4.example.org
+
 Remove a certificate by domain:
-</p>
-<pre class="code">pbx4 ~ # acme-client --remove -d pbx4.example.org</pre>
 
-<p>
-<br/>
+CLI> acme-client --remove -d pbx4.example.org
 
-</p>
 
-</div>
-<!-- EDIT6 SECTION "Additional CLI Commands" [6847-7187] -->
-<h2 class="sectionedit7" id="advanced_options">Advanced Options</h2>
-<div class="level2">
+----------------
+Advanced Options
+----------------
+For advanced users there may be situations where it would be useful to add special options for every occurrence of the acme-client command. Increasing the log-level and defining a log file would be one such example.
 
-<p>
-For advanced users there may be situations where it would be useful to add special options for every occurrence of the <code>acme-client</code> command.  Increasing the log-level and defining a log file would be one such example.
-</p>
+The /mnt/kd/acme/account.opts file does not exist by default, and needs to be manually created to enable this feature.
 
-<p>
-The <code>/mnt/kd/acme/account.opts</code> file does not exist by default, and needs to be manually created to enable this feature.
-</p>
-
-<p>
-Example <code>/mnt/kd/acme/account.opts</code> file with persistent options added by <code>acme-client</code> to the <code>acme.sh</code> script:
-</p>
-<pre class="code">## acme.sh options
+Example /mnt/kd/acme/account.opts file with persistent options added by acme-client to the acme.sh script:
+-- /mnt/kd/acme/account.opts --
+## acme.sh options
 
 log-level 3
-log /var/log/acme-client.log</pre>
+log /var/log/acme-client.log
+--
 
-<p>
-<span class="hilited">Tip →</span> Most users will not need to create a <code>/mnt/kd/acme/account.opts</code> file.
-</p>
 
-<p>
-<br/>
-
-</p>
-
-</div>
-<!-- EDIT7 SECTION "Advanced Options" [7188-] -->

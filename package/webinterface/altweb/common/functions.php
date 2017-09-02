@@ -282,6 +282,7 @@ function updateCRON($user, $ret_good, $ret_fail) {
 //   full URL and get it from the astlinux dokuwiki web site.
 // - Neither of the above, plain text.  Use the legacy mechanism to
 //   find the help info by requesting the content from info.php script.
+//
 function tt($topic,$tooltip = '') {
   return(includeTOPICinfo($topic,$tooltip));
 }
@@ -289,12 +290,7 @@ function includeTOPICinfo($topic,$tooltip = '') {
   global $global_prefs;
   global $ONLINE_DOCS_URL;
 
-  if ($tooltip === '') $tooltip = 'topic: '.$topic;
-  $class = 'tooltip';
-  if (strlen($tooltip) >= 50) $class .= ' tooltipwide';
-  $str = '';
-  // $str = '&nbsp;';
-  $onclick = '';
+
   if (filter_var($topic, FILTER_VALIDATE_URL)) {
     // we were passed in a full valid URL. Use it.
     $link = $topic;
@@ -319,7 +315,7 @@ function includeTOPICinfo($topic,$tooltip = '') {
       $link='/'.$topic;
     }
     else {
-      // File is not abailable on local AstLinux box.  We will expand
+      // File is not available on local AstLinux box.  We will expand
       // the topic name to a full URL and get of from the online
       // doc.astlinux-project.org dokuwiki web site.
       $docsite=getPREFdef($global_prefs, 'online_docs_url');
@@ -333,11 +329,26 @@ function includeTOPICinfo($topic,$tooltip = '') {
     // The original way of getting help information for the (i) anchors.
     $link = '/info.php?topic='.$topic;
   }
-  if (getPREFdef($global_prefs, 'use_javascript') === 'yes') {
-    $onclick = 'onclick="delayPopup(event,this.href,650,250,\''.$topic.'\',true,0); return false;"';
+
+  // If we were passes a tooltip then set style properties and html
+  // tags to display the tooltip if mouse hovers over the (i) image
+  $class = '';
+  if ($tooltip !== '') {
+    $class = ' class="tooltip';
+    if (strlen($tooltip) >= 50) $class .= ' tooltipwide';
+    $class .= '"';
+    $tooltip = '<b><em></em>'.$tooltip.'</b>';
   }
-  $str .= '<a href="'.$link.'" '.$onclick.' target="_blank" class="'.$class.'">';
-  $str .= '<img src="/common/topicinfo.gif" alt="Info"/><b><em></em>'.$tooltip.'</b></a>';
+
+  // If enabled display the help text in a popup window rather than
+  // displaying in another browser tab or window.
+  $onclick = '';
+  if (getPREFdef($global_prefs, 'help_in_popup_window') === 'yes') {
+    $onclick = ' onclick="delayPopup(event,this.href,650,250,\''.$topic.'\',true,0); return false;"';
+  }
+
+  $str = '<a href="'.$link.'"'.$onclick.' target="_blank"'.$class.'>';
+  $str .= '<img src="/common/topicinfo.gif" alt="Info"/>'.$tooltip.'</a>';
   
   return($str);
 }

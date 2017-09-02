@@ -272,7 +272,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     fwrite($fp, $value."\n");
     $value = 'cdrlog_log_maxlen = "'.trim($_POST['cdrlog_log_maxlen']).'"';
     fwrite($fp, $value."\n");
-    $value = 'use_javascript = '.$_POST['use_javascript'];
+    $value = 'help_in_popup_window = '.$_POST['help_in_popup_window'];
     fwrite($fp, $value."\n");
     $value = 'popup_hover_delay = "'.trim($_POST['popup_hover_delay']).'"';
     fwrite($fp, $value."\n");
@@ -869,8 +869,8 @@ require_once '../common/header.php';
   
   $value = getPREFdef($global_prefs, 'cdrlog_log_maxlen');
   putHtml('<input type="hidden" value="'.$value.'" name="cdrlog_log_maxlen" />');
-  $value = getPREFdef($global_prefs, 'use_javascript');
-  putHtml('<input type="hidden" name="use_javascript" value="'.$value.'" />');
+  $value = getPREFdef($global_prefs, 'help_in_popup_window');
+  putHtml('<input type="hidden" name="help_in_popup_window" value="'.$value.'" />');
   $value = getPREFdef($global_prefs, 'popup_hover_delay');
   putHtml('<input type="hidden" value="'.$value.'" name="popup_hover_delay" />'); 
   putHtml('<tr class="dtrow0"><td colspan="6">&nbsp;</td></tr>');

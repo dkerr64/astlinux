@@ -1,11 +1,13 @@
 #!/bin/bash
-
 # Download documentation from the AstLinux dokuwiki site
+#
+# Usage:
+#   download-docs <target-dir> <source-url>
+# Parameters are optional.
+
+# Source URL from which to download documents
 ONLINE_DOCS_URL="https://doc.astlinux-project.org?do=export_xhtmlbody" # does not end with a /
-# Prefixes and subdir names used in AstLinux's dokuwiki pages
-USERDOC_NAME="userdoc"
-DEVDOC_NAME="devdoc"
-MEDIA_NAME="_media"
+ONLINE_DOCS_URL="${2:-$ONLINE_DOCS_URL}"
 
 # Test if running on AstLinux box and set base www dir,
 # else use current directory as base dir.
@@ -15,6 +17,12 @@ if [[ $SYSVER =~ .*astlinux.* ]]; then
 else
   BASE_DIR="./"
 fi
+BASE_DIR="${1:-$BASE_DIR}"
+
+# Prefixes and subdir names used in AstLinux's dokuwiki pages
+USERDOC_NAME="userdoc"
+DEVDOC_NAME="devdoc"
+MEDIA_NAME="_media"
 
 # Split the AstLinux documentation URL at the question mark
 URL_FRONT="${ONLINE_DOCS_URL%%\?*}/"
@@ -23,7 +31,7 @@ if [ -n "$URL_BACK" ]; then
   URL_BACK="?${URL_BACK}"
 fi
 
-# Ao find what documents we need to download we are going to look at
+# To find what documents we need to download we are going to look at
 # AstLinux web inteface files in the base directory, admin and common.
 FILELIST="${BASE_DIR}*.php ${BASE_DIR}admin/*.php ${BASE_DIR}common/*.php ${BASE_DIR}common/*.inc"
 

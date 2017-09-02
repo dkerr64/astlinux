@@ -309,10 +309,15 @@ function delayPopup(e, url, w, h, title, fixed, delay) {
       popupTr.appendChild(popupTd2);
 
       var popupTd3 = document.createElement('td');
+      popupTd3.id = 'popup_external_link';
       popupTd3.className = 'popup_title_X';
-      popupTd3.innerHTML =' X';
-      popupTd3.onclick = function(event){hidePopup();}
       popupTr.appendChild(popupTd3);
+
+      var popupTd4 = document.createElement('td');
+      popupTd4.className = 'popup_title_X';
+      popupTd4.innerHTML =' X';
+      popupTd4.onclick = function(event){hidePopup();}
+      popupTr.appendChild(popupTd4);
       popupTable.appendChild(popupTr);
       popup.appendChild(popupTable);
 
@@ -370,6 +375,9 @@ function delayPopup(e, url, w, h, title, fixed, delay) {
     // Display the popup, remembering whether this is immediate or result of delay timeout.
     if (delay !=0) popupOnHover = true;
     else popupOnHover = false;
+
+    var popupLink = document.getElementById('popup_external_link');
+    popupLink.innerHTML ='<a href="'+url+'" target="_blank"><img src="../common/open-new-window.png" height="20" width="20" alt="->"/></a>';
     popup.style.display = '';
 
     // If this was a delayed (onmouseover) request, then look see if it was in the cache first.

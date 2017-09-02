@@ -35,9 +35,11 @@ if (! preg_match('/^[a-zA-Z0-9_-]*$/', $topic)) {
 }
 
 $tmpfile = tempnam("/tmp", "PHP_");
-@exec('sed -n "/^\[\['.$topic.'\]\]/,/^\[\[/ p" '.$ifile.' | sed "/^\[\[/ d" >'.$tmpfile);
+@exec('echo "<pre class=\"popup\">" > '.$tmpfile);
+@exec('sed -n "/^\[\['.$topic.'\]\]/,/^\[\[/ p" '.$ifile.' | sed "/^\[\[/ d" >>'.$tmpfile);
+@exec('echo "</pre>" >> '.$tmpfile);
 
-header('Content-Type: text/plain; charset=utf-8');
+header('Content-Type: text/html; charset=utf-8');
 header('Content-Disposition: inline; filename="'.$topic.'.txt"');
 header('Content-Transfer-Encoding: binary');
 header('Content-Length: '.filesize($tmpfile));
