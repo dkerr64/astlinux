@@ -26,7 +26,7 @@ Released @TBD@
 
 -- acme-client, add DuckDNS DNS validation support
 
--- e2fsprogs, version bump to 1.43.5
+-- e2fsprogs, version bump to 1.43.6, enable e2fsck progress indicator when filesystem is not 'clean' on boot.
 
 -- expat, version bump to 2.2.4
 
@@ -44,7 +44,7 @@ Released @TBD@
 
 ** Asterisk
 
--- Asterisk 11.25.1 (no change) and 13.17.0 (no change)
+-- Asterisk 11.25.2 (version bump) and 13.17.1 (version bump)
 
 -- DAHDI, dahdi-linux 2.10.2 (no change) and dahdi-tools 2.10.2 (no change)
 
