@@ -22,7 +22,6 @@
 // 08-12-2015, Added Show Fossil Tab
 // 02-16-2017, Added Disable CLI Tab for "staff" user
 // 07-16-2017, Added Show ACME Certificates
-// 08-19-2017, Added CDR log enhancements (from 06-26-2009)
 //
 
 $myself = $_SERVER['PHP_SELF'];
@@ -46,7 +45,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     $result = 11;
     fwrite($fp, "### Preferences -- ".$prefs_loc." -- ###\n");
-    
+
+    if (! isset($_POST['help_in_popup_window'])) {
+      $value = 'help_in_popup_window = no';
+      fwrite($fp, $value."\n");
+    }
+    $value = 'popup_hover_delay = "'.trim($_POST['popup_hover_delay']).'"';
+    fwrite($fp, $value."\n");
+
     if (! isset($_POST['pppoe_connection'])) {
       $value = 'status_pppoe_connection = no';
       fwrite($fp, $value."\n");
@@ -269,12 +275,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       fwrite($fp, $value."\n");
     }
     $value = 'cdrlog_last_cmd = "'.$_POST['cdr_last_cmd'].'"';
-    fwrite($fp, $value."\n");
-    $value = 'cdrlog_log_maxlen = "'.trim($_POST['cdrlog_log_maxlen']).'"';
-    fwrite($fp, $value."\n");
-    $value = 'help_in_popup_window = '.$_POST['help_in_popup_window'];
-    fwrite($fp, $value."\n");
-    $value = 'popup_hover_delay = "'.trim($_POST['popup_hover_delay']).'"';
     fwrite($fp, $value."\n");
     
     if (isset($_POST['extern_notify'])) {
@@ -586,8 +586,24 @@ require_once '../common/header.php';
   <table class="stdtable">
   <tr class="dtrow0"><td width="50">&nbsp;</td><td width="90">&nbsp;</td><td>&nbsp;</td><td width="90">&nbsp;</td><td width="90">&nbsp;</td><td width="90">&nbsp;</td></tr>
   <tr class="dtrow0"><td class="dialogText" style="text-align: left;" colspan="6">
-  <strong>Status Tab Options:</strong>
 <?php
+  putHtml('<strong>Online Documentation Options:</strong>');
+  putHtml('</td></tr>');
+  putHtml('<tr class="dtrow1"><td style="text-align: right;">');
+  $sel = (getPREFdef($global_prefs, 'help_in_popup_window') !== 'no') ? ' checked="checked"' : '';
+  putHtml('<input type="checkbox" value="help_in_popup_window" name="help_in_popup_window"'.$sel.' /></td><td colspan="5">Display help information in-line in a popop window');
+  putHtml(tt('','When selected if you click on a <img src="/common/topicinfo.gif" alt="Info"/> icon then help text is displayed in-line in a popup window rather than in a new browser tab or window.  Requires javascript enabled browser.'));
+  putHtml('</td></tr>');
+// Not used...
+//  putHtml('<tr class="dtrow1"><td style="text-align: right;" colspan="4">Time delay before displaying help:</td><td colspan="3">');
+//  if (($value = getPREFdef($global_prefs, 'popup_hover_delay')) === '') {
+//    $value = '0';
+//  }
+//  putHtml('<input type="text" size="2" maxlength="2" value="'.$value.'" name="popup_hover_delay" /></td></tr>');
+  putHtml('<tr class="dtrow0"><td colspan="6">&nbsp;</td></tr>');
+
+  putHtml('<tr class="dtrow0"><td class="dialogText" style="text-align: left;" colspan="6">');
+  putHtml('<strong>Status Tab Options:</strong>');
   putHtml('</td></tr>');
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'status_require_auth') === 'yes') ? ' checked="checked"' : '';
@@ -818,8 +834,7 @@ require_once '../common/header.php';
   putHtml('<tr class="dtrow0"><td colspan="6">&nbsp;</td></tr>');
   
   putHtml('<tr class="dtrow0"><td class="dialogText" style="text-align: left;" colspan="6">');
-  $tt = 'Settings for Call Detail Records display page.';
-  putHtml('<strong>CDR Log Tab Options:</strong>'.includeTOPICinfo('cdrlog',$tt));
+  putHtml('<strong>CDR Log Tab Options:</strong>');
   putHtml('</td></tr>');
   
   putHtml('<tr class="dtrow1"><td style="text-align: right;" colspan="2">CDR Log Format:</td><td colspan="4">');
@@ -842,7 +857,7 @@ require_once '../common/header.php';
   putHtml('<input type="checkbox" value="cdr_databases" name="cdr_databases"'.$sel.' /></td><td colspan="5">Show multiple *.csv CDR Databases in CDR Log Path</td></tr>');
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'cdrlog_extra_show') === 'yes') ? ' checked="checked"' : '';
-  putHtml('<input type="checkbox" value="cdr_extra" name="cdr_extra"'.$sel.' /></td><td colspan="5">Display context, channel and dstchannel CDR values</td></tr>');
+  putHtml('<input type="checkbox" value="cdr_extra" name="cdr_extra"'.$sel.' /></td><td colspan="5">Display channel, dstchannel and disposition CDR values</td></tr>');
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'cdrlog_last_show') === 'yes') ? ' checked="checked"' : '';
   putHtml('<input type="checkbox" value="cdr_last" name="cdr_last"'.$sel.' /></td><td colspan="5">Display');
@@ -867,12 +882,6 @@ require_once '../common/header.php';
   putHtml('</select>');
   putHtml('CDR value</td></tr>');
   
-  $value = getPREFdef($global_prefs, 'cdrlog_log_maxlen');
-  putHtml('<input type="hidden" value="'.$value.'" name="cdrlog_log_maxlen" />');
-  $value = getPREFdef($global_prefs, 'help_in_popup_window');
-  putHtml('<input type="hidden" name="help_in_popup_window" value="'.$value.'" />');
-  $value = getPREFdef($global_prefs, 'popup_hover_delay');
-  putHtml('<input type="hidden" value="'.$value.'" name="popup_hover_delay" />'); 
   putHtml('<tr class="dtrow0"><td colspan="6">&nbsp;</td></tr>');
   
   putHtml('<tr class="dtrow0"><td class="dialogText" style="text-align: left;" colspan="6">');

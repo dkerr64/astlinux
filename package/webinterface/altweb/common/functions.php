@@ -280,7 +280,9 @@ function updateCRON($user, $ret_good, $ret_fail) {
 //   doc.astlinux-project.org dokuwiki page which may be saved locally.
 //   If local version exists use that.  If not then wrap the topic in
 //   full URL and get it from the astlinux dokuwiki web site.
-// - Neither of the above, plain text.  Use the legacy mechanism to
+// - Empty then only the tooltip is displayed when mouse is over icon,
+//   clicking has no effect (no page to load).
+// - None of the above, plain text.  Use the legacy mechanism to
 //   find the help info by requesting the content from info.php script.
 //
 function tt($topic,$tooltip = '') {
@@ -290,8 +292,12 @@ function includeTOPICinfo($topic,$tooltip = '') {
   global $global_prefs;
   global $ONLINE_DOCS_URL;
 
-
-  if (filter_var($topic, FILTER_VALIDATE_URL)) {
+  $target = ' target="_blank"';
+  if ($topic === '') {
+    $link = '#!'; // an invalid id on this page, so does nothing.
+    $target = ''; // make sure that new tab / window not opened.
+  }
+  else if (filter_var($topic, FILTER_VALIDATE_URL)) {
     // we were passed in a full valid URL. Use it.
     $link = $topic;
   }
@@ -343,11 +349,11 @@ function includeTOPICinfo($topic,$tooltip = '') {
   // If enabled display the help text in a popup window rather than
   // displaying in another browser tab or window.
   $onclick = '';
-  if (getPREFdef($global_prefs, 'help_in_popup_window') === 'yes') {
+  if ($topic !== '' && getPREFdef($global_prefs, 'help_in_popup_window') !== 'no') {
     $onclick = ' onclick="delayPopup(event,this.href,650,250,\''.$topic.'\',true,0); return false;"';
   }
 
-  $str = '<a href="'.$link.'"'.$onclick.' target="_blank"'.$class.'>';
+  $str = '<a href="'.$link.'"'.$target.$onclick.$class.'>';
   $str .= '<img src="/common/topicinfo.gif" alt="Info"/>'.$tooltip.'</a>';
   
   return($str);
