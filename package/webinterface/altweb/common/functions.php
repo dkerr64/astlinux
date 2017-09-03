@@ -21,9 +21,10 @@
 // 08-15-2017, Added expandIPV6addr()
 // 08-19-2017, Added getAstDB()
 // 08-19-2017, Modify compressIPV6addr() to accept /xx prefix lengths
+// 09-02-2017, Updates to includeTOPICinfo()
 //
 // System location of prefs file                                 
-$KD_PREFS_LOCATION = '/mnt/kd/webgui-prefs.txt';
+$KD_PREFS_LOCATION = '/mnt/kd/webgui-prefs.txt';           
 $ONLINE_DOCS_URL = 'https://doc.astlinux-project.org?do=export_xhtmlbody';
 
 // Function: putHtml
@@ -336,7 +337,7 @@ function includeTOPICinfo($topic,$tooltip = '') {
     $link = '/info.php?topic='.$topic;
   }
 
-  // If we were passes a tooltip then set style properties and html
+  // If we were passed a tooltip then set style properties and html
   // tags to display the tooltip if mouse hovers over the (i) image
   $class = '';
   if ($tooltip !== '') {
@@ -346,7 +347,7 @@ function includeTOPICinfo($topic,$tooltip = '') {
     $tooltip = '<b><em></em>'.$tooltip.'</b>';
   }
 
-  // If enabled display the help text in a popup window rather than
+  // If enabled, display the help text in a popup window rather than
   // displaying in another browser tab or window.
   $onclick = '';
   if ($topic !== '' && getPREFdef($global_prefs, 'help_in_popup_window') !== 'no') {
