@@ -19,6 +19,7 @@
 // 01-04-2014, Added statusPROCESS()
 // 08-12-2017, Added is_IPV6addr()
 // 08-15-2017, Added expandIPV6addr()
+// 08-19-2017, Modify compressIPV6addr() to accept /xx prefix lengths
 //
 // System location of prefs file                                 
 $KD_PREFS_LOCATION = '/mnt/kd/webgui-prefs.txt';           
@@ -817,23 +818,38 @@ function pad_ipv4_str($ip) {
 }
 
 // Function: compressIPV6addr
-//
+// Accepts IP address with/without CIDR/prefix lengths
+// Returns compressed IP address.
+// Also works for IPv4 addresses.
 function compressIPV6addr($addr) {
-  if (strpos($addr, ':') !== FALSE) {
-    return(inet_ntop(inet_pton($addr)));
+  $addr=preg_replace('/\b0+(?=\d)/', '', $addr); // remove leading zeros
+  $parts=explode("/",$addr); // separate CIDR/prefix length
+  $addr=inet_ntop(inet_pton($parts[0])); // compress the address
+  if (!empty($parts[1])) {
+    $addr=$addr."/".$parts[1];  // add back in the CIDR/prefix length
   }
   return($addr);
 }
 
 // Function: expandIPV6addr
-// Accepts both IPv4 and IPv6
+// Accepts both IPv4 and IPv6 with/without CIDR/prefix lengths
+// Returns IPv6 for both with adjusted prefix lengths for IPv4 input
 function expandIPV6addr($addr){
+	$addr=preg_replace('/\b0+(?=\d)/', '', $addr); // remove leading zeros
+  $parts=explode("/",$addr); // separate CIDR/prefix length
+  $addr=$parts[0];
 	if (filter_var($addr, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
-		$addr='::'.$addr;
+    $addr='::'.$addr;  // convert IPv4 address to IPv6 notation
+    if (!empty($parts[1])) {
+	    $parts[1]=$parts[1]+96;  // adjust the CIDR to IPv6 prefix length
+	  }
 	}
   if (filter_var($addr, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
     $hex = unpack("H*hex", inet_pton($addr));
     $addr = substr(preg_replace("/([A-f0-9]{4})/", "$1:", $hex['hex']), 0, -1);
+  }
+  if (!empty($parts[1])) {
+    $addr=$addr."/".$parts[1];  // add back in the CIDR/prefix length
   }
   return $addr;
 }
@@ -841,7 +857,8 @@ function expandIPV6addr($addr){
 // Function: is_IPV6addr
 //
 function is_IPV6addr($addr) {
-  if (filter_var($addr, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+  $parts=explode("/",$addr); // separate CIDR/prefix length
+  if (filter_var($parts[0], FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
     return(true);
   }
   return(false);
