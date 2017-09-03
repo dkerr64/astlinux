@@ -18,25 +18,39 @@ Released @TBD@
 
 ** System
 
--- e2fsprogs, version bump to 1.43.5
+-- Linux Kernel 3.16.47, security and bug fixes.
+
+-- RUNNIX, version bump to runnix-0.5.1, with Linux Kernel 3.16.47, e2fsprogs 1.43.5
+
+-- sqlite, version bump to 3.20.1
 
 -- acme-client, add DuckDNS DNS validation support
+
+-- e2fsprogs, version bump to 1.43.6, enable e2fsck progress indicator when filesystem is not 'clean' on boot.
+
+-- expat, version bump to 2.2.4
+
+-- sudo, version bump to 1.8.21
 
 ** Networking
 
 -- libcurl (curl) version bump to 7.55.1
 
+-- unbound (host), version bump to 1.6.5
+
 -- ddclient, ddclient-curl version 3.8.3-05, adds DuckDNS support for both IPv4 and IPv6
+
+-- whois, version bump to 5.2.18
 
 ** Asterisk
 
--- Asterisk 11.25.1 (no change) and 13.17.0 (no change)
+-- Asterisk 11.25.2 (version bump) and 13.17.1 (version bump)
 
 -- DAHDI, dahdi-linux 2.10.2 (no change) and dahdi-tools 2.10.2 (no change)
 
 -- pjsip 2.6 (no change)
 
--- FOP2, available version bump to 2.31.13.
+-- FOP2, available version bump to 2.31.14.
    Note: If you have a license, you may need to purchase an "Annual Software Maintenance" license if you upgrade.
    More info: http://doc.astlinux-project.org/userdoc:tt_asterisk-fop2-upgrade
 
