@@ -698,7 +698,7 @@ if (is_file('/etc/ppp/pppoe.conf')) {
     }
     putHtml("</h2>");
     putHtml("</form>");
-    putHtml('<pre>');
+    putHtml("<pre>");
     $tmpfile = tempnam("/tmp", "PHP_");
     shell('/usr/sbin/pppoe-status >'.$tmpfile, $status);
     if ($status == 0) {
@@ -736,7 +736,7 @@ if (is_file('/etc/ppp/pppoe.conf')) {
 
 if (is_file('/etc/zabbix_agentd.conf')) {
   putHtml("<h2>Zabbix Monitoring Status:</h2>");
-  putHtml('<pre>');
+  putHtml("<pre>");
   putText('Zabbix Agent: '.($daemon['zabbix_agentd'] == 0 ? 'ERROR - No' : $daemon['zabbix_agentd']).' active processes');
   if (is_file('/etc/zabbix_proxy.conf')) {
     putText('Zabbix Proxy: '.($daemon['zabbix_proxy'] == 0 ? 'ERROR - No' : $daemon['zabbix_proxy']).' active processes');
@@ -746,7 +746,7 @@ if (is_file('/etc/zabbix_agentd.conf')) {
 
 if (($cmd = getPREFdef($global_prefs, 'status_disk_usage')) !== 'no') {
   putHtml("<h2>Disk Usage:</h2>");
-  putHtml('<pre>');
+  putHtml("<pre>");
   $tmpfile = tempnam("/tmp", "PHP_");
   @exec('df -h /tmp | grep "^ *[A-Z][a-z]" >'.$tmpfile);
   @exec('df -h | grep "^/dev/[sh]d[a-h][0-9]" | sort -k 1,1 >>'.$tmpfile);
@@ -764,7 +764,7 @@ if (($cmd = getPREFdef($global_prefs, 'status_disk_usage')) !== 'no') {
 if (is_file('/var/run/wan-failover.pid') && is_file('/var/log/wan-failover-status.log')) {
   if (getPREFdef($global_prefs, 'status_show_wan_failover') !== 'no') {
     putHtml("<h2>WAN Failover Status:</h2>");
-    putHtml('<pre>');
+    putHtml("<pre>");
 
     $output = array();
     @exec('cat /var/log/wan-failover-status.log', $output);
@@ -779,7 +779,7 @@ if (is_file('/var/run/wan-failover.pid') && is_file('/var/log/wan-failover-statu
 if (is_dir('/mnt/kd/acme')) {
   if (getPREFdef($global_prefs, 'status_show_acme_certificates') === 'yes') {
     putHtml("<h2>ACME Certificates:</h2>");
-    putHtml('<pre>');
+    putHtml("<pre>");
 
     $output = array();
     @exec('/usr/sbin/acme-client --list', $output);
@@ -794,7 +794,7 @@ if (is_dir('/mnt/kd/acme')) {
 if ($daemon['chronyd'] > 0) {
   if (getPREFdef($global_prefs, 'status_ntp_sessions') !== 'no') {
     putHtml("<h2>NTP Time Sources:</h2>");
-    putHtml('<pre>');
+    putHtml("<pre>");
 
     $output = array();
     @exec('/usr/bin/chronyc sources', $output);
@@ -814,7 +814,7 @@ if ($daemon['miniupnpd'] > 0) {
     putHtml("<h2>Universal Plug'n'Play (NAT-PMP/PCP and UPnP) Leases:</h2>");
   
     if (is_null($upnp = parseMINIUPNPDleases($MINIUPNPDLEASES))) {
-      putHtml('<pre>');
+      putHtml("<pre>");
       putText('No Active NAT-PMP/PCP or UPnP Leases');
       putHtml("</pre>");
     } else {
@@ -853,12 +853,12 @@ if ($daemon['dnsmasq'] > 0) {
     putHtml("<h2>DHCP Leases:</h2>");
   
     if (is_null($dhcp = parseDNSMASQleases($DNSMASQLEASES))) {
-      putHtml('<pre>');
+      putHtml("<pre>");
       putText('No Active DHCP Leases');
       putHtml("</pre>");
     } else {
       $is_mac2vendor = is_mac2vendor();
-      putHtml('<pre>');
+      putHtml("<pre>");
       if (($n = count($dhcp['clients'])) > 0) {
         $headers = 0; // 1=DHCPv4 table header printed, 2=DHCPv6 table header printed
         $dhcpv4 = 0; // Count of number of DHCPv4 leases issued
@@ -944,7 +944,7 @@ if ($daemon['dnsmasq'] > 0) {
 if ($daemon['openvpn'] > 0 && getPREFdef($global_prefs, 'status_openvpn_client_server') !== 'no') {
   if (is_file('/var/run/openvpnclient.pid') && !is_null($openvpnclient = parseOpenVPNClog($OVPNCLOGFILE))) {
     putHtml("<h2>OpenVPN Client Status:</h2>");
-    putHtml('<pre>');
+    putHtml("<pre>");
     putText('Active OpenVPN Client tunnel to Remote Server '.$openvpnclient['remote']);
     if (isset($openvpnclient['updated'])) {
       putText($openvpnclient['updated'].' - Bytes Received: '.$openvpnclient['BytesRcv'].' - Bytes Sent: '.$openvpnclient['BytesSnd'].' - Bytes Auth: '.$openvpnclient['BytesAuth']);
@@ -977,7 +977,7 @@ if ($daemon['openvpn'] > 0 && getPREFdef($global_prefs, 'status_openvpn_client_s
       putHtml("</tr>");
       putHtml("</table></pre>");
     } else {
-      putHtml('<pre>');
+      putHtml("<pre>");
       putText('No Active Clients connected to this OpenVPN Server');
       putHtml("</pre>");
     }
@@ -991,7 +991,7 @@ if ($daemon['racoon'] > 0) {
     shell('/usr/sbin/setkey -D | grep -e "^[0-9]" -e " mode=" -e "^[^a-z]*created:" -e "^[^a-z]*diff:" -e "^[^a-z]*current:" >'.$tmpfile, $status);
   
     if (is_null($ipsec = parseIPSECstates($tmpfile))) {
-      putHtml('<pre>');
+      putHtml("<pre>");
       putText('No Associations found');
       putHtml("</pre>");
     } else {
@@ -1026,7 +1026,7 @@ if ($daemon['racoon'] > 0) {
 if ($daemon['charon'] > 0) {
   if (getPREFdef($global_prefs, 'status_ipsec_associations') !== 'no') {
     putHtml("<h2>IPsec Associations (strongSwan):</h2>");
-    putHtml('<pre>');
+    putHtml("<pre>");
 
     $output = array();
     @exec('/usr/sbin/ipsec status', $output);
@@ -1041,7 +1041,7 @@ if ($daemon['charon'] > 0) {
 if ($daemon['pptpd'] > 0) {
   if (getPREFdef($global_prefs, 'status_pptp_server') !== 'no') {
     putHtml("<h2>PPTP VPN Server Status:</h2>");
-    putHtml('<pre>');
+    putHtml("<pre>");
     $line = trim(shell_exec('. /etc/rc.conf; echo "$PPTP_SUBNET"'));
     putText('PPTP VPN Server is active on subnet: '.$line);
     putHtml("</pre>");
@@ -1078,7 +1078,7 @@ if ($daemon['asterisk'] > 0) {
   
   if ($status == 0 && getPREFdef($global_prefs, 'status_sip_show_registry') !== 'no') {
     putHtml("<h2>SIP Trunk Registrations:</h2>");
-    putHtml('<pre>');
+    putHtml("<pre>");
     $tmpfile = tempnam("/tmp", "PHP_");
     asteriskCMD('sip show registry', $tmpfile);
     $ph = @fopen($tmpfile, "r");
@@ -1096,7 +1096,7 @@ if ($daemon['asterisk'] > 0) {
 
   if ($status == 0 && getPREFdef($global_prefs, 'status_sip_show_peers') !== 'no') {
     putHtml("<h2>SIP Peer Status:</h2>");
-    putHtml('<pre>');
+    putHtml("<pre>");
     $tmpfile = tempnam("/tmp", "PHP_");
     asteriskCMD('sip show peers', $tmpfile);
     $ph = @fopen($tmpfile, "r");
@@ -1115,7 +1115,7 @@ if ($daemon['asterisk'] > 0) {
   
   if ($status == 0 && getPREFdef($global_prefs, 'status_iax2_show_registry') === 'yes') {
     putHtml("<h2>IAX2 Trunk Registrations:</h2>");
-    putHtml('<pre>');
+    putHtml("<pre>");
     $tmpfile = tempnam("/tmp", "PHP_");
     asteriskCMD('iax2 show registry', $tmpfile);
     $ph = @fopen($tmpfile, "r");
@@ -1133,7 +1133,7 @@ if ($daemon['asterisk'] > 0) {
 
   if ($status == 0 && getPREFdef($global_prefs, 'status_iax2_show_peers') === 'yes') {
     putHtml("<h2>IAX2 Peer Status:</h2>");
-    putHtml('<pre>');
+    putHtml("<pre>");
     $tmpfile = tempnam("/tmp", "PHP_");
     asteriskCMD('iax2 show peers', $tmpfile);
     $ph = @fopen($tmpfile, "r");
@@ -1155,7 +1155,7 @@ if ($daemon['asterisk'] > 0) {
       $cmd = 'voicemail show users';
     }
     putHtml("<h2>Voicemail User Status:</h2>");
-    putHtml('<pre>');
+    putHtml("<pre>");
     $tmpfile = tempnam("/tmp", "PHP_");
     asteriskCMD($cmd, $tmpfile);
     $ph = @fopen($tmpfile, "r");
@@ -1176,7 +1176,7 @@ if ($daemon['asterisk'] > 0) {
       $cmd = 'dahdi show status';
     }
     putHtml("<h2>DAHDI Status:</h2>");
-    putHtml('<pre>');
+    putHtml("<pre>");
     $tmpfile = tempnam("/tmp", "PHP_");
     if ($cmd === 'wanrouter status' || $cmd === 'wanrouter summary') {
       shell('/usr/sbin/'.$cmd.' >'.$tmpfile, $ret_status);
@@ -1201,7 +1201,7 @@ if ($daemon['asterisk'] > 0) {
       $cmd = 'jabber show connections';
     }
     putHtml("<h2>Jabber Status:</h2>");
-    putHtml('<pre>');
+    putHtml("<pre>");
     $tmpfile = tempnam("/tmp", "PHP_");
     asteriskCMD($cmd, $tmpfile);
     $ph = @fopen($tmpfile, "r");
@@ -1222,7 +1222,7 @@ if ($daemon['asterisk'] > 0) {
       $cmd = 'Asterisk Command Status';
     }
     putHtml("<h2>".htmlspecialchars($cmd).":</h2>");
-    putHtml('<pre>');
+    putHtml("<pre>");
     if (($cmd = getPREFdef($global_prefs, 'status_custom_asterisk_cmdstr')) !== '') {
       $tmpfile = tempnam("/tmp", "PHP_");
       asteriskCMD($cmd, $tmpfile);
@@ -1256,7 +1256,7 @@ if ($daemon['asterisk'] > 0) {
 if ($daemon['kamailio'] > 0) {
   if (getPREFdef($global_prefs, 'status_show_kamailio_server') !== 'no') {
     putHtml("<h2>Kamailio SIP Server Status:</h2>");
-    putHtml('<pre>');
+    putHtml("<pre>");
 
     $output = array();
     @exec('kamcmd core.version; kamcmd tm.stats', $output);
@@ -1277,7 +1277,7 @@ if ($daemon['kamailio'] > 0) {
 if (is_file('/var/run/prosody/prosody.pid')) {
   if (getPREFdef($global_prefs, 'status_show_xmpp_server') !== 'no') {
     putHtml("<h2>XMPP Server Status:</h2>");
-    putHtml('<pre>');
+    putHtml("<pre>");
     $tmpfile = tempnam("/tmp", "PHP_");
     $cmd = "/usr/bin/prosodycmd 'server:version()' 'server:uptime()' 'c2s:show()'";
     if (trim(shell_exec('. /etc/rc.conf; echo "$XMPP_ENABLE_S2S"')) === 'yes') {
@@ -1305,7 +1305,7 @@ if (is_file('/var/run/prosody/prosody.pid')) {
 if (is_file('/var/lock/aif_adaptive_ban.lock')) {
   if (getPREFdef($global_prefs, 'status_show_adaptive_ban') === 'yes') {
     putHtml("<h2>Adaptive Ban Plugin Status:</h2>");
-    putHtml('<pre>');
+    putHtml("<pre>");
     $tmpfile = tempnam("/tmp", "PHP_");
     $ipv6 = trim(shell_exec('. /etc/rc.conf; if [ "$IPV6" = "yes" ]; then echo "1"; else echo "0"; fi'));
     $cmd = '/usr/share/arno-iptables-firewall/plugins/adaptive-ban-helper status /usr/sbin/iptables /usr/sbin/ip6tables '.$ipv6;
@@ -1331,7 +1331,7 @@ if (is_file($CONNTRACK)) {
   
     parseFIREWALLstates($firewall, $tmpfile, 100);
     if (is_null($firewall)) {
-      putHtml('<pre>');
+      putHtml("<pre>");
       putText('No Active Firewall States');
       putHtml("</pre>");
     } else {
@@ -1373,7 +1373,7 @@ if (is_file($CONNTRACK)) {
 if ($daemon['upsmon'] > 0) {
   if (getPREFdef($global_prefs, 'status_ups_show_status') !== 'no') {
     putHtml("<h2>UPS Monitoring Status:</h2>");
-    putHtml('<pre>');
+    putHtml("<pre>");
     $tmpfile = tempnam("/tmp", "PHP_");
     shell('/usr/bin/upsc $(awk \'/^MONITOR / { print $2; nextfile; }\' /etc/ups/upsmon.conf) >'.$tmpfile, $status);
     
@@ -1423,7 +1423,7 @@ if ($daemon['upsmon'] > 0) {
 if (is_executable('/usr/bin/sensors')) {
   if (getPREFdef($global_prefs, 'status_show_hardware_monitoring') === 'yes') {
     putHtml("<h2>Hardware Monitoring:</h2>");
-    putHtml('<pre>');
+    putHtml("<pre>");
 
     $output = array();
     @exec('/usr/bin/sensors', $output);
@@ -1441,7 +1441,7 @@ if (is_executable('/usr/bin/sensors')) {
 if (is_executable('/usr/sbin/smart-status')) {
   if (getPREFdef($global_prefs, 'status_show_smart_monitoring') === 'yes') {
     putHtml("<h2>S.M.A.R.T Monitoring:</h2>");
-    putHtml('<pre>');
+    putHtml("<pre>");
 
     $output = array();
     @exec('/usr/sbin/smart-status attributes', $output);
@@ -1456,7 +1456,7 @@ if (is_executable('/usr/sbin/smart-status')) {
 if ($daemon['syslogd'] > 0) {
   if (getPREFdef($global_prefs, 'status_show_system_logs') !== 'no') {
     putHtml("<h2>Latest System Logs:</h2>");
-    putHtml('<pre>');
+    putHtml("<pre>");
     $tmpfile = tempnam("/tmp", "PHP_");
     if (($str = getPREFdef($global_prefs, 'status_exclude_logs_cmdstr')) !== '') {
       $exclude_words = explode(' ', $str);
