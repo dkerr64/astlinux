@@ -50,8 +50,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $value = 'help_in_popup_window = no';
       fwrite($fp, $value."\n");
     }
-    $value = 'popup_hover_delay = "'.trim($_POST['popup_hover_delay']).'"';
-    fwrite($fp, $value."\n");
 
     if (! isset($_POST['pppoe_connection'])) {
       $value = 'status_pppoe_connection = no';
@@ -594,12 +592,6 @@ require_once '../common/header.php';
   putHtml('<input type="checkbox" value="help_in_popup_window" name="help_in_popup_window"'.$sel.' /></td><td colspan="5">Display help information in-line in a popop window');
   putHtml(tt('','When selected if you click on a <img src="/common/topicinfo.gif" alt="Info"/> icon then help text is displayed in-line in a popup window rather than in a new browser tab or window.  Requires javascript enabled browser.'));
   putHtml('</td></tr>');
-// Not used...
-//  putHtml('<tr class="dtrow1"><td style="text-align: right;" colspan="4">Time delay before displaying help:</td><td colspan="3">');
-//  if (($value = getPREFdef($global_prefs, 'popup_hover_delay')) === '') {
-//    $value = '0';
-//  }
-//  putHtml('<input type="text" size="2" maxlength="2" value="'.$value.'" name="popup_hover_delay" /></td></tr>');
   putHtml('<tr class="dtrow0"><td colspan="6">&nbsp;</td></tr>');
 
   putHtml('<tr class="dtrow0"><td class="dialogText" style="text-align: left;" colspan="6">');

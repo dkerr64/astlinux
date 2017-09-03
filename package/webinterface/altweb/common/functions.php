@@ -333,7 +333,7 @@ function includeTOPICinfo($topic,$tooltip = '') {
     $link = '/info.php?topic='.$topic;
   }
 
-  // If we were passes a tooltip then set style properties and html
+  // If we were passed a tooltip then set style properties and html
   // tags to display the tooltip if mouse hovers over the (i) image
   $class = '';
   if ($tooltip !== '') {
@@ -343,7 +343,7 @@ function includeTOPICinfo($topic,$tooltip = '') {
     $tooltip = '<b><em></em>'.$tooltip.'</b>';
   }
 
-  // If enabled display the help text in a popup window rather than
+  // If enabled, display the help text in a popup window rather than
   // displaying in another browser tab or window.
   $onclick = '';
   if ($topic !== '' && getPREFdef($global_prefs, 'help_in_popup_window') !== 'no') {
