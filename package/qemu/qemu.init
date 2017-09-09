@@ -158,8 +158,9 @@ start () {
         $QemuVCpuStr \
         -qmp tcp:localhost:4444,server,nowait \
         -daemonize \
-        -usbdevice tablet \
-        -display vnc=:$QEMU_VNC_DISPLAY
+        -usb \
+        -device usb-tablet \
+        -vnc :$QEMU_VNC_DISPLAY,websocket
 
     if [ $? == 1 ]; then
       # Something went wrong.

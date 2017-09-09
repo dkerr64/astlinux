@@ -4,7 +4,7 @@
 #
 ################################################################################
 
-QEMU_VERSION = 2.9.0
+QEMU_VERSION = 2.10.0
 QEMU_SOURCE = qemu-$(QEMU_VERSION).tar.bz2
 QEMU_SITE = http://wiki.qemu.org/download
 
@@ -84,6 +84,7 @@ define QEMU_CONFIGURE_CMDS
 			--enable-attr \
 			--enable-vhost-net \
 			--enable-uuid \
+			--enable-gnutls \
 			--disable-bsd-user \
 			--disable-xen \
 			--disable-slirp \
