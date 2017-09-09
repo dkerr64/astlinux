@@ -1,0 +1,6 @@
+config BR2_PACKAGE_NOVNC
+	bool "novnc"
+	help
+	  VNC client using HTML5 (Web Sockets, Canvas) with
+	  encryption (wss://) support.
+	  http://novnc.com
