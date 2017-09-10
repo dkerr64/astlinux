@@ -83,7 +83,6 @@ define QEMU_CONFIGURE_CMDS
 			--enable-kvm \
 			--enable-attr \
 			--enable-vhost-net \
-			--enable-uuid \
 			--enable-gnutls \
 			--disable-bsd-user \
 			--disable-xen \
