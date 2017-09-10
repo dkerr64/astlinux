@@ -46,6 +46,7 @@
 // 06-02-2017, Added selectable Prefix Delegation interfaces
 // 07-12-2017, Added ACME (Let's Encrypt) Certificate configuration
 // 08-13-2017, Added IPv6 ULA and DHCPv6 server user interface
+// 09-10-2017, Added Data Backup / Tarsnap Backup
 //
 // System location of rc.conf file
 $CONFFILE = '/etc/rc.conf';
@@ -1240,6 +1241,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
       header('Location: /admin/openvpnclient.php');
     }
+    exit;
+  } elseif (isset($_POST['submit_tarsnap_backup'])) {
+    $result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE);
+    header('Location: /admin/backup.php');
     exit;
   } elseif (isset($_POST['submit_edit_user_conf'])) {
     $result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE);
@@ -2566,6 +2571,19 @@ if (is_file('/etc/init.d/fossil')) {
 
   putHtml('<tr class="dtrow0"><td colspan="6">&nbsp;</td></tr>');
 }
+
+if (is_file('/usr/bin/tarsnap-backup')) {
+  putHtml('<tr class="dtrow0"><td class="dialogText" style="text-align: left;" colspan="6">');
+
+  putHtml('<strong>Data Backup:</strong>');
+  putHtml('</td></tr>');
+  putHtml('<tr class="dtrow1"><td style="text-align: left;" colspan="6">');
+  putHtml('Tarsnap Backup:');
+  putHtml('<input type="submit" value="Tarsnap Backup Options" name="submit_tarsnap_backup" class="button" /></td></tr>');
+
+  putHtml('<tr class="dtrow0"><td colspan="6">&nbsp;</td></tr>');
+}
+
   putHtml('<tr class="dtrow0"><td class="dialogText" style="text-align: left;" colspan="6">');
   
   putHtml('<strong>Advanced Configuration:</strong>');
