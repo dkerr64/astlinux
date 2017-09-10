@@ -12,7 +12,6 @@ config BR2_PACKAGE_QEMU
 	select BR2_PACKAGE_ZLIB
 	select BR2_PACKAGE_UTIL_LINUX
 	select BR2_PACKAGE_UTIL_LINUX_LIBUUID
-	select BR2_PACKAGE_GNUTLS
 	help
 	  QEMU is a generic and open source machine emulator and virtualizer.
 

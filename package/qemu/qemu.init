@@ -107,7 +107,7 @@ start () {
     QemuVnc="-vnc :$QEMU_VNC_DISPLAY,websocket"
     QemuVncTls=""
     if  [ "$QEMU_VNC_TLS" = "yes" ] && [ -n "$QEMU_VNC_TLS_DIR" ]; then
-      if [ -d "$QEMU_VNC_TLS_DIR" ] && 
+      if [ -d "$QEMU_VNC_TLS_DIR" ] &&
          [ -s "${QEMU_VNC_TLS_DIR}/ca-cert.pem" ] &&
          [ -s "${QEMU_VNC_TLS_DIR}/server-cert.pem" ] &&
          [ -s "${QEMU_VNC_TLS_DIR}/server-key.pem" ]; then
