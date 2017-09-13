@@ -106,17 +106,32 @@ start () {
     # Do we want VNC sessions encrypted?
     QemuVnc="-vnc :$QEMU_VNC_DISPLAY,websocket"
     QemuVncTls=""
-    if  [ "$QEMU_VNC_TLS" = "yes" ] && [ -n "$QEMU_VNC_TLS_DIR" ]; then
-      if [ -d "$QEMU_VNC_TLS_DIR" ] &&
-         [ -s "${QEMU_VNC_TLS_DIR}/ca-cert.pem" ] &&
-         [ -s "${QEMU_VNC_TLS_DIR}/server-cert.pem" ] &&
-         [ -s "${QEMU_VNC_TLS_DIR}/server-key.pem" ]; then
-        QemuVncTls="-object tls-creds-x509,dir=$QEMU_VNC_TLS_DIR,id=tls0,endpoint=server,verify-peer=no"
-        QemuVnc="${QemuVnc},tls-creds=tls0"
-      else
-        /usr/bin/logger -s -p user.err -id -t qemu "ERROR: TLS credentials missing in $QEMU_VNC_TLS_DIR.  Exiting"
-        exit
+    if  [ "$QEMU_VNC_TLS" = "yes" ] && [ -n "${QEMU_VNC_TLS_DIR}" ]; then
+      # User requested TLS sessions.
+      if [ ! -d "${QEMU_VNC_TLS_DIR}" ] ||
+         [ ! -s "${QEMU_VNC_TLS_DIR}/ca-cert.pem" ] ||
+         [ ! -s "${QEMU_VNC_TLS_DIR}/server-cert.pem" ] ||
+         [ ! -s "${QEMU_VNC_TLS_DIR}/server-key.pem" ]; then
+        # We do not have set of certificate files.  Attempt to use ACME issued...
+        if [ -d "/etc/acme/${DOMAIN}" ] &&
+            [ -s "/etc/acme/${DOMAIN}/ca.cer" ] &&
+            [ -s "/etc/acme/${DOMAIN}/${DOMAIN}.cer" ] &&
+            [ -s "/etc/acme/${DOMAIN}/${DOMAIN}.key" ]; then
+          # We have ACME issued certificates for this domain, use them
+          /usr/bin/logger -s -p user.notice -id -t qemu "NOTICE: Creating links to ACME certificates for ${DOMAIN} in ${QEMU_VNC_TLS_DIR}"
+          mkdir -p "${QEMU_VNC_TLS_DIR}"
+          ln -s -f "/etc/acme/${DOMAIN}/ca.cer" "${QEMU_VNC_TLS_DIR}/ca-cert.pem"
+          ln -s -f "/etc/acme/${DOMAIN}/${DOMAIN}.cer" "${QEMU_VNC_TLS_DIR}/server-cert.pem"
+          ln -s -f "/etc/acme/${DOMAIN}/${DOMAIN}.key" "${QEMU_VNC_TLS_DIR}/server-key.pem"
+        else
+          # No certificates available, abort, user will have to manually fix.
+          /usr/bin/logger -s -p user.err -id -t qemu "ERROR: TLS credentials missing in ${QEMU_VNC_TLS_DIR} and no ACME certificates available for ${DOMAIN}.  Exiting"
+          exit
+        fi
       fi
+      # We have a set of certificate files.
+      QemuVncTls="-object tls-creds-x509,dir=${QEMU_VNC_TLS_DIR},id=tls0,endpoint=server,verify-peer=no"
+      QemuVnc="${QemuVnc},tls-creds=tls0"
     fi
 
     # Load required modules in case they are not already loaded... kvm kvm-amd or kvm-intel and vhost_net
