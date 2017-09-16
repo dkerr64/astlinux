@@ -106,6 +106,7 @@ start () {
     # Do we want VNC sessions encrypted?
     QemuVnc="-vnc :$QEMU_VNC_DISPLAY,websocket"
     QemuVncTls=""
+    TLSmsg=""
     if  [ "$QEMU_VNC_TLS" = "yes" ] && [ -n "${QEMU_VNC_TLS_DIR}" ]; then
       # User requested TLS sessions.
       if [ ! -d "${QEMU_VNC_TLS_DIR}" ] ||
@@ -132,6 +133,7 @@ start () {
       # We have a set of certificate files.
       QemuVncTls="-object tls-creds-x509,dir=${QEMU_VNC_TLS_DIR},id=tls0,endpoint=server,verify-peer=no"
       QemuVnc="${QemuVnc},tls-creds=tls0"
+      TLSmsg="  TLS encryption required."
     fi
 
     # Load required modules in case they are not already loaded... kvm kvm-amd or kvm-intel and vhost_net
@@ -179,7 +181,6 @@ start () {
     fi
 
     # And now run qemu.
-    /usr/bin/logger -s -p user.info -id -t qemu "Run image $QEMU_RUN_IMAGE with $QemuMemory MB of Memory and $QemuVCpu CPU cores on Network $QEMU_NET_BRIDGE.  Console on VNC port 590$QEMU_VNC_DISPLAY"
     eval /usr/bin/qemu \
         -m $QemuMemory \
         $QemuNetdev \
@@ -199,6 +200,8 @@ start () {
       # Something went wrong.
       /usr/bin/logger -s -p user.err -id -t qemu "ERROR: Failed to run image $QEMU_RUN_IMAGE"
       exit
+    else
+      /usr/bin/logger -s -p user.info -id -t qemu "Running $QEMU_RUN_IMAGE with $QemuMemory MB of Memory and $QemuVCpu CPU cores on Network $QEMU_NET_BRIDGE.  Console on VNC port 590$QEMU_VNC_DISPLAY WebSocket 570$QEMU_VNC_DISPLAY.$TLSmsg"
     fi
   fi
 }
