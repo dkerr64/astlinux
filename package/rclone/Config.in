@@ -1,0 +1,7 @@
+config BR2_PACKAGE_RCLONE
+  bool "rclone"
+  help
+    rclone - rsync for cloud storage
+    rclone is a command line program to sync files and
+    directories to and from many cloud storage services
+    http://rclone.org
