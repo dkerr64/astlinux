@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # Default settings. Override in user.conf file.
-QEMU_START=yes
+# QEMU_ENABLE=yes -- required, must be set in user.conf
 # QEMU_CDROM_IMAGE=/path/to/iso/file -- Optional.
 # QEMU_RUN_IMAGE=/path/to/vm/image -- Required, must be set in user.conf file
 # QEMU_MEM=1024 -- (value in MB) default set below to lesser of 50% of total memory or 90% of free memory
@@ -17,22 +17,26 @@ QEMU_VNC_TLS_DIR=/mnt/kd/qemu
 . /etc/rc.conf
 
 init () {
-  if [ ! -d /mnt/kd/qemu ]; then
-    mkdir /mnt/kd/qemu
-    if [ -d /stat/etc/qemu ]; then
-      cp -a /stat/etc/qemu/* /mnt/kd/qemu/
+
+  if [ "$QEMU_ENABLE" = "yes" ]; then
+    if [ ! -d /mnt/kd/qemu ]; then
+      mkdir /mnt/kd/qemu
+      if [ -d /stat/etc/qemu ]; then
+        cp -a /stat/etc/qemu/* /mnt/kd/qemu/
+      fi
     fi
+
+    if [ -d /tmp/etc/qemu ]; then
+      rm -rf /tmp/etc/qemu
+    fi
+    ln -snf /mnt/kd/qemu /tmp/etc/qemu
   fi
 
-  if [ -d /tmp/etc/qemu ]; then
-    rm -rf /tmp/etc/qemu
-  fi
-  ln -snf /mnt/kd/qemu /tmp/etc/qemu
 }
 
 start () {
 
-  if [ "$QEMU_START" = "yes" ] && [ -n "$QEMU_RUN_IMAGE" ]; then
+  if [ "$QEMU_ENABLE" = "yes" ] && [ -n "$QEMU_RUN_IMAGE" ]; then
     echo "Starting qemu..."
     # find system memory in MB
     TotMem=$(free -m | awk '/^Mem:/{print $2}')
