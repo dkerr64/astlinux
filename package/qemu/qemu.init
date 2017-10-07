@@ -12,9 +12,23 @@ QEMU_NET_BRIDGE=br0
 QEMU_BLOCK_DEVICE=virtio
 QEMU_VNC_DISPLAY=1
 # QEMU_VNC_TLS="yes" -- Optional, if not set then VNC sessions will be unencrypted (default)
-QEMU_VNC_TLS_DIR=/mnt/kd/ssl/qemu
+QEMU_VNC_TLS_DIR=/mnt/kd/qemu
 
 . /etc/rc.conf
+
+init () {
+  if [ ! -d /mnt/kd/qemu ]; then
+    mkdir /mnt/kd/qemu
+    if [ -d /stat/etc/qemu ]; then
+      cp -a /stat/etc/qemu/* /mnt/kd/qemu/
+    fi
+  fi
+
+  if [ -d /tmp/etc/qemu ]; then
+    rm -rf /tmp/etc/qemu
+  fi
+  ln -snf /mnt/kd/qemu /tmp/etc/qemu
+}
 
 start () {
 
@@ -239,6 +253,7 @@ stop)
   ;;
 
 init)
+  init
   start
   ;;
 
