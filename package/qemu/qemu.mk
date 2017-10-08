@@ -119,8 +119,6 @@ endef
 define QEMU_INSTALL_TARGET_CMDS
 	$(TARGET_MAKE_ENV) $(MAKE) -C $(@D) $(QEMU_MAKE_ENV) DESTDIR=$(TARGET_DIR) install
 	mkdir -p $(TARGET_DIR)/stat/etc/qemu
-	cp -a $(TARGET_DIR)/etc/qemu/* $(TARGET_DIR)/stat/etc/qemu/
-	rm -rf $(TARGET_DIR)/etc/qemu
 	ln -s /tmp/etc/qemu $(TARGET_DIR)/etc/qemu
 	$(INSTALL) -m 0644 -D package/qemu/bridge.conf $(TARGET_DIR)/stat/etc/qemu/bridge.conf
 	if [ -f $(TARGET_DIR)/usr/bin/qemu-system-x86_64 ]; then \
