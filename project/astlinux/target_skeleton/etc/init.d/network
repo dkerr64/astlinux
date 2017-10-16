@@ -332,7 +332,9 @@ start () {
       sysctl -w "$line=0" >/dev/null
     done
     unset IFS
+  fi
 
+  if [ "$IPV6" = "yes" ]; then
     # Generate a ULA/48 site prefix
     get_ipv6_site_ula_prefix > /dev/null
   fi
