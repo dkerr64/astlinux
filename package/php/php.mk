@@ -4,7 +4,7 @@
 #
 #############################################################
 
-PHP_VERSION = 5.6.31
+PHP_VERSION = 5.6.32
 PHP_SITE = http://www.php.net/distributions
 PHP_SOURCE = php-$(PHP_VERSION).tar.xz
 PHP_INSTALL_STAGING = YES
@@ -13,7 +13,7 @@ PHP_INSTALL_TARGET_OPT = INSTALL_ROOT=$(TARGET_DIR) install
 PHP_DEPENDENCIES = host-pkg-config
 
 ifeq ($(BR2_PACKAGE_PHP_EXT_TIMEZONEDB),y)
-PHP_TIMEZONEDB_VERSION = 2017.1
+PHP_TIMEZONEDB_VERSION = 2017.3
 PHP_TIMEZONEDB_SITE = https://s3.amazonaws.com/files.astlinux-project
 PHP_TIMEZONEDB_SOURCE = timezonedb-$(PHP_TIMEZONEDB_VERSION).tar.gz
 
