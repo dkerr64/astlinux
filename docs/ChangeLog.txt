@@ -16,9 +16,16 @@ Released @TBD@
 
 -- php, version bump to 5.6.32, security fixes.
 
+-- empty, version 0.6.20b, new package; similar functionality to 'expect', allows scripting interactive sessions
+
+-- acme-client, add --deploy-hook 'custom' which executes the script "/mnt/kd/acme-deploy-custom.script".
+   Arguments: acme-deploy-custom.script domain key_file cert_file ca_file fullchain_file
+
 -- e2fsprogs, version bump to 1.43.7
 
 -- libxml2, version bump to 2.9.6
+
+-- expat, version bump to 2.2.5
 
 -- Monit, version bump to 5.24.0
 
@@ -48,7 +55,7 @@ Released @TBD@
 
 ** Asterisk
 
--- Asterisk 11.25.3 (no change) and 13.17.2 (no change)
+-- Asterisk 11.25.3 (no change) and 13.18.0 (version bump)
 
 -- DAHDI, dahdi-linux 2.10.2 (no change) and dahdi-tools 2.10.2 (no change)
 
@@ -60,7 +67,7 @@ Released @TBD@
 
 ** Web Interface
 
--- no change
+-- Status tab, updated "Show Licenses" information
 
 
 Additions for AstLinux 1.3.1:
