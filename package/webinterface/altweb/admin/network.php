@@ -681,6 +681,9 @@ function saveNETWORKsettings($conf_dir, $conf_file) {
   if (isset($_POST['pptp'])) {
     $x_value .= ' pptp';
   }
+  if (isset($_POST['wireguard'])) {
+    $x_value .= ' wireguard';
+  }
   $value = 'VPN="'.trim($x_value).'"';
   fwrite($fp, "### VPN Type\n".$value."\n");
   
@@ -1201,6 +1204,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   } elseif (isset($_POST['submit_edit_pptp'])) {
     $result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE);
     header('Location: /admin/pptp.php');
+    exit;
+  } elseif (isset($_POST['submit_edit_wireguard'])) {
+    $result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE);
+    header('Location: /admin/wireguard.php');
     exit;
   } elseif (isset($_POST['submit_edit_ddclient'])) {
     $result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE);
@@ -2284,19 +2291,19 @@ require_once '../common/header.php';
   putHtml('<input type="submit" value="IPsec Configuration" name="submit_edit_ipsecmobile" class="button" />');
   putHtml('</td></tr>');
   
-  if (is_file('/etc/init.d/ipsec')) {
-    putHtml('<tr class="dtrow1"><td style="text-align: right;">');
-    $sel = isVARtype('VPN', $db, $cur_db, 'ipsec') ? ' checked="checked"' : '';
-    putHtml('<input type="checkbox" value="ipsec" name="ipsec"'.$sel.' />');
-    putHtml('</td><td style="text-align: left;" colspan="5">');
-    putHtml('IPsec strongSwan');
-    if (is_writable('/mnt/kd/ipsec/strongswan/ipsec.conf')) {
-      putHtml('&ndash;');
-      putHtml('<input type="submit" value="IPsec Configuration" name="submit_edit_ipsec" class="button" />');
-    }
-    putHtml('</td></tr>');
+if (is_file('/etc/init.d/ipsec')) {
+  putHtml('<tr class="dtrow1"><td style="text-align: right;">');
+  $sel = isVARtype('VPN', $db, $cur_db, 'ipsec') ? ' checked="checked"' : '';
+  putHtml('<input type="checkbox" value="ipsec" name="ipsec"'.$sel.' />');
+  putHtml('</td><td style="text-align: left;" colspan="5">');
+  putHtml('IPsec strongSwan');
+  if (is_writable('/mnt/kd/ipsec/strongswan/ipsec.conf')) {
+    putHtml('&ndash;');
+    putHtml('<input type="submit" value="IPsec Configuration" name="submit_edit_ipsec" class="button" />');
   }
-  
+  putHtml('</td></tr>');
+}
+
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = isVARtype('VPN', $db, $cur_db, 'pptp') ? ' checked="checked"' : '';
   putHtml('<input type="checkbox" value="pptp" name="pptp"'.$sel.' />');
@@ -2305,7 +2312,18 @@ require_once '../common/header.php';
   putHtml('&ndash;');
   putHtml('<input type="submit" value="PPTP Configuration" name="submit_edit_pptp" class="button" />');
   putHtml('</td></tr>');
-  
+
+if (is_file('/etc/init.d/wireguard')) {
+  putHtml('<tr class="dtrow1"><td style="text-align: right;">');
+  $sel = isVARtype('VPN', $db, $cur_db, 'wireguard') ? ' checked="checked"' : '';
+  putHtml('<input type="checkbox" value="wireguard" name="wireguard"'.$sel.' />');
+  putHtml('</td><td style="text-align: left;" colspan="5">');
+  putHtml('WireGuard VPN');
+  putHtml('&ndash;');
+  putHtml('<input type="submit" value="WireGuard Configuration" name="submit_edit_wireguard" class="button" />');
+  putHtml('</td></tr>');
+}
+
   putHtml('<tr class="dtrow0"><td colspan="6">&nbsp;</td></tr>');
   
   putHtml('<tr class="dtrow0"><td class="dialogText" style="text-align: left;" colspan="6">');
