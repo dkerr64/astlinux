@@ -1,48 +1,7 @@
-From ddc951060ad748c31fb5c37b82d258ef6bfaa7f2 Mon Sep 17 00:00:00 2001
-From: David Kerr <david@kerr.net>
-Date: Mon, 21 Nov 2016 16:43:47 -0500
-Subject: [PATCH] app_originate: Add option to execute gosub prior to dial
-
-Issue/patch ASTERISK-26587 was inspired by issue ASTERISK-22992
-that requested ability to add callerid into app_originate.
-Comments in that issue suggested that it was better solved by
-adding an option to gosub prior to originating the call.  The
-attached patch implements this much like app_dial with two
-options one to gosub on the originating channel and one to gosub
-on the newly created channel and behaves just like app_dial.
-I have tested this patch by adding callerid info to the new
-channel and also SIPAddHeader (to e.g. add header to force auto
-answer) and confirmed it works.  Have also tested both 'exten'
-and 'app' versions of app_originate.
-
-Opened by: dkerr
-Patch by: dkerr
-
-Change-Id: I36abc39b58567ffcab4a636ea196ef48be234c57
----
-
-diff --git a/CHANGES b/CHANGES
-index cb3fe95..448657d 100644
---- a/CHANGES
-+++ b/CHANGES
-@@ -62,6 +62,12 @@
-    when you use more than 32 formats and calls are not accepted by a remote
-    implementation, please report this and go back to rtp_pt_dynamic = 96.
- 
-+app_originate
-+------------------
-+ * Added support to gosub predial routines on both original channel and on the
-+   created channel using options parameter (like app_dial) B() and b().  This
-+   allows for adding variables to newly created channel or, e.g. setting callerid.
-+
- ------------------------------------------------------------------------------
- --- Functionality changes from Asterisk 14.1.0 to Asterisk 14.2.0 ----------
- ------------------------------------------------------------------------------
-diff --git a/apps/app_originate.c b/apps/app_originate.c
-index 99984f5..cf4ef8e 100644
---- a/apps/app_originate.c
-+++ b/apps/app_originate.c
-@@ -72,6 +72,30 @@
+diff -aru asterisk-13.18.0a/apps/app_originate.c asterisk-13.18.0b/apps/app_originate.c
+--- asterisk-13.18.0a/apps/app_originate.c	2017-10-30 11:33:07.000000000 -0400
++++ asterisk-13.18.0b/apps/app_originate.c	2017-11-10 23:22:17.128838984 -0500
+@@ -74,6 +74,30 @@
  			<parameter name="timeout" required="false">
  				<para>Timeout in seconds. Default is 30 seconds.</para>
  			</parameter>
@@ -73,7 +32,7 @@ index 99984f5..cf4ef8e 100644
  		</syntax>
  		<description>
  		<para>This application originates an outbound call and connects it to a specified extension or application.  This application will block until the outgoing call fails or gets answered.  At that point, this application will exit with the status variable set and dialplan processing will continue.</para>
-@@ -95,6 +119,25 @@
+@@ -97,6 +121,25 @@
  	</application>
   ***/
  
@@ -99,7 +58,7 @@ index 99984f5..cf4ef8e 100644
  static int originate_exec(struct ast_channel *chan, const char *data)
  {
  	AST_DECLARE_APP_ARGS(args,
-@@ -104,7 +147,11 @@
+@@ -106,7 +149,11 @@
  		AST_APP_ARG(arg2);
  		AST_APP_ARG(arg3);
  		AST_APP_ARG(timeout);
@@ -111,7 +70,7 @@ index 99984f5..cf4ef8e 100644
  	char *parse;
  	char *chantech, *chandata;
  	int res = -1;
-@@ -157,6 +204,25 @@
+@@ -166,6 +213,25 @@
  		goto return_cleanup;
  	}
  
@@ -137,32 +96,48 @@ index 99984f5..cf4ef8e 100644
  	if (!strcasecmp(args.type, "exten")) {
  		int priority = 1; /* Initialized in case priority not specified */
  		const char *exten = args.arg2;
-@@ -175,16 +241,16 @@
+@@ -184,16 +250,16 @@
  		ast_debug(1, "Originating call to '%s/%s' and connecting them to extension %s,%s,%d\n",
  				chantech, chandata, args.arg1, exten, priority);
  
--		ast_pbx_outgoing_exten(chantech, cap_slin, chandata,
-+		ast_pbx_outgoing_exten_predial(chantech, cap_slin, chandata,
+-		res = ast_pbx_outgoing_exten(chantech, cap_slin, chandata,
++		res = ast_pbx_outgoing_exten_predial(chantech, cap_slin, chandata,
  				timeout * 1000, args.arg1, exten, priority, &outgoing_status,
 -				AST_OUTGOING_WAIT, NULL, NULL, NULL, NULL, NULL, 0, NULL);
 +				AST_OUTGOING_WAIT, NULL, NULL, NULL, NULL, NULL, 0, NULL, predial_callee);
- 	} else if (!strcasecmp(args.type, "app")) {
+ 	} else {
  		ast_debug(1, "Originating call to '%s/%s' and connecting them to %s(%s)\n",
  				chantech, chandata, args.arg1, S_OR(args.arg2, ""));
  
--		ast_pbx_outgoing_app(chantech, cap_slin, chandata,
-+		ast_pbx_outgoing_app_predial(chantech, cap_slin, chandata,
+-		res = ast_pbx_outgoing_app(chantech, cap_slin, chandata,
++		res = ast_pbx_outgoing_app_predial(chantech, cap_slin, chandata,
  				timeout * 1000, args.arg1, args.arg2, &outgoing_status,
 -				AST_OUTGOING_WAIT, NULL, NULL, NULL, NULL, NULL, NULL);
 +				AST_OUTGOING_WAIT, NULL, NULL, NULL, NULL, NULL, NULL, predial_callee);
- 	} else {
- 		ast_log(LOG_ERROR, "Incorrect type, it should be 'exten' or 'app': %s\n",
- 				args.type);
-diff --git a/include/asterisk/pbx.h b/include/asterisk/pbx.h
-index 6da4470..00ca4ac 100644
---- a/include/asterisk/pbx.h
-+++ b/include/asterisk/pbx.h
-@@ -1176,6 +1176,12 @@
+ 	}
+ 
+ 	/*
+diff -aru asterisk-13.18.0a/CHANGES asterisk-13.18.0b/CHANGES
+--- asterisk-13.18.0a/CHANGES	2017-10-30 11:33:07.000000000 -0400
++++ asterisk-13.18.0b/CHANGES	2017-11-10 10:18:37.776894583 -0500
+@@ -76,6 +76,12 @@
+ ------------------
+  * Added a new CancelAtxfer action that cancels an attended transfer.
+ 
++app_originate
++------------------
++ * Added support to gosub predial routines on both original channel and on the
++   created channel using options parameter (like app_dial) B() and b().  This
++   allows for adding variables to newly created channel or, e.g. setting callerid.
++
+ ------------------------------------------------------------------------------
+ --- Functionality changes from Asterisk 13.16.0 to Asterisk 13.17.0 ----------
+ ------------------------------------------------------------------------------
+Only in asterisk-13.18.0b: CHANGES.orig
+diff -aru asterisk-13.18.0a/include/asterisk/pbx.h asterisk-13.18.0b/include/asterisk/pbx.h
+--- asterisk-13.18.0a/include/asterisk/pbx.h	2017-10-30 11:33:07.000000000 -0400
++++ asterisk-13.18.0b/include/asterisk/pbx.h	2017-11-10 10:18:37.776894583 -0500
+@@ -1177,6 +1177,12 @@
  	const char *account, struct ast_channel **locked_channel, int early_media,
  	const struct ast_assigned_ids *assignedids);
  
@@ -175,7 +150,7 @@ index 6da4470..00ca4ac 100644
  /*!
   * \brief Synchronously or asynchronously make an outbound call and execute an
   *  application on the channel.
-@@ -1211,6 +1217,12 @@
+@@ -1215,6 +1221,12 @@
  	const char *account, struct ast_channel **locked_channel,
  	const struct ast_assigned_ids *assignedids);
  
@@ -188,11 +163,11 @@ index 6da4470..00ca4ac 100644
  /*!
   * \brief Evaluate a condition
   *
-diff --git a/main/pbx.c b/main/pbx.c
-index e5c3d3c..208c230 100644
---- a/main/pbx.c
-+++ b/main/pbx.c
-@@ -7631,11 +7631,13 @@
+Only in asterisk-13.18.0b/include/asterisk: pbx.h.orig
+diff -aru asterisk-13.18.0a/main/pbx.c asterisk-13.18.0b/main/pbx.c
+--- asterisk-13.18.0a/main/pbx.c	2017-10-30 11:33:07.000000000 -0400
++++ asterisk-13.18.0b/main/pbx.c	2017-11-10 10:18:37.776894583 -0500
+@@ -7611,11 +7611,13 @@
  	const char *app, const char *appdata, int *reason, int synchronous,
  	const char *cid_num, const char *cid_name, struct ast_variable *vars,
  	const char *account, struct ast_channel **locked_channel, int early_media,
@@ -207,7 +182,7 @@ index e5c3d3c..208c230 100644
  
  	outgoing = ao2_alloc(sizeof(*outgoing), pbx_outgoing_destroy);
  	if (!outgoing) {
-@@ -7662,6 +7664,11 @@
+@@ -7642,6 +7644,11 @@
  
  	ast_dial_set_global_timeout(outgoing->dial, timeout);
  
@@ -219,7 +194,7 @@ index e5c3d3c..208c230 100644
  	if (ast_dial_prerun(outgoing->dial, NULL, cap)) {
  		if (synchronous && reason) {
  			*reason = pbx_dial_reason(AST_DIAL_RESULT_FAILED,
-@@ -7686,6 +7693,25 @@
+@@ -7666,6 +7673,25 @@
  		ast_channel_stage_snapshot_done(dialed);
  	}
  	ast_set_flag(ast_channel_flags(dialed), AST_FLAG_ORIGINATED);
@@ -245,7 +220,7 @@ index e5c3d3c..208c230 100644
  	ast_channel_unlock(dialed);
  
  	if (!ast_strlen_zero(cid_num) || !ast_strlen_zero(cid_name)) {
-@@ -7794,6 +7820,16 @@
+@@ -7782,6 +7808,16 @@
  	const char *account, struct ast_channel **locked_channel, int early_media,
  	const struct ast_assigned_ids *assignedids)
  {
@@ -262,7 +237,7 @@ index e5c3d3c..208c230 100644
  	int res;
  	int my_reason;
  
-@@ -7807,7 +7843,7 @@
+@@ -7795,7 +7831,7 @@
  
  	res = pbx_outgoing_attempt(type, cap, addr, timeout, context, exten, priority,
  		NULL, NULL, reason, synchronous, cid_num, cid_name, vars, account, locked_channel,
@@ -270,8 +245,8 @@ index e5c3d3c..208c230 100644
 +		early_media, assignedids, predial_callee);
  
  	if (res < 0 /* Call failed to get connected for some reason. */
- 		&& 1 < synchronous
-@@ -7848,6 +7884,16 @@
+ 		&& 0 < synchronous
+@@ -7836,6 +7872,16 @@
  	const char *account, struct ast_channel **locked_channel,
  	const struct ast_assigned_ids *assignedids)
  {
@@ -288,7 +263,7 @@ index e5c3d3c..208c230 100644
  	if (reason) {
  		*reason = 0;
  	}
-@@ -7860,7 +7906,7 @@
+@@ -7848,7 +7894,7 @@
  
  	return pbx_outgoing_attempt(type, cap, addr, timeout, NULL, NULL, 0, app, appdata,
  		reason, synchronous, cid_num, cid_name, vars, account, locked_channel, 0,
@@ -297,3 +272,4 @@ index e5c3d3c..208c230 100644
  }
  
  /* this is the guts of destroying a context --
+Only in asterisk-13.18.0b/main: pbx.c.orig
