@@ -1055,7 +1055,7 @@ if (is_file('/var/lock/wireguard.lock')) {
     putHtml("<pre>");
 
     $output = array();
-    @exec('/usr/bin/wg show | sed -n \'/^peer:/,$ p\'', $output);
+    @exec('/usr/bin/wg show | sed -n \'/^peer/,$ p\'', $output);
     foreach ($output as $line) {
       putText(rtrim($line));
     }
