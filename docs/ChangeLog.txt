@@ -16,6 +16,8 @@ Released @TBD@
 
 -- RUNNIX, version bump to runnix-0.5.2, with Linux Kernel 3.16.51, e2fsprogs 1.43.7
 
+-- e1000e version bump to 3.4.0.2 Intel PCI-Express PRO/1000 Ethernet Linux driver
+
 -- sqlite, version bump to 3.21.0, security fixes: CVE-2017-13685, CVE-2017-15286
 
 -- php, version bump to 5.6.32, security fixes.
@@ -30,6 +32,8 @@ Released @TBD@
    Arguments: acme-deploy-custom.script domain key_file cert_file ca_file fullchain_file
 
 -- e2fsprogs, version bump to 1.43.7
+
+-- libsodium, version bump to 1.0.16
 
 -- libxml2, version bump to 2.9.6
 
@@ -60,7 +64,7 @@ Released @TBD@
 
 ** Networking
 
--- OpenSSL, version bump to 1.0.2m, security fixes: CVE-2017-3735, CVE-2017-3736
+-- OpenSSL, version bump to 1.0.2n, security fixes: CVE-2017-3735, CVE-2017-3736, CVE-2017-3737, CVE-2017-3738
 
 -- OpenVPN, version bump to 2.4.4, security fix: CVE-2017-12166
 
@@ -70,7 +74,7 @@ Released @TBD@
 -- dnsmasq, version bump to 2.78, security fixes: CVE-2017-13704, CVE-2017-14491, CVE-2017-14492, CVE-2017-14493
                                                   CVE-2017-14494, CVE-2017-14496, CVE-2017-14495
 
--- WireGuard VPN, version 0.0.20171127, new package; an extremely simple yet fast and modern VPN
+-- WireGuard VPN, version 0.0.20171211, new package; an extremely simple yet fast and modern VPN
                                                      that utilizes state-of-the-art cryptography.
    New rc.conf variables: WIREGUARD_IP, WIREGUARD_NM, WIREGUARD_IPV6, WIREGUARD_ROUTES, WIREGUARD_AUTO_ROUTES
                           WIREGUARD_IF, WIREGUARD_MTU, WIREGUARD_LISTEN_PORT, WIREGUARD_ALLOWLAN, WIREGUARD_TUNNEL_HOSTS
@@ -85,9 +89,13 @@ Released @TBD@
 
 -- stunnel, version bump to 5.44
 
+-- miniupnpd, version bump to 2.0.20171212
+
+-- whois, version bump to 5.2.19
+
 ** Asterisk
 
--- Asterisk 11.25.3 (no change) and 13.18.3 (version bump)
+-- Asterisk 11.25.3 (no change) and 13.18.4 (version bump)
 
 -- DAHDI, dahdi-linux 2.10.2 (no change) and dahdi-tools 2.10.2 (no change)
 
