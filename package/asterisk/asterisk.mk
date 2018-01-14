@@ -7,11 +7,11 @@ ifeq ($(BR2_PACKAGE_ASTERISK_v11),y)
 ASTERISK_VERSION := 11.25.3
 else
  ifeq ($(BR2_PACKAGE_ASTERISK_v13),y)
-ASTERISK_VERSION := 13.18.4
+ASTERISK_VERSION := 13.18.5
  endif
 endif
 ASTERISK_SOURCE := asterisk-$(ASTERISK_VERSION).tar.gz
-ASTERISK_SITE := http://downloads.asterisk.org/pub/telephony/asterisk/releases
+ASTERISK_SITE := https://downloads.asterisk.org/pub/telephony/asterisk/releases
 ASTERISK_DIR := $(BUILD_DIR)/asterisk-$(ASTERISK_VERSION)
 ASTERISK_BINARY := main/asterisk
 ASTERISK_TARGET_BINARY := usr/sbin/asterisk
