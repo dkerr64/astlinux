@@ -27,19 +27,30 @@ Released @TBD@
 
 -- sqlite, version bump to 3.22.0
 
+-- sqliteodbc, version bump to 0.9996
+
 -- libjpeg, version bump to 9c
 
--- e2fsprogs, version bump to 1.43.9
+-- libxml2, version bump to 2.9.8
+
+-- e2fsprogs, version bump to 1.44.0
 
 -- perl, version bump to 5.24.3 using perlcross 1.1.8
 
 -- ethtool, version bump to 4.15
 
+-- logrotate, version bump to 3.14.0
+
 -- strace, version bump to 4.21
 
 -- sudo, version bump to 1.8.22
 
--- ca-certificates, update trusted root certificates 2018-01-17
+-- system-vendor, new command to identify common hardware.  The system-vendor command is automatically
+   called at startup to create the /tmp/etc/system-vendor file, symlinked as /etc/system-vendor .
+   Note: If 'system-vendor' shows no output, issue 'system-vendor XYZ Hardware Model' and a fingerprint will be
+         generated, contact the developers to include the entry in future /usr/share/system-vendor.ids files.
+
+-- ca-certificates, update trusted root certificates 2018-03-07
 
 -- Time Zone Database update, tzdata2018c and php-timezonedb-2018.3
 
@@ -57,7 +68,7 @@ Released @TBD@
 
 -- OpenVPN, version bump to 2.4.5
 
--- ipset, version bump to 6.35
+-- ipset, version bump to 6.36
 
 -- sngrep, version bump to 1.4.5
 
@@ -81,7 +92,7 @@ Released @TBD@
 
 ** Web Interface
 
--- no change
+-- Status tab, add Hardware: system-vendor info when available.
 
 
 Additions for AstLinux 1.3.2:

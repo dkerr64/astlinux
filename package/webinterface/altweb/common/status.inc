@@ -1,6 +1,6 @@
 <?php
 
-// Copyright (C) 2008-2017 Lonnie Abelbeck
+// Copyright (C) 2008-2018 Lonnie Abelbeck
 // This is free software, licensed under the GNU General Public License
 // version 3 as published by the Free Software Foundation; you can
 // redistribute it and/or modify it under the terms of the GNU
@@ -42,6 +42,7 @@
 // 07-31-2017, Added interface identifier to IPv6 prefix/address display
 // 08-12-2017, Added IPv6 DHCP lease file listing
 // 11-06-2017, Added WireGuard VPN Status
+// 03-13-2018, Added Hardware system-vendor info
 //
 // System location of OpenVPN Client logfile
 $OVPNCLOGFILE = '/var/log/openvpnclient-status.log';
@@ -676,15 +677,28 @@ if (is_file('/oldroot/cdrom/runnix')) {
   echo '<td>&nbsp;</td><td>&nbsp;</td>';
 }
 putHtml('</tr>');
-// gui version
-echo '<tr ', ($i++ % 2 == 0) ? 'class="dtrow0"' : 'class="dtrow1"', '>';
-echo '<td class="dialogText" style="text-align: right; font-weight: bold;">', 'GUI Version:', '</td>';
-echo '<td style="text-align: left;">', $GUI_VERSION, '</td>';
-// license
-echo '<td class="dialogText" style="text-align: right; font-weight: bold;">', 'License:', '</td>';
+
 $license = (getPREFdef($global_prefs, 'status_require_auth') === 'yes') ? '/admin/license.php' : '/license.php';
-echo '<td style="text-align: left;">', '<a href="'.$license.'" class="headerText">Show Licenses</a>', '</td>';
-putHtml('</tr>');
+if (is_file('/etc/system-vendor')) {
+  // hardware
+  echo '<tr ', ($i++ % 2 == 0) ? 'class="dtrow0"' : 'class="dtrow1"', '>';
+  echo '<td class="dialogText" style="text-align: right; font-weight: bold;">', 'Hardware:', '</td>';
+  echo '<td style="text-align: left;">', htmlspecialchars(trim(@file_get_contents('/etc/system-vendor'))), '</td>';
+  // gui version - license
+  echo '<td class="dialogText" style="text-align: right; font-weight: bold;">', 'GUI Version:', '</td>';
+  echo '<td style="text-align: left;">', $GUI_VERSION, '&nbsp;&nbsp;&ndash;&nbsp;&nbsp;';
+  echo '<a href="'.$license.'" class="headerText">Show Licenses</a>', '</td>';
+  putHtml('</tr>');
+} else {
+  // gui version
+  echo '<tr ', ($i++ % 2 == 0) ? 'class="dtrow0"' : 'class="dtrow1"', '>';
+  echo '<td class="dialogText" style="text-align: right; font-weight: bold;">', 'GUI Version:', '</td>';
+  echo '<td style="text-align: left;">', $GUI_VERSION, '</td>';
+  // license
+  echo '<td class="dialogText" style="text-align: right; font-weight: bold;">', 'License:', '</td>';
+  echo '<td style="text-align: left;">', '<a href="'.$license.'" class="headerText">Show Licenses</a>', '</td>';
+  putHtml('</tr>');
+}
 // end of block
 putHtml('</table>');
 putHtml('</center></td></tr></table></center>');
