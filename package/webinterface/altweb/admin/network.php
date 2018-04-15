@@ -1,6 +1,6 @@
 <?php
 
-// Copyright (C) 2008-2017 Lonnie Abelbeck
+// Copyright (C) 2008-2018 Lonnie Abelbeck
 // This is free software, licensed under the GNU General Public License
 // version 3 as published by the Free Software Foundation; you can
 // redistribute it and/or modify it under the terms of the GNU
@@ -47,6 +47,7 @@
 // 07-12-2017, Added ACME (Let's Encrypt) Certificate configuration
 // 08-13-2017, Added IPv6 ULA and DHCPv6 server user interface
 // 09-10-2017, Added Data Backup / Tarsnap Backup
+// 04-14-2018, Added DNS-TLS support
 //
 // System location of rc.conf file
 $CONFFILE = '/etc/rc.conf';
@@ -1112,6 +1113,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE);
     header('Location: /admin/dnshosts.php');
     exit;
+  } elseif (isset($_POST['submit_dns_tls'])) {
+    $result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE);
+    header('Location: /admin/dnstls.php');
+    exit;
   } elseif (isset($_POST['submit_dnscrypt'])) {
     $result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE);
     header('Location: /admin/dnscrypt.php');
@@ -1613,8 +1618,8 @@ require_once '../common/header.php';
 
   putHtml('<tr class="dtrow1"><td style="text-align: left;" colspan="6">');
   $value = getVARdef($db, 'DNS', $cur_db);
-  if (isDNSCRYPT()) {
-    putHtml('DNS:&nbsp;[DNSCrypt Proxy Server Enabled]<input type="hidden" value="'.$value.'" name="dns" /></td></tr>');
+  if (isDNS_TLS() || isDNSCRYPT()) {
+    putHtml('DNS:&nbsp;['.(isDNS_TLS() ? 'DNS-TLS' : 'DNSCrypt').' Proxy Server Enabled]<input type="hidden" value="'.$value.'" name="dns" /></td></tr>');
   } else {
     putHtml('DNS:<input type="text" size="72" maxlength="256" value="'.$value.'" name="dns" />&nbsp;<i>(IPv4 and/or IPv6)</i></td></tr>');
   }
@@ -2062,6 +2067,11 @@ require_once '../common/header.php';
   putHtml('DNS&nbsp;Forwarder &amp; DHCP Server:');
   putHtml('<input type="submit" value="Configure DNS Hosts" name="submit_dns_hosts" class="button" /></td></tr>');
 
+  if (is_file('/etc/init.d/stubby')) {
+    putHtml('<tr class="dtrow1"><td style="text-align: left;" colspan="6">');
+    putHtml('DNS-TLS Proxy Server:');
+    putHtml('<input type="submit" value="Configure DNS-TLS" name="submit_dns_tls" class="button" /></td></tr>');
+  }
   if (is_file('/etc/init.d/dnscrypt')) {
     putHtml('<tr class="dtrow1"><td style="text-align: left;" colspan="6">');
     putHtml('DNSCrypt Proxy Server:');
