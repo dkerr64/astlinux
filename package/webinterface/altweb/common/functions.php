@@ -23,8 +23,8 @@
 // 08-19-2017, Modify compressIPV6addr() to accept /xx prefix lengths
 // 09-02-2017, Updates to includeTOPICinfo()
 //
-// System location of prefs file                                 
-$KD_PREFS_LOCATION = '/mnt/kd/webgui-prefs.txt';           
+// System location of prefs file
+$KD_PREFS_LOCATION = '/mnt/kd/webgui-prefs.txt';
 $ONLINE_DOCS_URL = 'https://doc.astlinux-project.org?do=export_xhtmlbody';
 
 // Function: putHtml
@@ -188,48 +188,48 @@ function statusPROCESS($process) {
 // Function: systemSHUTDOWN
 //
 function systemSHUTDOWN($myself, $result) {
-  $count_down_secs = 30;                                     
-  
+  $count_down_secs = 30;
+
   shell('/sbin/poweroff -d4 >/dev/null 2>/dev/null &', $status);
-  if ($status == 0) {                                           
+  if ($status == 0) {
     header('Location: '.$myself.'?count_down_secs='.$count_down_secs.'&shutdown&result='.$result);
-    exit;                                                                                
-  }                                                                                      
+    exit;
+  }
 }
 
 // Function: systemREBOOT
 //
 function systemREBOOT($myself, $result, $setup = FALSE) {
   global $global_prefs;
-  
-  $count_down_secs = 130;                                     
-  
+
+  $count_down_secs = 130;
+
   if (($adjust = getPREFdef($global_prefs, 'system_reboot_timer_adjust')) !== '') {
-    $count_down_secs += (int)$adjust;                                     
+    $count_down_secs += (int)$adjust;
   }
-  
+
   $arch = trim(shell_exec('cat /proc/cmdline 2>/dev/null | sed -e \'s/^.*astlinux=//\' -e \'s/ .*$//\''));
   if ($arch === 'net4801' || $arch === 'wrap') {
-    $count_down_secs += 20;                                     
+    $count_down_secs += 20;
   }
 
   $cmd = '/sbin/kernel-reboot';
   if (! is_executable($cmd) || (getPREFdef($global_prefs, 'system_reboot_classic_full') === 'yes') || $arch === 'genx86_64-vm') {
     $cmd = '/sbin/reboot';
-    $count_down_secs += 30;                                     
+    $count_down_secs += 30;
   }
 
   shell($cmd.' -d4 >/dev/null 2>/dev/null &', $status);
-  if ($status == 0) {                                           
+  if ($status == 0) {
     if ($setup) {
-      $count_down_secs += 50;                                     
+      $count_down_secs += 50;
       $opts = '&setup';
     } else {
       $opts = '';
     }
     header('Location: '.$myself.'?count_down_secs='.$count_down_secs.$opts.'&result='.$result);
-    exit;                                                                                
-  }                                                                                      
+    exit;
+  }
 }
 
 // Function: scheduleREBOOT
@@ -365,7 +365,7 @@ function includeTOPICinfo($topic,$tooltip = '') {
 
   $str = '<a href="'.$link.'"'.$target.$onclick.$class.'>';
   $str .= '<img src="/common/topicinfo.gif" alt="Info"/>'.$tooltip.'</a>';
-  
+
   return($str);
 }
 
@@ -388,11 +388,11 @@ function inStringList($match, $str, $chr = ' ') {
 function secs2minsec($secs) {
   $min = (string)((int)($secs / 60));
   $sec = (string)((int)($secs % 60));
-  
+
   $min = str_pad($min, 1, '0', STR_PAD_LEFT);
   $sec = str_pad($sec, 2, '0', STR_PAD_LEFT);
   $minsec = $min.':'.$sec;
-  
+
   return($minsec);
 }
 
@@ -403,12 +403,12 @@ function secs2hourminsec($secs) {
   $hour = (string)((int)($secs / 3600));
   $min = (string)((int)(($secs - (3600 * $hour)) / 60));
   $sec = (string)((int)(($secs - (3600 * $hour)) % 60));
-  
+
   $hour = str_pad($hour, 1, '0', STR_PAD_LEFT);
   $min = str_pad($min, 2, '0', STR_PAD_LEFT);
   $sec = str_pad($sec, 2, '0', STR_PAD_LEFT);
   $hourminsec = $hour.':'.$min.':'.$sec;
-  
+
   return($hourminsec);
 }
 
@@ -459,7 +459,7 @@ function getARNOplugins() {
   }
   fclose($ph);
   @unlink($tmpfile);
-  
+
   if (is_null($plugins)) {
     return(FALSE);
   }
@@ -680,7 +680,7 @@ function parseRCconf($conffile) {
   }
   fclose($ph);
   @unlink($tmpfile);
-  
+
   // remove duplicates and compact
   $db_R['conffile'] = $conffile;
   $n = $id;
@@ -704,10 +704,10 @@ function parseRCconf($conffile) {
 //
 function get_HOSTNAME_DOMAIN() {
   $hostname_domain = '';
-  
+
   // System location of gui.network.conf file
   $NETCONFFILE = '/mnt/kd/rc.conf.d/gui.network.conf';
-  
+
   if (is_file($NETCONFFILE)) {
     $netvars = parseRCconf($NETCONFFILE);
     if (($hostname = getVARdef($netvars, 'HOSTNAME')) !== '') {
@@ -770,7 +770,7 @@ function asteriskMGR($cmd, $fname) {
   fputs($socket, "Username: webinterface\r\n");
   fputs($socket, "Secret: webinterface\r\n");
   fputs($socket, "Events: off\r\n\r\n");
-  
+
   fputs($socket, "Action: command\r\n");
   fputs($socket, "Command: ".$cmd."\r\n\r\n");
 
@@ -813,7 +813,7 @@ function asteriskMGR($cmd, $fname) {
     $info = stream_get_meta_data($socket);
   }
   fclose($socket);
-  
+
   return($info['timed_out'] ? 1103 : 0);
 }
 
@@ -821,7 +821,7 @@ function asteriskMGR($cmd, $fname) {
 //
 function asteriskCMD($cmd, $fname) {
   global $global_prefs;
-  
+
   if (getPREFdef($global_prefs, 'status_asterisk_manager') === 'no') {
     $cmd = str_replace('"', '\"', $cmd);
     if ($fname === '') {
@@ -858,7 +858,7 @@ function parseAstDB($family) {
     fclose($ph);
   }
   @unlink($tmpfile);
-  
+
   return($db);
 }
 
@@ -1092,7 +1092,7 @@ function getPASSWDlocation()
 function getPREFSlocation()
 {
   global $KD_PREFS_LOCATION;
-  
+
   if (is_file($KD_PREFS_LOCATION)) {
     $str_R = $KD_PREFS_LOCATION;
   } elseif (($end = strrpos($_SERVER['SCRIPT_FILENAME'], $_SERVER['SCRIPT_NAME'])) === FALSE) {
@@ -1110,7 +1110,7 @@ function getPREFSlocation()
 function parsePrefs($pfile)
 {
   $id = 0;
-  
+
   if ($pfile !== '') {
     if (is_file($pfile)) {
       if (($ph = @fopen($pfile, "r")) !== FALSE) {

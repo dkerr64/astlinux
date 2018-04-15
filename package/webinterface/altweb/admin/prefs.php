@@ -32,7 +32,7 @@ require_once '../common/functions.php';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $result = 1;
   if (! $global_admin) {
-    $result = 999;                                 
+    $result = 999;
   } elseif (isset($_POST['submit_save'])) {
     $result = 6;
     if (($prefs_loc = getPREFSlocation()) === '') {
@@ -51,7 +51,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $value = 'help_in_popup_window = no';
       fwrite($fp, $value."\n");
     }
-
     if (! isset($_POST['pppoe_connection'])) {
       $value = 'status_pppoe_connection = no';
       fwrite($fp, $value."\n");
@@ -205,12 +204,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     fwrite($fp, $value."\n");
     $value = 'status_jabber_status_cmdstr = "'.tuqp($_POST['jabber_cmd']).'"';
     fwrite($fp, $value."\n");
-    
+
     $value = 'sysdial_ext_prefix_cmdstr = "'.tuqp($_POST['ext_prefix']).'"';
     fwrite($fp, $value."\n");
     $value = 'sysdial_ext_digits_cmdstr = "'.$_POST['ext_digits'].'"';
     fwrite($fp, $value."\n");
-    
+
     $value = 'number_format_cmdstr = "'.tuqp($_POST['num_format']).'"';
     fwrite($fp, $value."\n");
     $value = 'number_error_cmdstr = "'.tuqp($_POST['num_error']).'"';
@@ -219,20 +218,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     fwrite($fp, $value."\n");
     $value = 'whitelist_action_menu_cmdstr = "'.tuqp($_POST['whitelist_menu']).'"';
     fwrite($fp, $value."\n");
-    
+
     $value = 'actionlist_format_cmdstr = "'.tuqp($_POST['actionlist_key_format']).'"';
     fwrite($fp, $value."\n");
     $value = 'actionlist_error_cmdstr = "'.tuqp($_POST['actionlist_key_error']).'"';
     fwrite($fp, $value."\n");
     $value = 'actionlist_action_menu_cmdstr = "'.tuqp($_POST['actionlist_menu']).'"';
     fwrite($fp, $value."\n");
-    
+
     $value = tuqp($_POST['cidname_maxlen']);
     if ($value > 7 && $value != 15) {
       $value = 'cidname_maxlen_cmdstr = "'.$value.'"';
       fwrite($fp, $value."\n");
     }
-    
+
     $value = 'followme_numbers_displayed = "'.$_POST['followme_maxnum'].'"';
     fwrite($fp, $value."\n");
     if (($value = tuqp($_POST['followme_menu'])) !== '') {
@@ -251,7 +250,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $value = 'followme_use_number_format = no';
       fwrite($fp, $value."\n");
     }
-    
+
     if (($value = str_replace(' ', '', tuqp($_POST['meetme_redirect']))) !== '') {
       $value = 'meetme_redirect_path_cmdstr = "'.$value.'"';
       fwrite($fp, $value."\n");
@@ -260,7 +259,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $value = 'meetme_channel_show = yes';
       fwrite($fp, $value."\n");
     }
-    
+
     $value = 'cdrlog_default_format = "'.$_POST['cdr_default'].'"';
     fwrite($fp, $value."\n");
     $value = 'cdrlog_log_file_cmdstr = "'.tuqp($_POST['cdr_logfile']).'"';
@@ -279,7 +278,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     $value = 'cdrlog_last_cmd = "'.$_POST['cdr_last_cmd'].'"';
     fwrite($fp, $value."\n");
-    
+
     if (isset($_POST['extern_notify'])) {
       $value = 'voicemail_extern_notify = yes';
       fwrite($fp, $value."\n");
@@ -296,7 +295,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $value = 'monitor_play_inline = "'.$value.'"';
       fwrite($fp, $value."\n");
     }
-    
+
     if (! isset($_POST['sqldata_create_schema'])) {
       $value = 'sqldata_create_schema = no';
       fwrite($fp, $value."\n");
@@ -317,7 +316,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     fwrite($fp, $value."\n");
     $value = 'users_voicemail_reload_cmdstr = "'.tuqp($_POST['voicemail_reload']).'"';
     fwrite($fp, $value."\n");
-    
+
     if (isset($_POST['bak_files'])) {
       $value = 'edit_keep_bak_files = yes';
       fwrite($fp, $value."\n");
@@ -339,7 +338,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     $value = 'edit_text_shortcut_cmdstr = "'.$value.'"';
     fwrite($fp, $value."\n");
-    
+
     if (isset($_POST['backup_hostname_domain'])) {
       $value = 'system_backup_hostname_domain = yes';
       fwrite($fp, $value."\n");
@@ -368,7 +367,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     fwrite($fp, $value."\n");
     $value = 'system_asterisk_sounds_url = "'.tuqp($_POST['sounds_url']).'"';
     fwrite($fp, $value."\n");
-    
+
     if (($value = trim(preg_replace('/[^a-zA-Z]+/', '', $_POST['dn_country_name']))) !== '') {
       if (strlen($value) == 2) {
         $value = strtoupper($value);
@@ -400,7 +399,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $value = 'dn_email_address_cmdstr = "'.$value.'"';
       fwrite($fp, $value."\n");
     }
-    
+
     $value = 'title_name_cmdstr = "'.tuqp($_POST['title_name']).'"';
     fwrite($fp, $value."\n");
     if (($value = tuqp($_POST['external_url_link'])) !== '') {
@@ -619,7 +618,7 @@ require_once '../common/header.php';
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'status_show_acme_certificates') === 'yes') ? ' checked="checked"' : '';
   putHtml('<input type="checkbox" value="acme_certificates" name="acme_certificates"'.$sel.' /></td><td colspan="5">Show ACME Certificates</td></tr>');
- 
+
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'status_ntp_sessions') !== 'no') ? ' checked="checked"' : '';
   putHtml('<input type="checkbox" value="ntp_sessions" name="ntp_sessions"'.$sel.' /></td><td colspan="5">Show NTP Time Sources</td></tr>');
@@ -647,7 +646,7 @@ require_once '../common/header.php';
     $value = 'core show channels';
   }
   putHtml('<input type="text" size="28" maxlength="64" value="'.$value.'" name="active_cmd" /></td></tr>');
-  
+
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'status_sip_show_registry') !== 'no') ? ' checked="checked"' : '';
   putHtml('<input type="checkbox" value="sip_reg" name="sip_reg"'.$sel.' /></td><td colspan="5">Show SIP Trunk Registrations</td></tr>');
@@ -660,7 +659,7 @@ require_once '../common/header.php';
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'status_iax2_show_peers') === 'yes') ? ' checked="checked"' : '';
   putHtml('<input type="checkbox" value="iax2_peers" name="iax2_peers"'.$sel.' /></td><td colspan="5">Show IAX2 Peer Status</td></tr>');
-  
+
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'status_voicemail_show_users') === 'yes') ? ' checked="checked"' : '';
   putHtml('<input type="checkbox" value="voicemail_users" name="voicemail_users"'.$sel.' /></td><td colspan="5">Show Voicemail User Status</td></tr>');
@@ -669,7 +668,7 @@ require_once '../common/header.php';
     $value = 'voicemail show users';
   }
   putHtml('<input type="text" size="28" maxlength="64" value="'.$value.'" name="voicemail_cmd" /></td></tr>');
-  
+
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'status_dahdi_show_status') === 'yes') ? ' checked="checked"' : '';
   putHtml('<input type="checkbox" value="dahdi_status" name="dahdi_status"'.$sel.' /></td><td colspan="5">Show DAHDI Status</td></tr>');
@@ -678,7 +677,7 @@ require_once '../common/header.php';
     $value = 'dahdi show status';
   }
   putHtml('<input type="text" size="28" maxlength="64" value="'.$value.'" name="dahdi_cmd" /></td></tr>');
-  
+
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'status_jabber_show_status') === 'yes') ? ' checked="checked"' : '';
   putHtml('<input type="checkbox" value="jabber_status" name="jabber_status"'.$sel.' /></td><td colspan="5">Show Jabber Status</td></tr>');
@@ -702,15 +701,15 @@ require_once '../common/header.php';
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'status_show_kamailio_server') !== 'no') ? ' checked="checked"' : '';
   putHtml('<input type="checkbox" value="kamailio_server" name="kamailio_server"'.$sel.' /></td><td colspan="5">Show Kamailio SIP Server Status</td></tr>');
- 
+
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'status_show_xmpp_server') !== 'no') ? ' checked="checked"' : '';
   putHtml('<input type="checkbox" value="xmpp_server" name="xmpp_server"'.$sel.' /></td><td colspan="5">Show XMPP Server Status</td></tr>');
- 
+
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'status_show_adaptive_ban') === 'yes') ? ' checked="checked"' : '';
   putHtml('<input type="checkbox" value="adaptive_ban" name="adaptive_ban"'.$sel.' /></td><td colspan="5">Show Adaptive Ban Plugin Status</td></tr>');
- 
+
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'status_show_firewall_states') === 'yes') ? ' checked="checked"' : '';
   putHtml('<input type="checkbox" value="firewall_states" name="firewall_states"'.$sel.' /></td><td colspan="5">Show Firewall States</td></tr>');
@@ -720,7 +719,7 @@ require_once '../common/header.php';
   putHtml('<tr class="dtrow1"><td style="text-align: right;" colspan="2">Hide DST Ports:</td><td colspan="4">');
   $value = getPREFdef($global_prefs, 'status_firewall_dports_cmdstr');
   putHtml('<input type="text" size="48" maxlength="128" value="'.$value.'" name="firewall_dports" /></td></tr>');
-  
+
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'status_ups_show_status') !== 'no') ? ' checked="checked"' : '';
   putHtml('<input type="checkbox" value="ups_status" name="ups_status"'.$sel.' /></td><td colspan="5">Show UPS Monitoring Status</td></tr>');
@@ -746,16 +745,16 @@ require_once '../common/header.php';
   putHtml('<input type="checkbox" value="disable_ami" name="disable_ami"'.$sel.' /></td><td colspan="5">Disable Asterisk Manager Interface for Asterisk Commands</td></tr>');
 
   putHtml('<tr class="dtrow0"><td colspan="6">&nbsp;</td></tr>');
-  
+
   putHtml('<tr class="dtrow0"><td class="dialogText" style="text-align: left;" colspan="6">');
   putHtml('<strong>Directory Tab Options:</strong>');
   putHtml('</td></tr>');
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'directory_require_auth') === 'yes') ? ' checked="checked"' : '';
   putHtml('<input type="checkbox" value="directory_auth" name="directory_auth"'.$sel.' /></td><td colspan="5">Require Authentication for Directory Tab</td></tr>');
-  
+
   putHtml('<tr class="dtrow0"><td colspan="6">&nbsp;</td></tr>');
-  
+
   putHtml('<tr class="dtrow0"><td class="dialogText" style="text-align: left;" colspan="6">');
   putHtml('<strong>Voicemail &amp; Monitor Tab Options:</strong>');
   putHtml('</td></tr>');
@@ -768,7 +767,7 @@ require_once '../common/header.php';
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'voicemail_24_hour_format') === 'yes') ? ' checked="checked"' : '';
   putHtml('<input type="checkbox" value="hour_format" name="hour_format"'.$sel.' /></td><td colspan="5">Display 24 Hour Time Format instead of 12 Hour am/pm</td></tr>');
-  
+
   putHtml('<tr class="dtrow1"><td style="text-align: right;" colspan="3">Play WAV audio recordings:</td><td colspan="3">');
   $value = getPREFdef($global_prefs, 'monitor_play_inline');
   putHtml('<select name="play_inline">');
@@ -783,13 +782,13 @@ require_once '../common/header.php';
   putHtml('<option value="html5-http"'.$sel.'>in HTML5 browser - HTTP only</option>');
   putHtml('</select>');
   putHtml('</td></tr>');
-  
+
   putHtml('<tr class="dtrow0"><td colspan="6">&nbsp;</td></tr>');
-  
+
   putHtml('<tr class="dtrow0"><td class="dialogText" style="text-align: left;" colspan="6">');
   putHtml('<strong>Follow-Me Tab Options:</strong>');
   putHtml('</td></tr>');
-  
+
   putHtml('<tr class="dtrow1"><td style="text-align: right;" colspan="3">Follow-Me Numbers Displayed:</td><td colspan="3">');
   if (($value = getPREFdef($global_prefs, 'followme_numbers_displayed')) === '') {
     $value = '4';
@@ -801,7 +800,7 @@ require_once '../common/header.php';
   }
   putHtml('</select>');
   putHtml('</td></tr>');
-  
+
   putHtml('<tr class="dtrow1"><td style="text-align: right;" colspan="2">Schedule Menu:</td><td colspan="4">');
   $value = getPREFdef($global_prefs, 'followme_schedule_menu_cmdstr');
   putHtml('<input type="text" size="48" maxlength="128" value="'.$value.'" name="followme_menu" /></td></tr>');
@@ -814,13 +813,13 @@ require_once '../common/header.php';
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'followme_use_number_format') !== 'no') ? ' checked="checked"' : '';
   putHtml('<input type="checkbox" value="followme_format" name="followme_format"'.$sel.' /></td><td colspan="5">Use Caller*ID Tab Number Format Rules for Follow-Me</td></tr>');
-  
+
   putHtml('<tr class="dtrow0"><td colspan="6">&nbsp;</td></tr>');
-  
+
   putHtml('<tr class="dtrow0"><td class="dialogText" style="text-align: left;" colspan="6">');
   putHtml('<strong>MeetMe &amp; ConfBridge Tab Options:</strong>');
   putHtml('</td></tr>');
-  
+
   putHtml('<tr class="dtrow1"><td style="text-align: right;" colspan="2">Redirect Path:</td><td colspan="4">');
   if (($value = getPREFdef($global_prefs, 'meetme_redirect_path_cmdstr')) === '') {
     $value = 'default,s,1';
@@ -832,11 +831,11 @@ require_once '../common/header.php';
   putHtml('<input type="checkbox" value="meetme_channel" name="meetme_channel"'.$sel.' /></td><td colspan="5">Display channel values in MeetMe and ConfBridge Tabs</td></tr>');
 
   putHtml('<tr class="dtrow0"><td colspan="6">&nbsp;</td></tr>');
-  
+
   putHtml('<tr class="dtrow0"><td class="dialogText" style="text-align: left;" colspan="6">');
   putHtml('<strong>CDR Log Tab Options:</strong>');
   putHtml('</td></tr>');
-  
+
   putHtml('<tr class="dtrow1"><td style="text-align: right;" colspan="2">CDR Log Format:</td><td colspan="4">');
   putHtml('<select name="cdr_default">');
   putHtml('<option value="standard">Standard cdr-csv</option>');
@@ -846,7 +845,7 @@ require_once '../common/header.php';
   putHtml('<option value="special"'.$sel.'>Special cdr-custom</option>');
   putHtml('</select>');
   putHtml('</td></tr>');
-  
+
   putHtml('<tr class="dtrow1"><td style="text-align: right;" colspan="2">CDR Log Path:</td><td colspan="4">');
   if (($value = getPREFdef($global_prefs, 'cdrlog_log_file_cmdstr')) === '') {
     $value = '/var/log/asterisk/cdr-csv/Master.csv';
@@ -881,9 +880,9 @@ require_once '../common/header.php';
   putHtml('<option value="userfield"'.$sel.'>userfield</option>');
   putHtml('</select>');
   putHtml('CDR value</td></tr>');
-  
+
   putHtml('<tr class="dtrow0"><td colspan="6">&nbsp;</td></tr>');
-  
+
   putHtml('<tr class="dtrow0"><td class="dialogText" style="text-align: left;" colspan="6">');
   putHtml('<strong>Speed Dial Tab Options:</strong>');
   putHtml('</td></tr>');
@@ -910,9 +909,9 @@ require_once '../common/header.php';
   putHtml('<option value="'.$i.'"'.$sel.'>00 to '.$j.'</option>');
   putHtml('</select>');
   putHtml('</td></tr>');
-  
+
   putHtml('<tr class="dtrow0"><td colspan="6">&nbsp;</td></tr>');
-  
+
   putHtml('<tr class="dtrow0"><td class="dialogText" style="text-align: left;" colspan="6">');
   putHtml('<strong>Caller*ID, Blacklist &amp; Whitelist Tab Options:</strong>');
   putHtml('</td></tr>');
@@ -941,9 +940,9 @@ require_once '../common/header.php';
     $value = 'Voicemail~Priority~Standard~Follow-Me~IVR';
   }
   putHtml('<input type="text" size="48" maxlength="128" value="'.$value.'" name="whitelist_menu" /></td></tr>');
-  
+
   putHtml('<tr class="dtrow0"><td colspan="6">&nbsp;</td></tr>');
-  
+
   putHtml('<tr class="dtrow0"><td class="dialogText" style="text-align: left;" colspan="6">');
   putHtml('<strong>Actionlist Tab Options:</strong>');
   putHtml('</td></tr>');
@@ -957,13 +956,13 @@ require_once '../common/header.php';
     $value = 'Key must be alphanumeric, 2-20 characters';
   }
   putHtml('<input type="text" size="48" maxlength="96" value="'.$value.'" name="actionlist_key_error" /></td></tr>');
-  
+
   putHtml('<tr class="dtrow1"><td style="text-align: right;" colspan="2">Action Menu:</td><td colspan="4">');
   $value = getPREFdef($global_prefs, 'actionlist_action_menu_cmdstr');
   putHtml('<input type="text" size="48" maxlength="128" value="'.$value.'" name="actionlist_menu" /></td></tr>');
-  
+
   putHtml('<tr class="dtrow0"><td colspan="6">&nbsp;</td></tr>');
-  
+
   putHtml('<tr class="dtrow0"><td class="dialogText" style="text-align: left;" colspan="6">');
   putHtml('<strong>SQL-Data Tab Options:</strong>');
   putHtml('</td></tr>');
@@ -972,7 +971,7 @@ require_once '../common/header.php';
   putHtml('<input type="checkbox" value="sqldata_create_schema" name="sqldata_create_schema"'.$sel.' /></td><td colspan="5">Create SIP &amp; Phone standard SQL schema</td></tr>');
 
   putHtml('<tr class="dtrow0"><td colspan="6">&nbsp;</td></tr>');
-  
+
   putHtml('<tr class="dtrow0"><td class="dialogText" style="text-align: left;" colspan="6">');
   putHtml('<strong>PhoneProv Tab Options:</strong>');
   putHtml('</td></tr>');
@@ -988,9 +987,9 @@ require_once '../common/header.php';
   }
   putHtml('</select>');
   putHtml('</td></tr>');
-  
+
   putHtml('<tr class="dtrow0"><td colspan="6">&nbsp;</td></tr>');
-  
+
   putHtml('<tr class="dtrow0"><td class="dialogText" style="text-align: left;" colspan="6">');
   putHtml('<strong>Users Tab Options:</strong>');
   putHtml('</td></tr>');
@@ -1012,9 +1011,9 @@ require_once '../common/header.php';
     $value = 'module reload app_voicemail.so';
   }
   putHtml('<input type="text" size="28" maxlength="64" value="'.$value.'" name="voicemail_reload" /></td></tr>');
-  
+
   putHtml('<tr class="dtrow0"><td colspan="6">&nbsp;</td></tr>');
-  
+
   putHtml('<tr class="dtrow0"><td class="dialogText" style="text-align: left;" colspan="6">');
   putHtml('<strong>Edit Tab Options:</strong>');
   putHtml('</td></tr>');
@@ -1043,9 +1042,9 @@ require_once '../common/header.php';
   }
   putHtml('</textarea>');
   putHtml('</td></tr>');
-  
+
   putHtml('<tr class="dtrow0"><td colspan="6">&nbsp;</td></tr>');
-  
+
   putHtml('<tr class="dtrow0"><td class="dialogText" style="text-align: left;" colspan="6">');
   putHtml('<strong>System &amp; Staff Tab Options:</strong>');
   putHtml('</td></tr>');
@@ -1084,31 +1083,31 @@ require_once '../common/header.php';
   }
   putHtml('</select>');
   putHtml('</td></tr>');
-  
+
   putHtml('<tr class="dtrow1"><td style="text-align: right;" colspan="3">Reload Asterisk Command:</td><td colspan="3">');
   if (($value = getPREFdef($global_prefs, 'system_asterisk_reload_cmdstr')) === '') {
     $value = 'module reload';
   }
   putHtml('<input type="text" size="28" maxlength="64" value="'.$value.'" name="asterisk_reload" /></td></tr>');
-  
+
   putHtml('<tr class="dtrow1"><td style="text-align: right;" colspan="2">Repository URL:</td><td colspan="4">');
   if (($value = getPREFdef($global_prefs, 'system_firmware_repository_url')) === '') {
     $value = asteriskURLrepo();
   }
   putHtml('<input type="text" size="48" maxlength="128" value="'.$value.'" name="repository_url" /></td></tr>');
-  
+
   putHtml('<tr class="dtrow1"><td style="text-align: right;" colspan="2">Sounds Pkg URL:</td><td colspan="4">');
   if (($value = getPREFdef($global_prefs, 'system_asterisk_sounds_url')) === '') {
     $value = 'https://downloads.asterisk.org/pub/telephony/sounds';
   }
   putHtml('<input type="text" size="48" maxlength="128" value="'.$value.'" name="sounds_url" /></td></tr>');
-  
+
   putHtml('<tr class="dtrow0"><td colspan="6">&nbsp;</td></tr>');
-  
+
   putHtml('<tr class="dtrow0"><td class="dialogText" style="text-align: left;" colspan="6">');
   putHtml('<strong>Distinguished Name:</strong>');
   putHtml('</td></tr>');
-  
+
   putHtml('<tr class="dtrow1"><td style="text-align: right;" colspan="3">Country Name:</td><td colspan="3">');
   $value = getPREFdef($global_prefs, 'dn_country_name_cmdstr');
   putHtml('<input type="text" size="4" maxlength="2" value="'.$value.'" name="dn_country_name" /></td></tr>');
@@ -1130,9 +1129,9 @@ require_once '../common/header.php';
   putHtml('<tr class="dtrow1"><td style="text-align: right;" colspan="3">Email Address:</td><td colspan="3">');
   $value = getPREFdef($global_prefs, 'dn_email_address_cmdstr');
   putHtml('<input type="text" size="28" maxlength="64" value="'.$value.'" name="dn_email_address" /></td></tr>');
-  
+
   putHtml('<tr class="dtrow0"><td colspan="6">&nbsp;</td></tr>');
-  
+
   putHtml('<tr class="dtrow0"><td class="dialogText" style="text-align: left;" colspan="6">');
   putHtml('<strong>General Options:</strong>');
   putHtml('</td></tr>');
@@ -1150,29 +1149,29 @@ require_once '../common/header.php';
   putHtml('<tr class="dtrow1"><td style="text-align: right;" colspan="2">External CLI Link:</td><td colspan="4">');
   $value = getPREFdef($global_prefs, 'external_cli_link_cmdstr');
   putHtml('<input type="text" size="48" maxlength="128" value="'.$value.'" name="external_cli_link" /></td></tr>');
-  
+
   putHtml('<tr class="dtrow1"><td style="text-align: right;" colspan="2">External FOP2 Link:</td><td colspan="4">');
   $sel = (getPREFdef($global_prefs, 'external_fop2_https') === 'yes') ? ' checked="checked"' : '';
   putHtml('<input type="checkbox" value="external_fop2_https" name="external_fop2_https"'.$sel.' />&nbsp;Use HTTPS</td></tr>');
-  
+
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'tab_directory_show') === 'yes') ? ' checked="checked"' : '';
   putHtml('<input type="checkbox" value="tab_directory" name="tab_directory"'.$sel.' /></td><td colspan="5">Show Directory Tab</td></tr>');
-  
+
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'tab_voicemail_show') === 'yes') ? ' checked="checked"' : '';
   putHtml('<input type="checkbox" value="tab_voicemail" name="tab_voicemail"'.$sel.' /></td><td colspan="5">Show Voicemail Tab</td></tr>');
   putHtml('<tr class="dtrow1"><td>&nbsp;</td><td colspan="5">');
   $sel = (getPREFdef($global_prefs, 'tab_voicemail_disable_staff') === 'yes') ? ' checked="checked"' : '';
   putHtml('<input type="checkbox" value="voicemail_disable_staff" name="voicemail_disable_staff"'.$sel.' />&nbsp;Disable Voicemail Tab for &quot;staff&quot; user</td></tr>');
-  
+
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'tab_monitor_show') === 'yes') ? ' checked="checked"' : '';
   putHtml('<input type="checkbox" value="tab_monitor" name="tab_monitor"'.$sel.' /></td><td colspan="5">Show Monitor Tab</td></tr>');
   putHtml('<tr class="dtrow1"><td>&nbsp;</td><td colspan="5">');
   $sel = (getPREFdef($global_prefs, 'tab_monitor_disable_staff') === 'yes') ? ' checked="checked"' : '';
   putHtml('<input type="checkbox" value="monitor_disable_staff" name="monitor_disable_staff"'.$sel.' />&nbsp;Disable Monitor Tab for &quot;staff&quot; user</td></tr>');
-  
+
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'tab_followme_show') === 'yes') ? ' checked="checked"' : '';
   putHtml('<input type="checkbox" value="tab_followme" name="tab_followme"'.$sel.' /></td><td colspan="5">Show Follow-Me Tab');
@@ -1181,49 +1180,49 @@ require_once '../common/header.php';
   putHtml('<tr class="dtrow1"><td>&nbsp;</td><td colspan="5">');
   $sel = (getPREFdef($global_prefs, 'tab_followme_disable_staff') === 'yes') ? ' checked="checked"' : '';
   putHtml('<input type="checkbox" value="followme_disable_staff" name="followme_disable_staff"'.$sel.' />&nbsp;Disable Follow-Me Tab for &quot;staff&quot; user</td></tr>');
-  
+
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'tab_meetme_show') === 'yes') ? ' checked="checked"' : '';
   putHtml('<input type="checkbox" value="tab_meetme" name="tab_meetme"'.$sel.' /></td><td colspan="5">Show MeetMe Tab</td></tr>');
-  
+
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'tab_confbridge_show') === 'yes') ? ' checked="checked"' : '';
   putHtml('<input type="checkbox" value="tab_confbridge" name="tab_confbridge"'.$sel.' /></td><td colspan="5">Show ConfBridge Tab</td></tr>');
-  
+
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'tab_cdrlog_show') !== 'no') ? ' checked="checked"' : '';
   putHtml('<input type="checkbox" value="tab_cdrlog" name="tab_cdrlog"'.$sel.' /></td><td colspan="5">Show CDR Log Tab</td></tr>');
-  
+
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'tab_sysdial_show') !== 'no') ? ' checked="checked"' : '';
   putHtml('<input type="checkbox" value="tab_sysdial" name="tab_sysdial"'.$sel.' /></td><td colspan="5">Show Speed Dial Tab');
   putHtml(tt('sysdial-dialplan','The Speed Dial tab adds a web dialog interface to the asterisk astdb database, using Family: sysdial.  <strong>More...</strong>'));
   putHtml('</td></tr>');
-  
+
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'tab_cidname_show') !== 'no') ? ' checked="checked"' : '';
   putHtml('<input type="checkbox" value="tab_cidname" name="tab_cidname"'.$sel.' /></td><td colspan="5">Show Caller*ID Tab');
   putHtml(tt('cidname-dialplan','The Caller*ID tab adds a web dialog interface to the asterisk astdb database, using Family: cidname.  <strong>More...</strong>'));
   putHtml('</td></tr>');
-  
+
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'tab_blacklist_show') !== 'no') ? ' checked="checked"' : '';
   putHtml('<input type="checkbox" value="tab_blacklist" name="tab_blacklist"'.$sel.' /></td><td colspan="5">Show Blacklist Tab');
   putHtml(tt('blacklist-dialplan','The Blacklist tab adds a web dialog interface to the asterisk astdb database, using Family: blacklist.  <strong>More...</strong>'));
   putHtml('</td></tr>');
-  
+
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'tab_whitelist_show') === 'yes') ? ' checked="checked"' : '';
   putHtml('<input type="checkbox" value="tab_whitelist" name="tab_whitelist"'.$sel.' /></td><td colspan="5">Show Whitelist Tab');
   putHtml(tt('whitelist-dialplan','The Whitelist tab adds a web dialog interface to the asterisk astdb database, using Family: whitelist.  <strong>More...</strong>'));
   putHtml('</td></tr>');
-  
+
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'tab_actionlist_show') === 'yes') ? ' checked="checked"' : '';
   putHtml('<input type="checkbox" value="tab_actionlist" name="tab_actionlist"'.$sel.' /></td><td colspan="5">Show Actionlist Tab');
   putHtml(tt('actionlist-dialplan','The Actionlist tab adds a web dialog interface to the asterisk astdb database, using Family: actionlist.  <strong>More...</strong>'));
   putHtml('</td></tr>');
-  
+
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'tab_sqldata_show') === 'yes') ? ' checked="checked"' : '';
   putHtml('<input type="checkbox" value="tab_sqldata" name="tab_sqldata"'.$sel.' /></td><td colspan="5">Show SQL-Data Tab');
@@ -1233,19 +1232,19 @@ require_once '../common/header.php';
   putHtml('<tr class="dtrow1"><td>&nbsp;</td><td colspan="5">');
   $sel = (getPREFdef($global_prefs, 'tab_sqldata_disable_staff') !== 'no') ? ' checked="checked"' : '';
   putHtml('<input type="checkbox" value="sqldata_disable_staff" name="sqldata_disable_staff"'.$sel.' />&nbsp;Disable SQL-Data Tab for &quot;staff&quot; user</td></tr>');
-  
+
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'tab_ldapab_show') === 'yes') ? ' checked="checked"' : '';
   putHtml('<input type="checkbox" value="tab_ldapab" name="tab_ldapab"'.$sel.' /></td><td colspan="5">Show LDAP-AB Tab</td></tr>');
-  
+
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'tab_phoneprov_show') === 'yes') ? ' checked="checked"' : '';
   putHtml('<input type="checkbox" value="tab_phoneprov" name="tab_phoneprov"'.$sel.' /></td><td colspan="5">Show PhoneProv Tab</td></tr>');
-  
+
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'tab_users_show') === 'yes') ? ' checked="checked"' : '';
   putHtml('<input type="checkbox" value="tab_users" name="tab_users"'.$sel.' /></td><td colspan="5">Show Users Tab</td></tr>');
-  
+
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'tab_netstat_show') === 'yes') ? ' checked="checked"' : '';
   putHtml('<input type="checkbox" value="tab_netstat" name="tab_netstat"'.$sel.' /></td><td colspan="5">Show NetStat Tab</td></tr>');
@@ -1265,19 +1264,19 @@ require_once '../common/header.php';
   putHtml('<tr class="dtrow1"><td>&nbsp;</td><td colspan="5">');
   $sel = (getPREFdef($global_prefs, 'tab_xmpp_disable_staff') !== 'no') ? ' checked="checked"' : '';
   putHtml('<input type="checkbox" value="xmpp_disable_staff" name="xmpp_disable_staff"'.$sel.' />&nbsp;Disable XMPP Users Tab for &quot;staff&quot; user</td></tr>');
-  
-  
+
+
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'tab_edit_show') !== 'no') ? ' checked="checked"' : '';
   putHtml('<input type="checkbox" value="tab_edit" name="tab_edit"'.$sel.' /></td><td colspan="5">Show Edit Tab</td></tr>');
-  
+
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'tab_cli_show') === 'yes') ? ' checked="checked"' : '';
   putHtml('<input type="checkbox" value="tab_cli" name="tab_cli"'.$sel.' /></td><td colspan="5">Show CLI Tab</td></tr>');
   putHtml('<tr class="dtrow1"><td>&nbsp;</td><td colspan="5">');
   $sel = (getPREFdef($global_prefs, 'tab_cli_disable_staff') !== 'no') ? ' checked="checked"' : '';
   putHtml('<input type="checkbox" value="cli_disable_staff" name="cli_disable_staff"'.$sel.' />&nbsp;Disable CLI Tab for &quot;staff&quot; user</td></tr>');
-  
+
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'tab_fossil_show') === 'yes') ? ' checked="checked"' : '';
   putHtml('<input type="checkbox" value="tab_fossil" name="tab_fossil"'.$sel.' /></td><td colspan="5">Show Fossil Tab');
@@ -1287,7 +1286,7 @@ require_once '../common/header.php';
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'tab_staff_disable_staff') !== 'yes') ? ' checked="checked"' : '';
   putHtml('<input type="checkbox" value="tab_staff" name="tab_staff"'.$sel.' /></td><td colspan="5">Show Staff Tab for &quot;staff&quot; user</td></tr>');
-  
+
   putHtml('</table>');
   putHtml('</form>');
   putHtml('</center></td></tr></table>');

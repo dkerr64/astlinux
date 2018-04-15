@@ -176,7 +176,7 @@ function parseIPSECstates($log) {
 //
 function parseFIREWALLstates(&$status, $log, $max) {
   global $global_prefs;
-  
+
   $proto = array (
     1  => 'ICMP',
     6  => 'TCP',
@@ -240,7 +240,7 @@ function parseFIREWALLstates(&$status, $log, $max) {
               $packets += (float)substr($pair, 8);
             }
           }
-        
+
           $unique = TRUE;
           $xid = $max;
           $xbytes = $bytes;
@@ -827,7 +827,7 @@ if ($daemon['chronyd'] > 0) {
 if ($daemon['miniupnpd'] > 0) {
   if (getPREFdef($global_prefs, 'status_show_miniupnpd_leases') !== 'no') { // currently not set in the Prefs tab
     putHtml("<h2>Universal Plug'n'Play (NAT-PMP/PCP and UPnP) Leases:</h2>");
-  
+
     if (is_null($upnp = parseMINIUPNPDleases($MINIUPNPDLEASES))) {
       putHtml("<pre>");
       putText('No Active NAT-PMP/PCP or UPnP Leases');
@@ -866,7 +866,7 @@ if ($daemon['miniupnpd'] > 0) {
 if ($daemon['dnsmasq'] > 0) {
   if (getPREFdef($global_prefs, 'status_show_dhcp_leases') !== 'no' && isDHCPactive()) {
     putHtml("<h2>DHCP Leases:</h2>");
-  
+
     if (is_null($dhcp = parseDNSMASQleases($DNSMASQLEASES))) {
       putHtml("<pre>");
       putText('No Active DHCP Leases');
@@ -1004,7 +1004,7 @@ if ($daemon['racoon'] > 0) {
     putHtml("<h2>IPsec Associations:</h2>");
     $tmpfile = tempnam("/tmp", "PHP_");
     shell('/usr/sbin/setkey -D | grep -e "^[0-9]" -e " mode=" -e "^[^a-z]*created:" -e "^[^a-z]*diff:" -e "^[^a-z]*current:" >'.$tmpfile, $status);
-  
+
     if (is_null($ipsec = parseIPSECstates($tmpfile))) {
       putHtml("<pre>");
       putText('No Associations found');
@@ -1084,7 +1084,7 @@ if ($daemon['asterisk'] > 0) {
   }
   $tmpfile = tempnam("/tmp", "PHP_");
   $status = asteriskCMD($cmd, $tmpfile);
-  
+
   if ($status == 0 && getPREFdef($global_prefs, 'status_show_active_chan') !== 'no') {
     putHtml("<h2>Active Channels:</h2>");
     putHtml('<pre>');
@@ -1105,7 +1105,7 @@ if ($daemon['asterisk'] > 0) {
     putHtml('</pre>');
   }
   @unlink($tmpfile);
-  
+
   if ($status == 0 && getPREFdef($global_prefs, 'status_sip_show_registry') !== 'no') {
     putHtml("<h2>SIP Trunk Registrations:</h2>");
     putHtml("<pre>");
@@ -1142,7 +1142,7 @@ if ($daemon['asterisk'] > 0) {
     @unlink($tmpfile);
     putHtml("</pre>");
   }
-  
+
   if ($status == 0 && getPREFdef($global_prefs, 'status_iax2_show_registry') === 'yes') {
     putHtml("<h2>IAX2 Trunk Registrations:</h2>");
     putHtml("<pre>");
@@ -1179,7 +1179,7 @@ if ($daemon['asterisk'] > 0) {
     @unlink($tmpfile);
     putHtml("</pre>");
   }
-  
+
   if ($status == 0 && getPREFdef($global_prefs, 'status_voicemail_show_users') === 'yes') {
     if (($cmd = getPREFdef($global_prefs, 'status_voicemail_users_cmdstr')) === '') {
       $cmd = 'voicemail show users';
@@ -1200,7 +1200,7 @@ if ($daemon['asterisk'] > 0) {
     @unlink($tmpfile);
     putHtml("</pre>");
   }
-  
+
   if ($status == 0 && getPREFdef($global_prefs, 'status_dahdi_show_status') === 'yes') {
     if (($cmd = getPREFdef($global_prefs, 'status_dahdi_status_cmdstr')) === '') {
       $cmd = 'dahdi show status';
@@ -1225,7 +1225,7 @@ if ($daemon['asterisk'] > 0) {
     @unlink($tmpfile);
     putHtml("</pre>");
   }
-  
+
   if ($status == 0 && getPREFdef($global_prefs, 'status_jabber_show_status') === 'yes') {
     if (($cmd = getPREFdef($global_prefs, 'status_jabber_status_cmdstr')) === '') {
       $cmd = 'jabber show connections';
@@ -1246,7 +1246,7 @@ if ($daemon['asterisk'] > 0) {
     @unlink($tmpfile);
     putHtml("</pre>");
   }
-  
+
   if ($status == 0 && getPREFdef($global_prefs, 'status_custom_asterisk_status') === 'yes') {
     if (($cmd = getPREFdef($global_prefs, 'status_custom_asterisk_name_cmdstr')) === '') {
       $cmd = 'Asterisk Command Status';
@@ -1314,7 +1314,7 @@ if (is_file('/var/run/prosody/prosody.pid')) {
       $cmd .= " 's2s:show()'";
     }
     shell($cmd.' >'.$tmpfile, $status);
-  
+
     $ph = @fopen($tmpfile, "r");
     if (! feof($ph)) {
       if (($line = rtrim(fgets($ph, 1024))) !== '') {
@@ -1340,7 +1340,7 @@ if (is_file('/var/lock/aif_adaptive_ban.lock')) {
     $ipv6 = trim(shell_exec('. /etc/rc.conf; if [ "$IPV6" = "yes" ]; then echo "1"; else echo "0"; fi'));
     $cmd = '/usr/share/arno-iptables-firewall/plugins/adaptive-ban-helper status /usr/sbin/iptables /usr/sbin/ip6tables '.$ipv6;
     shell($cmd.' >'.$tmpfile, $status);
-  
+
     $ph = @fopen($tmpfile, "r");
     while (! feof($ph)) {
       if (($line = trim(fgets($ph, 1024))) !== '') {
@@ -1358,7 +1358,7 @@ if (is_file($CONNTRACK)) {
     putHtml("<h2>Firewall States:</h2>");
     $tmpfile = tempnam("/tmp", "PHP_");
     shell('head -n 2500 '.$CONNTRACK.' | grep -v "127\.0\.0\.1" >'.$tmpfile, $status);
-  
+
     parseFIREWALLstates($firewall, $tmpfile, 100);
     if (is_null($firewall)) {
       putHtml("<pre>");
@@ -1406,7 +1406,7 @@ if ($daemon['upsmon'] > 0) {
     putHtml("<pre>");
     $tmpfile = tempnam("/tmp", "PHP_");
     shell('/usr/bin/upsc $(awk \'/^MONITOR / { print $2; nextfile; }\' /etc/ups/upsmon.conf) >'.$tmpfile, $status);
-    
+
     if (is_null($upsmon = parseUPSstatus($tmpfile))) {
       putText('No UPS Status available');
       putText('');
@@ -1433,11 +1433,11 @@ if ($daemon['upsmon'] > 0) {
       putHtml("</tr>");
       putHtml("</table>");
     }
-    
+
     putText('Recent UPS Events:');
     putText('==================');
     shell('tail -n4 /var/log/ups-status.log >'.$tmpfile, $status);
-  
+
     $ph = @fopen($tmpfile, "r");
     while (! feof($ph)) {
       if (($line = trim(fgets($ph, 1024))) !== '') {
