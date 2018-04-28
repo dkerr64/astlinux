@@ -51,6 +51,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $value = 'help_in_popup_window = no';
       fwrite($fp, $value."\n");
     }
+    if (! isset($_POST['async_load_status_page'])) {
+      $value = 'async_load_status_page = no';
+      fwrite($fp, $value."\n");
+    }
     if (! isset($_POST['pppoe_connection'])) {
       $value = 'status_pppoe_connection = no';
       fwrite($fp, $value."\n");
@@ -604,6 +608,9 @@ require_once '../common/header.php';
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'status_require_auth') === 'yes') ? ' checked="checked"' : '';
   putHtml('<input type="checkbox" value="status_auth" name="status_auth"'.$sel.' /></td><td colspan="5">Require Authentication for Status Tab</td></tr>');
+  putHtml('<tr class="dtrow1"><td style="text-align: right;">');
+  $sel = (getPREFdef($global_prefs, 'async_load_status_page') !== 'no') ? ' checked="checked"' : '';
+  putHtml('<input type="checkbox" value="async_load_status_page" name="async_load_status_page"'.$sel.' /></td><td colspan="5">Asynchronous load status page to speed-up initial display</td></tr>');
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'status_pppoe_connection') !== 'no') ? ' checked="checked"' : '';
   putHtml('<input type="checkbox" value="pppoe_connection" name="pppoe_connection"'.$sel.' /></td><td colspan="5">Show PPPoE Connection Status when Active</td></tr>');
