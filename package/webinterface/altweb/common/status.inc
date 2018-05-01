@@ -541,9 +541,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   exit;
 } else { // Start of HTTP GET
 $ACCESS_RIGHTS = 'all';
-require_once $COMMON.'header.php';
+$section_load = $_SESSION['section_load'];
 
 $daemon = getDaemons();
+
+if ($section_load || (!getPREFdef($global_prefs, 'async_load_status_page') !== 'no')) {
+  // Only fire off the popen()'s if loading status sections this read.
 
 if (getPREFdef($global_prefs, 'status_disk_usage') !== 'no') {
     $cmd = 'df -h /tmp | grep "^ *[A-Z][a-z]"';
@@ -620,7 +623,13 @@ if ($daemon['syslogd'] > 0) {
     $status_show_system_logs = @popen($cmd, 'r');
   }
 }
+}
 
+// Build the HTML for the main block of the page
+if (!$section_load) {
+require_once $COMMON.'header.php';
+// Start with general system info.
+//
 putHtml("<center>");
 if (isset($_GET['result'])) {
   $result = $_GET['result'];
@@ -779,7 +788,24 @@ if (is_file('/etc/system-vendor')) {
 // end of block
 putHtml('</table>');
 putHtml('</center></td></tr></table></center>');
-
+}
+// Now do all the status sections
+//
+// Status section can either be included directly into the HTML and
+// sent down to the browser as a single large page.
+// Or the section can be asynchronously loaded using Javascript/AJAX
+// methods for improved page load performance (recommended)
+if (!$section_load && (getPREFdef($global_prefs, 'async_load_status_page') !== 'no')) {
+  $name = 'status_sections';
+  $url = 'status.php';
+  $_SESSION['section_load'] = TRUE;
+  putHtml("<span id='$name'><br>Loading...<br></span>");
+  putHtml("<script language='JavaScript' type='text/javascript'>");
+  putHtml("jx.load('$myself',function(data){document.getElementById('$name').innerHTML=data;});");
+  putHtml("</script>");
+}
+else {
+  $_SESSION['section_load'] = FALSE;
 if (is_file('/etc/ppp/pppoe.conf')) {
   if (getPREFdef($global_prefs, 'status_pppoe_connection') !== 'no') {
     putHtml('<form method="post" action="'.$myself.'">');
@@ -1567,8 +1593,10 @@ if (isset($status_show_system_logs)) {
     putHtml("</pre>");
   }
 }
+}
+if (!$section_load) {
 putHtml('<p style="color: orange;">Asterisk&reg; is a registered trademark of Digium, Inc.</p>');
-
+}
 } // End of HTTP GET
 require_once $COMMON.'footer.php';
 

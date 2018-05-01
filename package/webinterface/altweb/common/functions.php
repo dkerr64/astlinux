@@ -27,6 +27,9 @@
 $KD_PREFS_LOCATION = '/mnt/kd/webgui-prefs.txt';
 $ONLINE_DOCS_URL = 'https://doc.astlinux-project.org?do=export_xhtmlbody';
 
+// Start (or rejoin) browser session
+session_start();
+
 // Function: putHtml
 // Put html string, with new-line
 //
