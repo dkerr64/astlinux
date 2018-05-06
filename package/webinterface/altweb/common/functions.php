@@ -496,19 +496,6 @@ function getETHinterfaces() {
   return($eth_R);
 }
 
-// Function: isVARdef
-//
-function isVARdef($db, $var) {
-  if (($n = count($db['data'])) > 0) {
-    for ($i = 0; $i < $n; $i++) {
-      if ($db['data'][$i]['var'] === $var) {
-        return(TRUE);
-      }
-    }
-  }
-  return(FALSE);
-}
-
 // Function: getVARdef
 //
 //
@@ -517,23 +504,16 @@ function getVARdef($db, $var, $cur = NULL) {
   if (is_null($db)) {
     return($value);
   }
-  if (($n = count($db['data'])) > 0) {
-    for ($i = 0; $i < $n; $i++) {
-      if ($db['data'][$i]['var'] === $var) {
-        return($db['data'][$i]['value']);
-      }
-    }
+  if (isset($db['data']["$var"])) {
+    return($db['data']["$var"]);
   }
+
+  // no matches, check for currrent config
   if (is_null($cur)) {
     return($value);
   }
-  // no matches, check for currrent config
-  if (($n = count($cur['data'])) > 0) {
-    for ($i = 0; $i < $n; $i++) {
-      if ($cur['data'][$i]['var'] === $var) {
-        return($cur['data'][$i]['value']);
-      }
-    }
+  if (isset($cur['data']["$var"])) {
+    return($cur['data']["$var"]);
   }
   return($value);
 }
@@ -614,9 +594,8 @@ function tuqd($str) {
 
 // Function: parseRCconfig
 //
-//
 function parseRCconf($conffile) {
-  $id = 0;
+
   $tmpfile = tempnam("/tmp", "PHP_");
   @exec("sed -e 's/^#.*//' -e '/^$/ d' ".$conffile.' >'.$tmpfile);
   $ph = @fopen($tmpfile, "r");
@@ -675,9 +654,7 @@ function parseRCconf($conffile) {
           $var = '';
         }
         if ($var !== '') {
-          $db['data'][$id]['var'] = $var;
-          $db['data'][$id]['value'] = $value;
-          $id++;
+          $db['data']["$var"] = $value;
         }
       }
     }
@@ -685,23 +662,8 @@ function parseRCconf($conffile) {
   fclose($ph);
   @unlink($tmpfile);
 
-  // remove duplicates and compact
-  $db_R['conffile'] = $conffile;
-  $n = $id;
-  $id = 0;
-  for ($i = 0; $i < $n; $i++) {
-    if ($db['data'][$i]['var'] !== '') {
-      for ($j = ($i + 1); $j < $n; $j++) {
-        if ($db['data'][$i]['var'] === $db['data'][$j]['var']) {
-          $db['data'][$i]['value'] = $db['data'][$j]['value'];
-          $db['data'][$j]['var'] = '';
-        }
-      }
-      $db_R['data'][$id] = $db['data'][$i];
-      $id++;
-    }
-  }
-  return($db_R);
+  $db['conffile'] = $conffile;
+  return($db);
 }
 
 // Function: get_HOSTNAME_DOMAIN
@@ -1022,12 +984,8 @@ function getAstDB($family, $key) {
 function getPREFdef($db, $var)
 {
   $value = '';
-  if (($n = count($db['data'])) > 0) {
-    for ($i = 0; $i < $n; $i++) {
-      if ($db['data'][$i]['var'] === $var) {
-        return($db['data'][$i]['value']);
-      }
-    }
+  if (isset($db['data']["$var"])) {
+    return($db['data']["$var"]);
   }
   return($value);
 }
@@ -1120,8 +1078,6 @@ function getPREFSlocation()
 //
 function parsePrefs($pfile)
 {
-  $id = 0;
-
   if ($pfile !== '') {
     if (is_file($pfile)) {
       if (($ph = @fopen($pfile, "r")) !== FALSE) {
@@ -1132,9 +1088,7 @@ function parsePrefs($pfile)
                 $var = trim(substr($line, 0, $pos), ' ');
                 $value = trim(substr($line, ($pos + 1)), '" ');
                 if ($var !== '' && $value !== '') {
-                  $db['data'][$id]['var'] = $var;
-                  $db['data'][$id]['value'] = $value;
-                  $id++;
+                  $db['data']["$var"] = $value;
                 }
               }
             }
