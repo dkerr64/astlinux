@@ -88,6 +88,8 @@ Released @TBD@
 
 -- rsync, version bump to 3.1.3, security fix: CVE-2018-5764
 
+-- prosody, version bump to 0.9.13, security fixes.
+
 -- WireGuard VPN, version bump to 0.0.20180420
 
 -- OpenVPN, version bump to 2.4.6
@@ -104,7 +106,7 @@ Released @TBD@
 
 -- openldap, version bump to 2.4.46
 
--- getdns/stubby, new package, version 1.4.2-rc1/0.2.3-rc1, encrypts local DNS queries forwarded to upstream recursive DNS-TLS servers
+-- getdns/stubby, new package, version 1.4.2/0.2.3, encrypts local DNS queries forwarded to upstream recursive DNS-TLS servers
    New rc.conf variables: DNS_TLS_PROXY, DNS_TLS_DNSSEC, DNS_TLS_QUERY_ALL, DNS_TLS_SERVERS
 
 -- unbound (host), version bump to 1.7.0, security fix: CVE-2017-15105
