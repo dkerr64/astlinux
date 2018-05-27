@@ -5,10 +5,16 @@
 === docs/ChangeLog.txt
 =========================================================
 
-Additions for AstLinux 1.3.3:
+Additions for AstLinux 1.3.4:
 =============================
 
 Released @TBD@
+
+
+Additions for AstLinux 1.3.3:
+=============================
+
+Released 2018-05-16
 
 ** System
 
@@ -90,7 +96,7 @@ Released @TBD@
 
 -- prosody, version bump to 0.9.13, security fixes.
 
--- WireGuard VPN, version bump to 0.0.20180420
+-- WireGuard VPN, version bump to 0.0.20180513
 
 -- OpenVPN, version bump to 2.4.6
 
