@@ -212,13 +212,15 @@ function systemREBOOT($myself, $result, $setup = FALSE) {
     $count_down_secs += (int)$adjust;
   }
 
-  $arch = trim(shell_exec('cat /proc/cmdline 2>/dev/null | sed -e \'s/^.*astlinux=//\' -e \'s/ .*$//\''));
+  $arch = system_image_arch();
   if ($arch === 'net4801' || $arch === 'wrap') {
     $count_down_secs += 20;
   }
 
   $cmd = '/sbin/kernel-reboot';
-  if (! is_executable($cmd) || (getPREFdef($global_prefs, 'system_reboot_classic_full') === 'yes') || $arch === 'genx86_64-vm') {
+  if (! is_executable($cmd)
+    || ((getPREFdef($global_prefs, 'system_reboot_classic_full') === 'yes') && $arch !== 'genx86_64-vm')
+    || ((getPREFdef($global_prefs, 'system_reboot_vm_classic_full') !== 'no') && $arch === 'genx86_64-vm')) {
     $cmd = '/sbin/reboot';
     $count_down_secs += 30;
   }
@@ -1099,6 +1101,24 @@ function parsePrefs($pfile)
     }
   }
   return($db);
+}
+
+// Function: system_image_arch
+//
+function system_image_arch() {
+
+  $arch = '';
+  if (($cmdline = trim(@file_get_contents('/proc/cmdline'))) !== '') {
+    $tokens = explode(' ', $cmdline);
+    foreach ($tokens as $value) {
+      $cmd = explode('=', $value);
+      if ($cmd[0] === 'astlinux' && $cmd[1] != '') {
+        $arch = $cmd[1];
+        break;
+      }
+    }
+  }
+  return ($arch);
 }
 
 // Function: system_timezone
