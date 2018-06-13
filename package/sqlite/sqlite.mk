@@ -4,7 +4,7 @@
 #
 #############################################################
 
-SQLITE_VERSION = 3230100
+SQLITE_VERSION = 3240000
 SQLITE_SOURCE = sqlite-autoconf-$(SQLITE_VERSION).tar.gz
 SQLITE_SITE = https://www.sqlite.org/2018
 SQLITE_INSTALL_STAGING = YES
@@ -19,6 +19,8 @@ SQLITE_CFLAGS += -DSQLITE_ENABLE_COLUMN_METADATA
 SQLITE_CONF_ENV = CFLAGS="$(TARGET_CFLAGS) $(SQLITE_CFLAGS)"
 
 SQLITE_CONF_OPT = \
+	--disable-fts5 \
+	--disable-json1 \
 	--disable-static-shell \
 	--enable-threadsafe \
 	--localstatedir=/var
