@@ -63,6 +63,23 @@ $CONNTRACK = '/proc/net/nf_conntrack';
 //
 
 $myself = $_SERVER['PHP_SELF'];
+$starttime = microtime(true);
+$laptime = $starttime;
+$showtimes = isset($_GET['timer']);
+function printElapsed($txt) {
+  global $starttime;
+  global $laptime;
+  global $showtimes;
+
+  if ($showtimes) {
+    $timenow = microtime(true);
+    $totaltime = round(($timenow - $starttime) * 1000, 2);
+    $elapsedtime = round(($timenow - $laptime) * 1000, 2);
+    echo '*** '.$txt.': '.$totaltime.'ms ('.$elapsedtime.'ms) *** <br>';
+    $laptime = $timenow;
+  }
+}
+
 
 require_once $COMMON.'functions.php';
 
@@ -549,9 +566,9 @@ $ACCESS_RIGHTS = 'all';
 
 $daemon = getDaemons();
 
-if (($async_load === 'yes') || (!getPREFdef($global_prefs, 'async_load_status_page') !== 'no')) {
+if (($async_load === 'yes') || (getPREFdef($global_prefs, 'async_load_status_page') === 'no')) {
   // Only fire off the popen()'s if loading status sections this read.
-
+printElapsed('Start of popen block');
 if (getPREFdef($global_prefs, 'status_disk_usage') !== 'no') {
     $cmd = 'df -h /tmp | grep "^ *[A-Z][a-z]"';
     $cmd .= '; df -h | grep "^/dev/[sh]d[a-h][0-9]" | sort -k 1,1';
@@ -627,11 +644,13 @@ if ($daemon['syslogd'] > 0) {
     $status_show_system_logs = @popen($cmd, 'r');
   }
 }
+printElapsed('End of popen block');
 }
 
 // Build the HTML for the main block of the page
 if ($async_load !== 'yes') {
 require_once $COMMON.'header.php';
+printElapsed('Start');
 // Start with general system info.
 //
 putHtml("<center>");
@@ -662,6 +681,7 @@ putHtml('<table width="100%" class="datatable">');
 echo '<tr ', ($i++ % 2 == 0) ? 'class="dtrow0"' : 'class="dtrow1"', '>';
 echo '<td class="dialogText" style="text-align: right; font-weight: bold;">', 'Hostname:', '</td>';
 echo '<td style="text-align: left;">', $_SERVER['SERVER_NAME'], '</td>';
+printElapsed('After server name');
 // IP Address
 $line = trim(shell_exec('. /etc/rc.conf;/sbin/ip -o addr show dev "$EXTIF" 2>/dev/null | awk \'$3 == "inet" { split($4, field, "/"); print field[1]; }\''));
 if ($line !== '') {
@@ -671,6 +691,7 @@ if ($line !== '') {
   echo '<td>&nbsp;</td><td>&nbsp;</td>';
 }
 putHtml('</tr>');
+printElapsed('After IPv4');
 // IPv6
 if (! is_null($ipv6_addr = getIPV6address())) {
   echo '<tr ', ($i++ % 2 == 0) ? 'class="dtrow0"' : 'class="dtrow1"', '>';
@@ -689,6 +710,7 @@ if (! is_null($ipv6_addr = getIPV6address())) {
   putHtml('</tr>');
 }
 // DNS
+printElapsed('After IPv6');
 if (isDNS_TLS() || isDNSCRYPT()) {
   echo '<tr ', ($i++ % 2 == 0) ? 'class="dtrow0"' : 'class="dtrow1"', '>';
   echo '<td class="dialogText" style="text-align: right; font-weight: bold;">', 'DNS:', '</td>';
@@ -735,6 +757,7 @@ if (preg_match('/^.*up *(.*)load average: *(.*)/i', $line, $matches)) {
   echo '<td style="text-align: left;">', $matches[2], '</td>';
   putHtml('</tr>');
 }
+printElapsed('After uptime');
 // astlinux-release
 echo '<tr ', ($i++ % 2 == 0) ? 'class="dtrow0"' : 'class="dtrow1"', '>';
 echo '<td class="dialogText" style="text-align: right; font-weight: bold;">', 'AstLinux Release:', '</td>';
@@ -792,6 +815,7 @@ if (is_file('/etc/system-vendor')) {
 // end of block
 putHtml('</table>');
 putHtml('</center></td></tr></table></center>');
+printElapsed('End of first block');
 }
 // Now do all the status sections
 //
@@ -802,10 +826,13 @@ putHtml('</center></td></tr></table></center>');
 if (($async_load !== 'yes') && (getPREFdef($global_prefs, 'async_load_status_page') !== 'no')) {
   putHtml("<span id='status_sections'><br>Loading...<br></span>");
   putHtml("<script language='JavaScript' type='text/javascript'>");
-  putHtml("jx.load('$myself?async-load=yes',function(data){document.getElementById('status_sections').innerHTML=data;});");
+  if ($showtimes) $url = $myself.'?async-load=yes&timer';
+  else $url = $myself.'?async-load=yes';
+  putHtml("jx.load('$url',function(data){document.getElementById('status_sections').innerHTML=data;});");
   putHtml("</script>");
 }
 else {
+printElapsed('Start of second block');
 if (is_file('/etc/ppp/pppoe.conf')) {
   if (getPREFdef($global_prefs, 'status_pppoe_connection') !== 'no') {
     putHtml('<form method="post" action="'.$myself.'">');
@@ -877,7 +904,7 @@ if (isset($status_disk_usage)) {
     putHtml("</pre>");
   }
 }
-
+printElapsed('After disk usage');
 if (is_file('/var/run/wan-failover.pid') && is_file('/var/log/wan-failover-status.log')) {
   if (getPREFdef($global_prefs, 'status_show_wan_failover') !== 'no') {
     putHtml("<h2>WAN Failover Status:</h2>");
@@ -892,7 +919,7 @@ if (is_file('/var/run/wan-failover.pid') && is_file('/var/log/wan-failover-statu
     putHtml("</pre>");
   }
 }
-
+printElapsed('After WAN failover');
 if (isset($status_show_acme_certificates)) {
   if ($status_show_acme_certificates !== FALSE) {
     putHtml("<h2>ACME Certificates:</h2>");
@@ -908,7 +935,7 @@ if (isset($status_show_acme_certificates)) {
     putHtml("</pre>");
   }
 }
-
+printElapsed('After ACME');
 if (isset($status_ntp_sessions)) {
   if ($status_ntp_sessions !== FALSE) {
     putHtml("<h2>NTP Time Sources:</h2>");
@@ -929,7 +956,7 @@ if (isset($status_ntp_sessions)) {
     putHtml("</pre>");
   }
 }
-
+printElapsed('After NTP');
 if ($daemon['miniupnpd'] > 0) {
   if (getPREFdef($global_prefs, 'status_show_miniupnpd_leases') !== 'no') { // currently not set in the Prefs tab
     putHtml("<h2>Universal Plug'n'Play (NAT-PMP/PCP and UPnP) Leases:</h2>");
@@ -968,7 +995,7 @@ if ($daemon['miniupnpd'] > 0) {
     }
   }
 }
-
+printElapsed('After MINIUPNPD');
 if ($daemon['dnsmasq'] > 0) {
   if (getPREFdef($global_prefs, 'status_show_dhcp_leases') !== 'no' && isDHCPactive()) {
     putHtml("<h2>DHCP Leases:</h2>");
@@ -1061,7 +1088,7 @@ if ($daemon['dnsmasq'] > 0) {
     }
   }
 }
-
+printElapsed('After DNS');
 if ($daemon['openvpn'] > 0 && getPREFdef($global_prefs, 'status_openvpn_client_server') !== 'no') {
   if (is_file('/var/run/openvpnclient.pid') && !is_null($openvpnclient = parseOpenVPNClog($OVPNCLOGFILE))) {
     putHtml("<h2>OpenVPN Client Status:</h2>");
@@ -1104,7 +1131,7 @@ if ($daemon['openvpn'] > 0 && getPREFdef($global_prefs, 'status_openvpn_client_s
     }
   }
 }
-
+printElapsed('After OpenVPN');
 if ($daemon['racoon'] > 0) {
   if (getPREFdef($global_prefs, 'status_ipsec_associations') !== 'no') {
     putHtml("<h2>IPsec Associations:</h2>");
@@ -1159,7 +1186,7 @@ if (isset($status_ipsec_associations)) {
     putHtml("</pre>");
   }
 }
-
+printElapsed('After IPsec');
 if ($daemon['pptpd'] > 0) {
   if (getPREFdef($global_prefs, 'status_pptp_server') !== 'no') {
     putHtml("<h2>PPTP VPN Server Status:</h2>");
@@ -1185,7 +1212,7 @@ if (isset($status_wireguard_vpn)) {
     putHtml("</pre>");
   }
 }
-
+printElapsed('After WireGuard');
 if ($daemon['asterisk'] > 0) {
   if (($cmd = getPREFdef($global_prefs, 'status_active_chan_cmdstr')) === '') {
     $cmd = 'core show channels';
@@ -1390,7 +1417,7 @@ if ($daemon['asterisk'] > 0) {
     putHtml("</pre>");
   }
 }
-
+printElapsed('After Asterisk');
 if ($daemon['kamailio'] > 0) {
   if (getPREFdef($global_prefs, 'status_show_kamailio_server') !== 'no') {
     putHtml("<h2>Kamailio SIP Server Status:</h2>");
@@ -1448,7 +1475,7 @@ if (isset($status_show_adaptive_ban)) {
     putHtml("</pre>");
   }
 }
-
+printElapsed('After adaptive ban');
 if (is_file($CONNTRACK)) {
   if (getPREFdef($global_prefs, 'status_show_firewall_states') === 'yes') {
     putHtml("<h2>Firewall States:</h2>");
@@ -1495,7 +1522,7 @@ if (is_file($CONNTRACK)) {
     @unlink($tmpfile);
   }
 }
-
+printElapsed('After firewall');
 if ($daemon['upsmon'] > 0) {
   if (getPREFdef($global_prefs, 'status_ups_show_status') !== 'no') {
     putHtml("<h2>UPS Monitoring Status:</h2>");
@@ -1545,7 +1572,7 @@ if ($daemon['upsmon'] > 0) {
     putHtml("</pre>");
   }
 }
-
+printElapsed('After UPS');
 if (isset($status_show_hardware_monitoring)) {
   if ($status_show_hardware_monitoring !== FALSE) {
     putHtml("<h2>Hardware Monitoring:</h2>");
@@ -1577,7 +1604,7 @@ if (isset($status_show_smart_monitoring)) {
     putHtml("</pre>");
   }
 }
-
+printElapsed('After hardware');
 if (isset($status_show_system_logs)) {
   if ($status_show_system_logs !== FALSE) {
     putHtml("<h2>Latest System Logs:</h2>");
@@ -1598,6 +1625,7 @@ if ($async_load !== 'yes') {
 putHtml('<p style="color: orange;">Asterisk&reg; is a registered trademark of Digium, Inc.</p>');
 }
 } // End of HTTP GET
+printElapsed('Footer');
 require_once $COMMON.'footer.php';
 
 ?>
