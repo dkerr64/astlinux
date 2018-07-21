@@ -19,13 +19,17 @@ Released @TBD@
 -- genx86_64-vm board type, add support for QEMU Guest Agent (qemu-ga 2.12.0).
    New rc.conf variable QEMU_GUEST_AGENT must be set to "yes" to enable.
 
--- e2fsprogs, version bump to 1.44.2
+-- php, version bump to 5.6.37
+
+-- e2fsprogs, version bump to 1.44.3
 
 -- sqlite, version bump to 3.24.0
 
 -- libedit, version bump to 20180525-3.1
 
 -- luabitop, version 1.0.2, new Lua module for prosody
+
+-- acpid, version bump to 2.0.30
 
 -- ethtool, version bump to 4.17
 
@@ -44,15 +48,15 @@ Released @TBD@
 
 ** Networking
 
--- libcurl (curl) version bump to 7.60.0, security fixes: CVE-2018-1000300, CVE-2018-1000301
+-- libcurl (curl) version bump to 7.61.0, security fixes: CVE-2018-1000300, CVE-2018-1000301, CVE-2018-0500
 
 -- prosody, major version bump to 0.10.2, security fixes. Uses added luabitop 'lua bit' module
 
--- WireGuard VPN, version bump to 0.0.20180625
+-- WireGuard VPN, version bump to 0.0.20180718
 
 -- strongSwan, version 5.5.3, security fixes: CVE-2018-10811, CVE-2018-5388
 
--- stunnel, version bump to 5.47
+-- stunnel, version bump to 5.48
 
 -- iperf3, major version bump to 3.6
 
@@ -62,11 +66,13 @@ Released @TBD@
 
 -- unbound (host), version bump to 1.7.3
 
--- whois, version bump to 5.3.1
+-- whois, version bump to 5.3.2
+
+-- (Custom Build Only) sipp, version bump to 3.5.2
 
 ** Asterisk
 
--- Asterisk 11.25.3 (no change) and 13.21.1 (version bump)
+-- Asterisk 11.25.3 (no change) and 13.22.0 (version bump)
 
 -- DAHDI, dahdi-linux 2.10.2 (no change) and dahdi-tools 2.10.2 (no change)
 
