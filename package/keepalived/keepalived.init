@@ -1,0 +1,67 @@
+#!/bin/sh
+
+. /etc/rc.conf
+
+PIDFILE="/var/run/keepalived.pid"
+
+init () {
+
+  if [ ! -f /mnt/kd/keepalived/keepalived.conf ]; then
+    exit
+  fi
+
+  ln -snf /mnt/kd/keepalived /tmp/etc/keepalived
+
+  mkdir -p /var/state/keepalived
+}
+
+start () {
+  local OPTIONS
+
+  if [ -f /etc/keepalived/keepalived.conf ]; then
+
+    sysctl -w net.ipv4.ip_nonlocal_bind=1 >/dev/null
+
+    OPTIONS="$KEEPALIVED_OPTIONS"
+
+    echo "Starting keepalived..."
+    keepalived $OPTIONS -f /etc/keepalived/keepalived.conf
+  fi
+}
+
+stop () {
+
+  if [ -f $PIDFILE ]; then
+
+    echo "Stopping keepalived..."
+    kill $(cat $PIDFILE) >/dev/null 2>&1
+  fi
+}
+
+case $1 in
+
+start)
+  start
+  ;;
+
+stop)
+  stop
+  ;;
+
+init)
+  init
+  start
+  ;;
+
+restart)
+  stop
+  sleep 2
+  start
+  ;;
+
+*)
+  echo "Usage: start|stop|restart"
+  ;;
+
+esac
+

@@ -48,6 +48,7 @@
 // 08-13-2017, Added IPv6 ULA and DHCPv6 server user interface
 // 09-10-2017, Added Data Backup / Tarsnap Backup
 // 04-14-2018, Added DNS-TLS support
+// 07-30-2018, Added Keepalived support
 //
 // System location of rc.conf file
 $CONFFILE = '/etc/rc.conf';
@@ -1073,6 +1074,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       header('Location: /admin/edit.php?file='.$file);
       exit;
     }
+  } elseif (isset($_POST['submit_keepalived'])) {
+    $result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE);
+    if (is_writable($file = '/mnt/kd/keepalived/keepalived.conf')) {
+      header('Location: /admin/edit.php?file='.$file);
+      exit;
+    }
   } elseif (isset($_POST['submit_monit'])) {
     $result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE);
     header('Location: /admin/monitconfig.php');
@@ -1253,6 +1260,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $result = restartPROCESS($process, 50, $result, 'init');
       } elseif ($process === 'wireguard') {
         $result = restartPROCESS($process, 51, $result, 'init');
+      } elseif ($process === 'keepalived') {
+        $result = restartPROCESS($process, 52, $result, 'init');
       }
     } else {
       $result = 2;
@@ -1353,6 +1362,8 @@ require_once '../common/header.php';
       putHtml('<p style="color: green;">FTP Server'.statusPROCESS('vsftpd').'.</p>');
     } elseif ($result == 51) {
       putHtml('<p style="color: green;">WireGuard VPN'.statusPROCESS('wireguard').'.</p>');
+    } elseif ($result == 52) {
+      putHtml('<p style="color: green;">Keepalived'.statusPROCESS('keepalived').'.</p>');
     } elseif ($result == 99) {
       putHtml('<p style="color: red;">Action Failed.</p>');
     } elseif ($result == 100) {
@@ -1464,6 +1475,10 @@ require_once '../common/header.php';
   }
   $sel = ($reboot_restart === 'asterisk') ? ' selected="selected"' : '';
   putHtml('<option value="asterisk"'.$sel.'>Restart Asterisk</option>');
+  if (is_file('/etc/init.d/keepalived')) {
+    $sel = ($reboot_restart === 'keepalived') ? ' selected="selected"' : '';
+    putHtml('<option value="keepalived"'.$sel.'>Restart Keepalived</option>');
+  }
   if (is_addon_package('fop2')) {
     $sel = ($reboot_restart === 'fop2') ? ' selected="selected"' : '';
     putHtml('<option value="fop2"'.$sel.'>Restart Asterisk FOP2</option>');
@@ -2010,6 +2025,11 @@ require_once '../common/header.php';
     putHtml('<tr class="dtrow1"><td style="text-align: left;" colspan="6">');
     putHtml('SNMP&nbsp;Agent&nbsp;Server:');
     putHtml('<input type="submit" value="Configure SNMP Agent" name="submit_snmp_agent" class="button" /></td></tr>');
+  }
+  if (is_file('/etc/init.d/keepalived') && is_file('/mnt/kd/keepalived/keepalived.conf')) {
+    putHtml('<tr class="dtrow1"><td style="text-align: left;" colspan="6">');
+    putHtml('VRRP High Availability Daemon:');
+    putHtml('<input type="submit" value="Configure Keepalived" name="submit_keepalived" class="button" /></td></tr>');
   }
   if (is_file('/etc/init.d/monit')) {
     putHtml('<tr class="dtrow1"><td style="text-align: left;" colspan="6">');
