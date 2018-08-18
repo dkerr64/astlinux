@@ -63,17 +63,6 @@ password $SMTP_PASS"
 
 init () {
 
-  # Automatically create "/mnt/kd/mail" directory if it doesn't exist
-  if [ ! -d /mnt/kd/mail ]; then
-    mkdir /mnt/kd/mail 2>/dev/null     # will fail on virgin RO filesystem, ignore stderr
-  fi
-
-  if [ -d /mnt/kd/mail ]; then  # Persistent mail queue
-    ln -snf /mnt/kd/mail /var/spool/mail
-  elif [ ! -d /var/spool/mail ]; then  # Temporary mail queue
-    mkdir /var/spool/mail
-  fi
-
   if [ -n "$SMTP_DOMAIN" ]; then
     DOMAIN="$SMTP_DOMAIN"
   fi
