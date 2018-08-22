@@ -4,13 +4,12 @@
 #
 #############################################################
 
-MSMTP_VERSION = 1.6.8
+MSMTP_VERSION = 1.8.0rc1
 MSMTP_SOURCE = msmtp-$(MSMTP_VERSION).tar.xz
 MSMTP_SITE = https://marlam.de/msmtp/releases
 MSMTP_DEPENDENCIES = openssl
 
 MSMTP_CONF_OPT += \
-	--with-msmtpd \
 	--with-tls=openssl \
 	--without-libgsasl \
 	--without-libidn \
