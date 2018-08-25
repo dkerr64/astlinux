@@ -571,7 +571,7 @@ if (($async_load === 'yes') || (getPREFdef($global_prefs, 'async_load_status_pag
 printElapsed('Start of popen block');
 if (getPREFdef($global_prefs, 'status_disk_usage') !== 'no') {
     $cmd = 'df -h /tmp | grep "^ *[A-Z][a-z]"';
-    $cmd .= '; df -h | grep "^/dev/[sh]d[a-h][0-9]" | sort -k 1,1';
+    $cmd .= '; df -h | grep "^/dev/[sv]d[a-h][0-9]" | sort -k 1,1';
     $status_disk_usage = @popen($cmd, 'r');
 }
 if (is_dir('/mnt/kd/acme')) {
