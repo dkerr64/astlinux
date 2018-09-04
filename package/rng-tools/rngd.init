@@ -1,0 +1,90 @@
+#!/bin/sh
+
+. /etc/rc.conf
+
+PIDFILE="/var/run/rngd.pid"
+
+HWRNG_DEVICE="/dev/hwrng"
+
+init () {
+
+  if [ "$HWRNG_MODULE" = "no" ]; then
+    exit
+  fi
+
+  ## No need to load a module if HWRNG_DEVICE exists
+  if [ -e $HWRNG_DEVICE ]; then
+    return
+  fi
+
+  ## Load a module to create HWRNG_DEVICE
+  if [ -n "$HWRNG_MODULE" ]; then
+    modprobe "$HWRNG_MODULE"
+  elif grep -q "astlinux=genx86_64-vm" /proc/cmdline; then
+    modprobe virtio-rng
+  fi
+}
+
+start () {
+
+  if [ "$HWRNG_MODULE" != "no" ]; then
+    echo "Starting rngd..."
+
+    if [ -e $HWRNG_DEVICE ]; then
+      ## Exclude TPM RNG Device (1), Intel RDRAND (2) and jitterentropy (5)
+      ARGS="-r $HWRNG_DEVICE -x1 -x2 -x5"
+    else
+      ## Exclude Hardware RNG Device (0) and TPM RNG Device (1)
+      ARGS="-x0 -x1"
+      ## Exclude jitterentropy (5) if we have Intel RDRAND (2) support
+      if grep -q '^flags.*:.* rdrand ' /proc/cpuinfo; then
+        ARGS="$ARGS -x5"
+        ## Disable applying additional AES to RDRAND data
+        ARGS="$ARGS -O 2:use_aes:0"
+      else
+        ## Disable Intel RDRAND (2)
+        ARGS="$ARGS -x2"
+      fi
+    fi
+
+    start-stop-daemon -S -x /usr/sbin/rngd -p $PIDFILE -m -b -- -f -q $ARGS
+  fi
+}
+
+stop () {
+
+  if [ -f $PIDFILE ]; then
+    echo "Stopping rngd..."
+
+    start-stop-daemon -K -q -n rngd -p $PIDFILE -s TERM
+    rm -f $PIDFILE
+  fi
+}
+
+case $1 in
+
+start)
+  start
+  ;;
+
+stop)
+  stop
+  ;;
+
+init)
+  init
+  start
+  ;;
+
+restart)
+  stop
+  sleep 2
+  start
+  ;;
+
+*)
+  echo "Usage: start|stop|restart"
+  ;;
+
+esac
+
