@@ -14,7 +14,7 @@ Released @TBD@
 
 -- Linux Kernel 3.16.57, security and bug fixes
 
--- RUNNIX, version bump to runnix-0.5.5, with Linux Kernel 3.16.57, e2fsprogs 1.44.4
+-- RUNNIX, version bump to runnix-0.5.6, with Linux Kernel 3.16.57, e2fsprogs 1.44.4
    Added kernel drivers: virtio-blk
 
 -- igb, version bump to 5.3.5.20, Intel Gigabit Ethernet Network Driver
@@ -29,11 +29,15 @@ Released @TBD@
 
 -- rng-tools, new package, version 6.4, Random Number Generator (RNG) daemon
    Enabled by default to increase the available entropy for the kernel's "random" sources.
+   Uses one of 3 sources, in order:
+     1) /dev/hwrng (typically via virtio-rng for the genx86_64-vm board type)
+     2) Intel RDRAND instruction on supported CPU's
+     3) jitterentropy, Hardware RNG based on CPU timing jitter
    New rc.conf variable HWRNG_MODULE can be set to "no" to disable.
 
 -- acme-client, version bump to 2.7.9
 
--- php, version bump to 5.6.37
+-- php, version bump to 5.6.38
 
 -- busybox, enable "timeout" command
 
@@ -61,7 +65,7 @@ Released @TBD@
 
 -- strace, version bump to 4.24
 
--- sudo, version bump to 1.8.25
+-- sudo, version bump to 1.8.25p1
 
 -- unixodbc, version bump to 2.3.7
 
@@ -80,7 +84,7 @@ Released @TBD@
 
 -- prosody, major version bump to 0.10.2, security fixes. Uses added luabitop 'lua bit' module
 
--- WireGuard VPN, version bump to 0.0.20180904
+-- WireGuard VPN, version bump to 0.0.20180910
 
 -- lighttpd, version bump to 1.4.50, many bug and security fixes
 
@@ -104,7 +108,7 @@ Released @TBD@
          Required for Monit and Keepalived email alerts.
          Disable with new rc.conf variable SMTP_LOCALHOST_SERVER="no"
 
--- unbound (host), version bump to 1.7.3
+-- unbound (host), version bump to 1.8.0
 
 -- whois, version bump to 5.3.2
 
