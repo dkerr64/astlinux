@@ -71,19 +71,22 @@ isDHCPinterface()
 
 trueDNSMASQnet()
 {
-  # args: tag, IP, ip.dstart, ip.dend, leasetime
+  # args: tag, IP, ip.dstart, ip.dend, leasetime, dnsList
   local servername="$2" gateway="$2"
+  local dnsList="$6"
 
   if [ "$1" = "lan" ]; then
     servername="$HOSTNAME.$DOMAIN"
   elif [ "$1" = "ext" ]; then
     gateway="$EXTGW"
   fi
+  # if no DNS servers provided then use this gateway IP address
+  if [ -z "$dnsList" ]; then dnsList="$gateway"; fi
 
   echo "
 dhcp-range=$1,$3,$4,$5
 dhcp-option=$1,option:router,$gateway
-dhcp-option=$1,option:dns-server,$gateway
+dhcp-option=$1,option:dns-server,$dnsList
 dhcp-option=$1,option:tftp-server,\"$servername\"
 dhcp-option=$1,150,$2"
 
@@ -106,6 +109,8 @@ addIPV6net()
   # args: IFname, tag, leasetime
   local iname="$1" tag="$2"
   local manualIPv6="" interface="" regex
+  local IFS
+  local dnsAddrs dnsList="" dnsIP
 
   # find interface name (e.g. eth1) from interface ID (e.g. INTIF)
   eval interface='$'$iname
@@ -122,20 +127,36 @@ addIPV6net()
      [[ "$IPV6_PREFIX_ULA" =~ $regex ]] || [ -n "$manualIPv6" ]; then
     # an IPv6 is assigned to this interface.  Proceed.
     if [[ "$IPV6_AUTOCONF_DHCP" =~ $regex ]]; then
+      # find list of DNS servers from e.g. INTDNS
+      eval dnsAddrs='$'${iname/%IF/DNS}
+      # now extract only IPv6 addresses and format them as required by dnsmasq
+      IFS=$' ,'
+      for dnsIP in $dnsAddrs; do
+        get_numeric_ip_version "$dnsIP"
+        if [ $? -eq 6 ]; then
+          if [ -z "$dnsList" ]; then dnsList="[$dnsIP]"
+            else dnsList="$dnsList,[$dnsIP]"
+          fi
+        fi
+      done
+      unset IFS
+      # if no IPv6 DNS servers provided then use [::] (which means IP addr of this interface)
+      if [ -z "$dnsList" ]; then dnsList="[::]"; fi
+
       if [ -z "$DHCPV6RANGE" ]; then
         DHCPV6RANGE="::1000,::ffff"
       fi
       echo ""
       echo "# Enable IPv6 Stateful DHCP and Router Advertisements on $interface"
       echo "dhcp-range=$tag,$DHCPV6RANGE,constructor:$interface,ra-names,slaac,${DHCP_LEASETIME:-24}h"
-      echo "dhcp-option=$tag,option6:dns-server,[fe80::]"
+      echo "dhcp-option=$tag,option6:dns-server,$dnsList"
       echo "dhcp-option=$tag,option6:domain-search,$DOMAIN"
       return 0
     elif [[ "$IPV6_AUTOCONF_STATELESS_DHCP" =~ $regex ]]; then
       echo ""
       echo "# Enable IPv6 Stateless DHCP and Router Advertisements on $interface"
       echo "dhcp-range=$tag,::,constructor:$interface,ra-names,ra-stateless,${DHCP_LEASETIME:-24}h"
-      echo "dhcp-option=$tag,option6:dns-server,[fe80::]"
+      echo "dhcp-option=$tag,option6:dns-server,$dnsList"
       echo "dhcp-option=$tag,option6:domain-search,$DOMAIN"
       return 0
     elif [[ "$IPV6_AUTOCONF" =~ $regex ]]; then
@@ -155,8 +176,10 @@ addIPV6net()
 
 addDNSMASQnet()
 {
-  # args: IF, IP, NM, tag
+  # args: IF, IP, NM, DNS tag
   local max_hosts range_min range_max ip_min ip_max leasetime
+  local IFS
+  local dnsAddrs="$4" dnsList="" dnsIP
 
   if [ -n "$1" -a "$1" != "none" -a -n "$2" -a -n "$3" ]; then
     leasetime="${DHCP_LEASETIME:-24}h"
@@ -188,7 +211,20 @@ addDNSMASQnet()
       ip_min="$(netcalc -R "$range_min:$range_max" "$2" "$3" | sed -n -r -e 's/^RangeMin *: *([0-9.]+).*$/\1/p')"
       ip_max="$(netcalc -R "$range_min:$range_max" "$2" "$3" | sed -n -r -e 's/^RangeMax *: *([0-9.]+).*$/\1/p')"
 
-      trueDNSMASQnet $4 $2 "$ip_min" "$ip_max" $leasetime
+      # dnsAddrs is a list of DNS server IP addresses.
+      # extract only IPv4 addresses and format them as required by dnsmasq
+      IFS=$' ,'
+      for dnsIP in $dnsAddrs; do
+        get_numeric_ip_version "$dnsIP"
+        if [ $? -eq 4 ]; then
+          if [ -z "$dnsList" ]; then dnsList="$dnsIP"
+            else dnsList="$dnsList,$dnsIP"
+          fi
+        fi
+      done
+      unset IFS
+
+      trueDNSMASQnet $5 $2 "$ip_min" "$ip_max" $leasetime $dnsList
 
     else
       falseDNSMASQnet $1
@@ -396,23 +432,23 @@ nameserver 127.0.0.1" > /tmp/etc/resolv.conf
   if is_DHCP_active || is_EXTDHCP_active || is_IPV6RA_active; then
     createDNSMASQbasic dhcp >> /tmp/etc/dnsmasq.conf
 
-    addDNSMASQnet "$INTIF" "$INTIP" "$INTNM" lan >> /tmp/etc/dnsmasq.conf
+    addDNSMASQnet "$INTIF" "$INTIP" "$INTNM" "$INTDNS" lan >> /tmp/etc/dnsmasq.conf
     addIPV6net "INTIF" lan >> /tmp/etc/dnsmasq.conf
 
-    addDNSMASQnet "$INT2IF" "$INT2IP" "$INT2NM" lan2 >> /tmp/etc/dnsmasq.conf
+    addDNSMASQnet "$INT2IF" "$INT2IP" "$INT2NM" "$INT2DNS" lan2 >> /tmp/etc/dnsmasq.conf
     addIPV6net "INT2IF" lan2 >> /tmp/etc/dnsmasq.conf
 
-    addDNSMASQnet "$INT3IF" "$INT3IP" "$INT3NM" lan3 >> /tmp/etc/dnsmasq.conf
+    addDNSMASQnet "$INT3IF" "$INT3IP" "$INT3NM" "$INT3DNS" lan3 >> /tmp/etc/dnsmasq.conf
     addIPV6net "INT3IF" lan3 >> /tmp/etc/dnsmasq.conf
 
-    addDNSMASQnet "$INT4IF" "$INT4IP" "$INT4NM" lan4 >> /tmp/etc/dnsmasq.conf
+    addDNSMASQnet "$INT4IF" "$INT4IP" "$INT4NM" "$INT4DNS" lan4 >> /tmp/etc/dnsmasq.conf
     addIPV6net "INT4IF" lan4 >> /tmp/etc/dnsmasq.conf
 
-    addDNSMASQnet "$DMZIF" "$DMZIP" "$DMZNM" dmz >> /tmp/etc/dnsmasq.conf
+    addDNSMASQnet "$DMZIF" "$DMZIP" "$DMZNM" "$DMZDNS" dmz >> /tmp/etc/dnsmasq.conf
     addIPV6net "DMZIF" dmz >> /tmp/etc/dnsmasq.conf
 
     if is_EXTDHCP_active; then
-      addDNSMASQnet "$EXTIF" "$EXTIP" "$EXTNM" ext >> /tmp/etc/dnsmasq.conf
+      addDNSMASQnet "$EXTIF" "$EXTIP" "$EXTNM" "$EXTDNS" ext >> /tmp/etc/dnsmasq.conf
     fi
 
     addDHCPhosts_options >> /tmp/etc/dnsmasq.conf
