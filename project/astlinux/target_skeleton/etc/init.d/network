@@ -103,62 +103,52 @@ id-assoc pd 1 {"
       echo "  prefix ::/$len infinity;"
     fi
 
-    if [ -z "$IPV6_PREFIX_DELEGATION" ]; then
-        # If there are no interfaces set to receive a GUA prefix then we need to
-        # "park" the prefix onto a dummy interface. This is required for NPTv6 to work.
-      echo "  prefix-interface dummy0 {
-    sla-id 0;
-    sla-len $((64-len));
-    ifid 1;
-  };"
-
-    else
-      unset IFS
-      for iname in $IPV6_PREFIX_DELEGATION; do
-        int=""
-        case $iname in
-          INTIF)
-            if [ -n "$INTIF" -a "$INTIF" != "none" ]; then
-              int="$INTIF"
-            fi
-            ;;
-          INT2IF)
-            if [ -n "$INT2IF" -a "$INT2IF" != "none" ]; then
-              int="$INT2IF"
-            fi
-            ;;
-          INT3IF)
-            if [ -n "$INT3IF" -a "$INT3IF" != "none" ]; then
-              int="$INT3IF"
-            fi
-            ;;
-          INT4IF)
-            if [ -n "$INT4IF" -a "$INT4IF" != "none" ]; then
-              int="$INT4IF"
-            fi
-            ;;
-          DMZIF)
-            if [ -n "$DMZIF" -a "$DMZIF" != "none" ]; then
-              int="$DMZIF"
-            fi
-            ;;
-        esac
-        if [ -n "$int" ]; then
-          # subnet comes back set to a 4 digit hex string, convert to decimal
-          id="$(printf '%d' 0x$(get_dhcpv6_subnet $int $len))"
-          echo "  prefix-interface $int {
+    unset IFS
+    for iname in $IPV6_PREFIX_DELEGATION; do
+      int=""
+      case $iname in
+        INTIF)
+          if [ -n "$INTIF" -a "$INTIF" != "none" ]; then
+            int="$INTIF"
+          fi
+          ;;
+        INT2IF)
+          if [ -n "$INT2IF" -a "$INT2IF" != "none" ]; then
+            int="$INT2IF"
+          fi
+          ;;
+        INT3IF)
+          if [ -n "$INT3IF" -a "$INT3IF" != "none" ]; then
+            int="$INT3IF"
+          fi
+          ;;
+        INT4IF)
+          if [ -n "$INT4IF" -a "$INT4IF" != "none" ]; then
+            int="$INT4IF"
+          fi
+          ;;
+        DMZIF)
+          if [ -n "$DMZIF" -a "$DMZIF" != "none" ]; then
+            int="$DMZIF"
+          fi
+          ;;
+      esac
+      if [ -n "$int" ]; then
+        # subnet comes back set to a 4 digit hex string, convert to decimal
+        id="$(printf '%d' 0x$(get_dhcpv6_subnet $int $len))"
+        echo "  prefix-interface $int {
     sla-id $id;
     sla-len $((64-len));
     ifid 1;
   };"
 
-          # Only assign one interface given only a /64 prefix
-          if [ $len -eq 64 ]; then
-            break
-          fi
+        # Only assign one interface given only a /64 prefix
+        if [ $len -eq 64 ]; then
+          break
         fi
-      done
-    fi
+      fi
+    done
+
     echo "};"
   fi
 }
@@ -812,12 +802,6 @@ PPPOE_EXTRA=\"\"" > /tmp/etc/ppp/pppoe.conf
     sleep 4
     if [ "$IPV6" = "yes" -a "$DHCPV6_CLIENT_ENABLE" = "yes" ]; then
       up_delay=10
-      if [ "$DHCPV6_CLIENT_REQUEST_PREFIX" != "no" -a -z "$IPV6_PREFIX_DELEGATION" ]; then
-        # If there are no interfaces set to receive a GUA prefix then we need to create a
-        # dummy interface so there is somewhere for DHCPv6 to "park" the prefix.  This
-        # is required for NPTv6 to work.
-        ip link add name dummy0 type dummy
-      fi
       init_dhcp6c extif $EXTIF
       dhcp6c -c /etc/wide-dhcpv6/dhcp6c-$EXTIF.conf -p /var/run/dhcp6c-$EXTIF.pid $EXTIF
     fi

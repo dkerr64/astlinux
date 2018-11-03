@@ -38,9 +38,7 @@ net_prefix_translation_global_ipv6()
   local lan IFS
 
   IFS=' ,'
-  # We need to add dummy interface in case list is empty.  Dummy will
-  # have the GUA prefix if no other interface is set with one.
-  for lan in $NET_PREFIX_TRANSLATION_IF "dummy0"; do
+  for lan in $NET_PREFIX_TRANSLATION_IF; do
     ip -6 -o addr show dev $lan scope global 2>/dev/null \
       | awk '$3 == "inet6" { print $4; }' \
       | grep -i -v '^fd'
