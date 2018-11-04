@@ -103,6 +103,7 @@ id-assoc pd 1 {"
       echo "  prefix ::/$len infinity;"
     fi
 
+    id=0
     unset IFS
     for iname in $IPV6_PREFIX_DELEGATION; do
       int=""
