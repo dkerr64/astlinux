@@ -146,6 +146,17 @@ if [ "$dhcp6c_changed" != "no" ]; then
   fi
 fi
 
+if [ "$dhcp6c_changed" = "yes" ]; then
+  # don't need to go through this during reboot, only a change while
+  # system is up.
+  logger -t dhcp6c -p kern.info "Restarting dynamicdns (ddclient) because IPv6 Prefix changed"
+  service dynamicdns stop
+  if [ $? = 0 ]; then
+    sleep 2
+    service dynamicdns init
+  fi
+fi
+
 if [ -x $SCRIPTFILE ]; then
   export dhcp6c_interface dhcp6c_address dhcp6c_changed
   export dhcp6c_prefix_interfaces dhcp6c_prefix_addresses
