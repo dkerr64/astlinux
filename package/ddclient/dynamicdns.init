@@ -4,23 +4,6 @@
 
 PIDFILE="/var/run/ddclient.pid"
 
-# find the /64 network prefix for a given network interface
-# returns in compacted form "aaaa:bbbb:cccc:dddd"
-get_if_v6_network()
-{
-  if [ -n "$1" ]; then
-    echo "$(ip -6 -o addr show $1 scope global 2>/dev/null | \
-            sed -n -r -e 's/.*inet6 *([0-9a-fA-F:/]+).*$/\1/p' | \
-            grep -v "^fd" | netcalc - 2>/dev/null | \
-            sed -n -r -e 's/^Network *: *([0-9a-fA-F:]+).*$/\1/p' | \
-            cut -d: -f1-4)"
-    return 0
-  else
-    echo ""
-    return 1
-  fi
-}
-
 gen_ddclient_conf()
 {
   local use_web="#" use_if="#" web_str delay domain service
@@ -114,11 +97,6 @@ gen_ddclient_conf()
            -e "s|@USEV6_WEB@|${usev6_web}|g" \
            -e "s|@USEV6_IF@|${usev6_if}|g" \
            -e "s|@WEBV6_STR@|${webv6_str}|g" \
-           -e "s|@INTV6NET@|$(get_if_v6_network $INTIF)|g" \
-           -e "s|@INT2V6NET@|$(get_if_v6_network $INT2IF)|g" \
-           -e "s|@INT3V6NET@|$(get_if_v6_network $INT3IF)|g" \
-           -e "s|@INT4V6NET@|$(get_if_v6_network $INT4IF)|g" \
-           -e "s|@DMZV6NET@|$(get_if_v6_network $DMZIF)|g" \
               /tmp/etc/ddclient.conf
 
     chmod 600 /tmp/etc/ddclient.conf
@@ -155,10 +133,8 @@ stop () {
 
       start-stop-daemon -K -q -p $PIDFILE -s TERM
       rm -f $PIDFILE
-      return 0
     fi
   fi
-  return 1
 }
 
 case $1 in
