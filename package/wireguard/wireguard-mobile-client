@@ -126,6 +126,7 @@ gen_unique_addr() {
 add_client() {
   local client="$1" addr addr6 pub_peer pub_remote allow allow_peer allow_remote ipv6_ex ipv6_net wg_if
   local address dns mtu
+  local IFS ipv6_addr
 
   if ! echo "$client" | grep -q '^[a-zA-Z0-9][a-zA-Z0-9._-]*$'; then
     echo "wireguard-mobile-client: Client names must be alphanumeric, underbar (_), dash (-), dot (.)." >&2
@@ -193,11 +194,15 @@ add_client() {
       if [ -n "$ipv6_net" ]; then
         allow_remote="$allow_remote, $ipv6_net/48"
       elif [ -n "$INTIPV6" ]; then
-        ipv6_net="$(netcalc "$INTIPV6" | sed -n -r -e 's#^Network *: *([0-9a-fA-F:/]+).*$#\1#p')"
-        ipv6_net="$(netcalc "$ipv6_net" | sed -n -r -e 's/^Compressed IPv6 *: *([0-9a-fA-F:]+).*$/\1/p')"
-        if [ -n "$ipv6_net" ]; then
-          allow_remote="$allow_remote, $ipv6_net/${INTIPV6##*/}"
-        fi
+        IFS=" ,"
+        for ipv6_addr in $INTIPV6; do
+          ipv6_net="$(netcalc "$ipv6_addr" | sed -n -r -e 's#^Network *: *([0-9a-fA-F:/]+).*$#\1#p')"
+          ipv6_net="$(netcalc "$ipv6_net" | sed -n -r -e 's/^Compressed IPv6 *: *([0-9a-fA-F:]+).*$/\1/p')"
+          if [ -n "$ipv6_net" ]; then
+            allow_remote="$allow_remote, $ipv6_net/${ipv6_addr##*/}"
+          fi
+        done
+        unset IFS
       fi
     fi
   fi

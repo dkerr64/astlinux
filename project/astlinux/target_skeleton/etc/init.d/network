@@ -498,10 +498,12 @@ start () {
       bringup="yes"
     fi
     if [ "$IPV6" = "yes" ]; then
-      if [ -n "$INTIPV6" ]; then
-        ip -6 addr add $INTIPV6 dev $INTIF
+      IFS=" ,"
+      for ipv6_addr in $INTIPV6; do
+        ip -6 addr add $ipv6_addr dev $INTIF
         bringup="yes"
-      fi
+      done
+      unset IFS
       regex="\bINTIF\b"
       if [[ "$IPV6_PREFIX_ULA" =~ $regex ]]; then
         ip -6 addr add $(get_ipv6_site_ula_prefix $INTIF) dev $INTIF
@@ -523,10 +525,12 @@ start () {
       bringup="yes"
     fi
     if [ "$IPV6" = "yes" ]; then
-      if [ -n "$INT2IPV6" ]; then
-        ip -6 addr add $INT2IPV6 dev $INT2IF
+      IFS=" ,"
+      for ipv6_addr in $INT2IPV6; do
+        ip -6 addr add $ipv6_addr dev $INT2IF
         bringup="yes"
-      fi
+      done
+      unset IFS
       regex="\bINT2IF\b"
       if [[ "$IPV6_PREFIX_ULA" =~ $regex ]]; then
         ip -6 addr add $(get_ipv6_site_ula_prefix $INT2IF) dev $INT2IF
@@ -548,10 +552,12 @@ start () {
       bringup="yes"
     fi
     if [ "$IPV6" = "yes" ]; then
-      if [ -n "$INT3IPV6" ]; then
-        ip -6 addr add $INT3IPV6 dev $INT3IF
+      IFS=" ,"
+      for ipv6_addr in $INT3IPV6; do
+        ip -6 addr add $ipv6_addr dev $INT3IF
         bringup="yes"
-      fi
+      done
+      unset IFS
       regex="\bINT3IF\b"
       if [[ "$IPV6_PREFIX_ULA" =~ $regex ]]; then
         ip -6 addr add $(get_ipv6_site_ula_prefix $INT3IF) dev $INT3IF
@@ -573,10 +579,12 @@ start () {
       bringup="yes"
     fi
     if [ "$IPV6" = "yes" ]; then
-      if [ -n "$INT4IPV6" ]; then
-        ip -6 addr add $INT4IPV6 dev $INT4IF
+      IFS=" ,"
+      for ipv6_addr in $INT4IPV6; do
+        ip -6 addr add $ipv6_addr dev $INT4IF
         bringup="yes"
-      fi
+      done
+      unset IFS
       regex="\bINT4IF\b"
       if [[ "$IPV6_PREFIX_ULA" =~ $regex ]]; then
         ip -6 addr add $(get_ipv6_site_ula_prefix $INT4IF) dev $INT4IF
@@ -598,10 +606,12 @@ start () {
       bringup="yes"
     fi
     if [ "$IPV6" = "yes" ]; then
-      if [ -n "$DMZIPV6" ]; then
-        ip -6 addr add $DMZIPV6 dev $DMZIF
+      IFS=" ,"
+      for ipv6_addr in $DMZIPV6; do
+        ip -6 addr add $ipv6_addr dev $DMZIF
         bringup="yes"
-      fi
+      done
+      unset IFS
       regex="\bDMZIF\b"
       if [[ "$IPV6_PREFIX_ULA" =~ $regex ]]; then
         ip -6 addr add $(get_ipv6_site_ula_prefix $DMZIF) dev $DMZIF
