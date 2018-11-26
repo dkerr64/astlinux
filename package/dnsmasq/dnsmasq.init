@@ -104,6 +104,44 @@ falseDNSMASQnet()
 no-dhcp-interface=$1"
 }
 
+addDNSinterface_name()
+{
+  local ilist="INTIF INT2IF INT3IF INT4IF DMZIF"
+  local iname interface regex manualIPv4 manualIPv6
+  local IFS
+  local ipv6_set=""
+
+  echo "
+localise-queries"
+  for iname in $ilist; do
+    # find interface name e.g. eth1
+    eval interface='$'$iname
+    # find manually assigned IPv4 address from e.g. INTIP
+    eval manualIPv4='$'${iname/%IF/IP}
+    # find manually assigned IPv6 address from e.g. INTIPV6
+    eval manualIPv6='$'${iname/%IF/IPV6}
+    # We will use regex to find word in a string, e.g. INTIF in "DMZIF INTIF INT2IF"
+    regex="\b$iname\b"
+    if [[ "$IPV6_PREFIX_DELEGATION" =~ $regex && "$DHCPV6_CLIENT_REQUEST_PREFIX" != "no" ]] ||
+       [[ "$IPV6_PREFIX_ULA" =~ $regex ]] || [ -n "$manualIPv6" ]; then
+      # an IPv6 is assigned to this interface.
+      if [ -z "$ipv6_set" ]; then
+        if [ -n "$manualIPv4" ]; then
+          echo "interface-name=$HOSTNAME.$DOMAIN,$interface"
+        else
+          echo "interface-name=$HOSTNAME.$DOMAIN,$interface/6"
+        fi
+        ipv6_set="yes"
+      elif [ -n "$manualIPv4" ]; then
+        echo "interface-name=$HOSTNAME.$DOMAIN,$interface/4"
+      fi
+    elif [ -n "$manualIPv4" ]; then
+      # no IPv6 so add a IPv4 record only
+      echo "interface-name=$HOSTNAME.$DOMAIN,$interface/4"
+    fi
+  done
+}
+
 addIPV6net()
 {
   # args: IFname, tag, leasetime
@@ -180,12 +218,6 @@ addDNSMASQnet()
   local max_hosts range_min range_max ip_min ip_max leasetime
   local IFS
   local dnsAddrs="$4" dnsList="" dnsIP
-
-  if [ -n "$1" -a "$1" != "none" ] && [ "$5" != "ext" ]; then
-    # Add our hostname DNS A and AAAA here rather than in /etc/hosts
-    echo "
-interface-name=$HOSTNAME.$DOMAIN,$1"
-  fi
 
   if [ -n "$1" -a "$1" != "none" -a -n "$2" -a -n "$3" ]; then
     leasetime="${DHCP_LEASETIME:-24}h"
@@ -461,6 +493,8 @@ nameserver 127.0.0.1" > /tmp/etc/resolv.conf
   else
     createDNSMASQbasic nodhcp >> /tmp/etc/dnsmasq.conf
   fi
+
+  addDNSinterface_name >> /tmp/etc/dnsmasq.conf
 
   # include static mappings from a file
   if [ -f /etc/dnsmasq.static ]; then
