@@ -181,12 +181,6 @@ addDNSMASQnet()
   local IFS
   local dnsAddrs="$4" dnsList="" dnsIP
 
-  if [ -n "$1" -a "$1" != "none" ] && [ "$5" != "ext" ]; then
-    # Add our hostname DNS A and AAAA here rather than in /etc/hosts
-    echo "
-interface-name=$HOSTNAME.$DOMAIN,$1"
-  fi
-
   if [ -n "$1" -a "$1" != "none" -a -n "$2" -a -n "$3" ]; then
     leasetime="${DHCP_LEASETIME:-24}h"
     if isDHCPinterface $1; then

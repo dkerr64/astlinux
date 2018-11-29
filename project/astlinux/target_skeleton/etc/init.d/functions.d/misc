@@ -8,23 +8,32 @@
 #
 
 SYS_gen_etc_hosts() {
-  local ip IFS dd_host
+  local ip hostip hostipv6 IFS
+
+  # we deliberately leave out EXTIP
+  for ip in $INTIP/$INTIPV6 $INT2IP/$INT2IPV6 $INT3IP/$INT3IPV6 $INT4IP/$INT4IPV6; do
+    hostip="$(echo $ip | cut -d'/' -f1)"
+    hostipv6="$(echo $ip | cut -d'/' -f2)"
+    if [ -n "$hostip" ]; then
+      # we only need the first non-empty one...
+      break
+    fi
+  done
 
   echo "# Automatically generated from internal state.
-127.0.0.1	localhost"
+127.0.0.1	localhost${hostip:+
+$hostip	$HOSTNAME.$DOMAIN $HOSTNAME}"
 
   if [ "$IPV6" = "yes" ]; then
     echo "
-::1	localhost ip6-localhost ip6-loopback
+::1	localhost ip6-localhost ip6-loopback${hostipv6:+
+$hostipv6	$HOSTNAME.$DOMAIN $HOSTNAME}
 "
   fi
 
   # DDHOST may not be a pure DNS Name, purify it
-  dd_host="$(echo "$DDHOST" | sed 's/[, ].*//')"
-  if [ -n "$dd_host" ] && [ "$dd_host" != "$HOSTNAME.$DOMAIN" ]; then
-    # only add DDHOST if it is not he same as my hostname.domain so we
-    # don't duplicate DNS record added by dnsmasq.
-    echo "$INTIP	$dd_host"
+  if [ -n "$DDHOST" ]; then
+    echo "$INTIP	$(echo "$DDHOST" | sed 's/[, ].*//')"
   fi
 
   if [ -f /stat/etc/hosts ]; then
