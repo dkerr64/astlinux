@@ -9,16 +9,12 @@
 
 SYS_gen_etc_hosts() {
   local ip hostip hostipv6 IFS
+  local dd_host interface ip_list
+  local ipv4_list="$INTIP $INT2IP $INT3IP $INT4IP $DMZIP"
+  local ipv6_if_list="$INTIF $INT2IF $INT3IF $INT4IF $DMZIF "
 
-  # we deliberately leave out EXTIP
-  for ip in $INTIP/$INTIPV6 $INT2IP/$INT2IPV6 $INT3IP/$INT3IPV6 $INT4IP/$INT4IPV6; do
-    hostip="$(echo $ip | cut -d'/' -f1)"
-    hostipv6="$(echo $ip | cut -d'/' -f2)"
-    if [ -n "$hostip" ]; then
-      # we only need the first non-empty one...
-      break
-    fi
-  done
+  # find the first internal IPv4 address from list of static IP addresses
+  hostip=$(echo $ipv4_list | xargs | cut -d' ' -f 1)
 
   echo "# Automatically generated from internal state.
 127.0.0.1	localhost${hostip:+
@@ -26,14 +22,27 @@ $hostip	$HOSTNAME.$DOMAIN $HOSTNAME}"
 
   if [ "$IPV6" = "yes" ]; then
     echo "
-::1	localhost ip6-localhost ip6-loopback${hostipv6:+
-$hostipv6	$HOSTNAME.$DOMAIN $HOSTNAME}
-"
+::1	localhost ip6-localhost ip6-loopback
+ff02::1	ip6-allnodes
+ff02::2	ip6-allrouters"
+    # find the first internal IPv6 address from list of internal interfaces
+    for interface in $ipv6_if_list; do
+      ip_list=$(ip -6 -o addr show dev $interface scope global 2>/dev/null | sed -n -r -e 's/.*inet6 *([0-9a-fA-F:]+).*$/\1/p')
+      if [ -n "$ip_list" ]; then
+        break
+      fi
+    done
+    for hostipv6 in $ip_list; do
+      echo "$hostipv6	$HOSTNAME.$DOMAIN $HOSTNAME"
+    done
   fi
 
   # DDHOST may not be a pure DNS Name, purify it
-  if [ -n "$DDHOST" ]; then
-    echo "$INTIP	$(echo "$DDHOST" | sed 's/[, ].*//')"
+  dd_host="$(echo "$DDHOST" | sed 's/[, ].*//')"
+  if [ -n "$dd_host" ] && [ "$dd_host" != "$HOSTNAME.$DOMAIN" ] && [ -n "$hostip" ]; then
+    # only add DDHOST if it is not he same as my hostname.domain so we
+    # don't duplicate DNS records
+    echo "$hostip	$dd_host"
   fi
 
   if [ -f /stat/etc/hosts ]; then

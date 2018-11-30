@@ -2,6 +2,8 @@
 
 . /etc/rc.conf
 
+. /etc/init.d/functions.d/misc
+
 export PATH="/usr/bin:/bin:/usr/sbin:/sbin"
 
 SCRIPTFILE="/mnt/kd/dhcp6c.script"
@@ -144,6 +146,11 @@ if [ "$dhcp6c_changed" != "no" ]; then
   if [ -f /var/tmp/aif-net-prefix-translation-global-ipv6 ]; then
     arno-iptables-firewall status-plugins net-prefix-translation >/dev/null 2>&1
   fi
+fi
+
+if [ "$dhcp6c_changed" = "yes" ] && [ -n "$IPV6_PREFIX_DELEGATION"]; then
+  # Regenerate /etc/hosts
+  SYS_gen_etc_hosts > /tmp/etc/hosts
 fi
 
 if [ -x $SCRIPTFILE ]; then
