@@ -104,6 +104,66 @@ falseDNSMASQnet()
 no-dhcp-interface=$1"
 }
 
+addDNSinterface_name()
+{
+  local ilist="INTIF INT2IF INT3IF INT4IF DMZIF"
+  local iname interface regex manualIPv4 manualIPv6
+  local IFS
+  local ipv6_set="" ipv4_set=""
+
+  # Search in /etc/hosts to see if IP addresses set for our host.domain
+  local etc_hosts=$(grep -o "^[^#]*" /tmp/etc/hosts | grep -e "[[:space:]]$HOSTNAME\.$DOMAIN\($\|[[:space:]]\)" | cut -f 1)
+  if [ -n "$etc_hosts" ]; then
+    # IP address(s) for host.domain already defined in /etc/hosts
+    return 0
+  else
+    echo "
+# Autogenerate DNS records for our host.domain"
+  fi
+
+  # Loop through all our internal interfaces to decide whether
+  # to use dnsmasq's interface-name DNS feature.
+  for iname in $ilist; do
+    # find interface name e.g. eth1
+    eval interface='$'$iname
+    # find manually assigned IPv4 address from e.g. INTIP
+    eval manualIPv4='$'${iname/%IF/IP}
+    # find manually assigned IPv6 address from e.g. INTIPV6
+    eval manualIPv6='$'${iname/%IF/IPV6}
+    # We will use regex to find word in a string, e.g. INTIF in "DMZIF INTIF INT2IF"
+    # Only set interface-name once, on the first interface we find that
+    # supports the IP protocol version for each of IPv4 and IPv6
+    regex="\b$iname\b"
+    if [[ "$IPV6_PREFIX_DELEGATION" =~ $regex && "$DHCPV6_CLIENT_REQUEST_PREFIX" != "no" ]] ||
+       [[ "$IPV6_PREFIX_ULA" =~ $regex ]] || [ -n "$manualIPv6" ]; then
+      # an IPv6 is assigned to this interface.
+      if [ -z "$ipv6_set" ]; then
+        if [ -n "$manualIPv4" ] && [ -z "$ipv4_set" ]; then
+          # set for both IPv4 and IPv6
+          echo "interface-name=$HOSTNAME.$DOMAIN,$interface"
+          ipv4_set="yes"
+        else
+          # set for IPv6 only as IPv4 done already
+          echo "interface-name=$HOSTNAME.$DOMAIN,$interface/6"
+        fi
+        ipv6_set="yes"
+      fi
+    fi
+
+    if [ -n "$manualIPv4" ] && [ -z "$ipv4_set" ]; then
+      # an IPv4 is assigned to this interface
+      echo "interface-name=$HOSTNAME.$DOMAIN,$interface/4"
+      ipv4_set="yes"
+    fi
+
+    if [ -n "$ipv4_set" ] && [ -n "$ipv6_set" ]; then
+      # Once both IPv4 and IPv6 addresses set we can break out
+      break
+    fi
+  done
+  return 0
+}
+
 addIPV6net()
 {
   # args: IFname, tag, leasetime
@@ -431,6 +491,7 @@ nameserver 127.0.0.1" > /tmp/etc/resolv.conf
 
   if is_DHCP_active || is_EXTDHCP_active || is_IPV6RA_active; then
     createDNSMASQbasic dhcp >> /tmp/etc/dnsmasq.conf
+    addDNSinterface_name >> /tmp/etc/dnsmasq.conf
 
     addDNSMASQnet "$INTIF" "$INTIP" "$INTNM" "$INTDNS" lan >> /tmp/etc/dnsmasq.conf
     addIPV6net "INTIF" lan >> /tmp/etc/dnsmasq.conf
@@ -454,6 +515,7 @@ nameserver 127.0.0.1" > /tmp/etc/resolv.conf
     addDHCPhosts_options >> /tmp/etc/dnsmasq.conf
   else
     createDNSMASQbasic nodhcp >> /tmp/etc/dnsmasq.conf
+    addDNSinterface_name >> /tmp/etc/dnsmasq.conf
   fi
 
   # include static mappings from a file
