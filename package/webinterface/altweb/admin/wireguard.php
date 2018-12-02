@@ -326,6 +326,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   }
   header('Location: '.$myself.'?result='.$result);
   exit;
+} elseif (isset($_GET['clientpopup'])) {
+  $result = 4;
+  $client_list = wireguardGETclients($wg);
+  foreach ($client_list as $value) {
+    if ($value === (string)$_GET['clientpopup']) {
+      $result = 1;
+      break;
+    }
+  }
+  $tmp_conf = tempnam("/tmp", "CONF_");
+  $tmp_png = tempnam("/tmp", "PNG_");
+  if (wireguardGENconf($value, $tmp_conf)) {
+    if (wireguardGENpng($tmp_conf, $tmp_png)) {
+      putHtml('<h2>QR code for mobile WireGuard client:</h2>');
+      $im = file_get_contents($tmp_png);
+      if ($im) {
+        echo '<img src="data:image/png;base64,'.base64_encode($im).'" />';
+      }
+      else {
+        putHtml('Error displaying QR image<br />');
+      }
+      putHtml('<h2>Config file for WireGuard client:</h2>');
+      putHtml("<pre>");
+      $handle = fopen($tmp_conf, "r");
+      if ($handle) {
+        while (($line = fgets($handle)) !== false) {
+          echo $line;
+        }
+        fclose($handle);
+      } else {
+        $result = 99;
+      }
+      putHtml("</pre>");
+    }
+  }
+  @unlink($tmp_conf);
+  @unlink($tmp_png);
+  exit;
 } else { // Start of HTTP GET
 $ACCESS_RIGHTS = 'admin';
 require_once '../common/header.php';
@@ -546,7 +584,7 @@ if (is_file($WG_LOCK_FILE) && trim(@file_get_contents($WG_LOCK_FILE)) === $wg_if
     if (($n = count($data)) > 0) {
       echo '<td class="dialogText" style="text-align: left; font-weight: bold;">', "Client Name", "</td>";
       echo '<td class="dialogText" style="text-align: center; font-weight: bold;">', "Configuration", "</td>";
-      echo '<td class="dialogText" style="text-align: center; font-weight: bold;">', "Credentials", "</td>";
+      echo '<td class="dialogText" style="text-align: center; font-weight: bold;" colspan="2">', "Credentials", "</td>";
       echo '<td class="dialogText" style="text-align: center; font-weight: bold;">', "Delete", "</td>";
       for ($i = 0; $i < $n; $i++) {
         putHtml("</tr>");
@@ -554,6 +592,7 @@ if (is_file($WG_LOCK_FILE) && trim(@file_get_contents($WG_LOCK_FILE)) === $wg_if
         echo '<td style="text-align: left;">', $data[$i], '</td>';
         echo '<td style="text-align: center;">', '<a href="/admin/edit.php?file='.$wg['clients_peer_dir'].'/'.$data[$i].'.peer" class="actionText">Edit Peer</a></td>';
         echo '<td style="text-align: center;">', '<a href="'.$myself.'?client='.$data[$i].'" class="actionText">Download</a></td>';
+        echo '<td style="text-align: center;">', ttx($myself.'?clientpopup='.$data[$i],'Click to view client credentials and QR code. <strong>More...</strong>','/common/qricon.png','Wireguard client credentials for '.$data[$i]), '</td>';
         echo '<td style="text-align: center;">', '<input type="checkbox" name="delete[]" value="'.$data[$i].'" />', '</td>';
       }
     } else {
