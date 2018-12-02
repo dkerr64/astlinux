@@ -302,8 +302,8 @@ function updateCRON($user, $ret_good, $ret_fail) {
 // if $topic is...
 // - A valid URL (e.g. https://doc.astlinux-project.org/whatever) then
 //   help page content is downloaded from that web site.
-// - Starting in userdoc: or devdoc: then the topic is a
-//   doc.astlinux-project.org dokuwiki page which may be saved locally.
+// - Starting in userdoc: or devdoc: (with/without slash) then the topic is
+//   a doc.astlinux-project.org dokuwiki page which may be saved locally.
 //   If local version exists use that.  If not then wrap the topic in
 //   full URL and get it from the astlinux dokuwiki web site.
 // - Relative URL (starts with a /) content is loaded from that web site.
@@ -328,6 +328,10 @@ function includeTOPICinfo($topic,$tooltip = '', $icon = '/common/topicinfo.gif',
   if ($title === '') {
     $parts = explode('?',$topic);
     $title = $parts[0]; // remove parameters after '?' from title displayed 
+    if (strpos($title,'/') === 0) {
+      // remove slash from front
+      $title = substr($title,1);
+    }
   }
   $target = ' target="_blank"';
   if ($topic === '') {
@@ -338,22 +342,29 @@ function includeTOPICinfo($topic,$tooltip = '', $icon = '/common/topicinfo.gif',
     // we were passed in a full valid URL. Use it.
     $link = $topic;
   }
-  else if (strpos($topic,'userdoc:') === 0 || strpos($topic,'devdoc:') === 0  ) {
+  else if (strpos($topic,'userdoc:') === 0 || strpos($topic,'devdoc:') === 0 ||
+           strpos($topic,'/userdoc:') === 0 || strpos($topic,'/devdoc:') === 0  ) {
     // We were passed a relative URL. Check if the file exists.
     // Link will start with either userdoc:xxx or devdoc:xxx  This
     // identifies which directory the local version will have been
     // saved in.
+    if (strpos($topic,'/') !== 0) $topic = '/'.$topic;
     $parts = explode(':',$topic); // capture part before colon
     $subdir = $parts[0];
     // This __FILE__ executes in /var/www/common so to get to the
     // right subdir need to look for e.g /var/www/common/../userdoc
-    $file = dirname(__FILE__).'/../'.$subdir.'/'.$topic.'.html';
+    $file = dirname(__FILE__).'/../'.$subdir.$topic.'.html';
+    // We added '.html' as on our astlinux server that is how the files
+    // are stored
     if (is_file($file)) {
       // while file is in /var/www/userdoc/* we cannot include /userdoc/
       // in the URL path as that is not what native dokuwiki uses for
-      // embedded links.  We will update lighttpd config to detect
+      // *embedded* links.  We will update lighttpd config to detect
       // userdoc:topic-name and get file from the right directory.
-      $link='/'.$topic;
+      $link=$topic;
+      // We do not add '.html' because all embedded links won't have
+      // them either.  The lighttpd config file will add it back in
+      // so that the correct file is retrieved by the server.
     }
     else {
       // File is not available on local AstLinux box.  We will expand
@@ -363,7 +374,7 @@ function includeTOPICinfo($topic,$tooltip = '', $icon = '/common/topicinfo.gif',
       if (empty($docsite)) $docsite=$ONLINE_DOCS_URL;
       $parts = explode('?',$docsite);
       if (substr($parts[0],-1) === "/") $parts[0] = substr($parts[0],0,-1); // remove trailing slash if present
-      $link=$parts[0].'/'.$topic.'?'.$parts[1];
+      $link=$parts[0].$topic.'?'.$parts[1];
     }
   }
   else if (strpos($topic,'/') === 0) {

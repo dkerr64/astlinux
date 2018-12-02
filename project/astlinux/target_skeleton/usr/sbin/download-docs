@@ -48,17 +48,19 @@ mkdir -p "${MEDIA_DIR}"
 # STEP 1
 # Scan all web interface source files looking to links to
 # /userdoc: or /devdoc: files.
-# In our source files these are identified by calls to either tt()
+# In our source files these are identified by calls to either tt(), ttx()
 # or includeTOPICinfo().  The first parameter of this function call
-# identifies the help topic.  If it begins with a slash and either
-# /userdoc:xxxx or /devdoc:xxxx then this identifies a AstLinux
+# identifies the help topic.  If it begins (with/without a slash) and
+# either userdoc:xxxx or devdoc:xxxx then this identifies a AstLinux
 # documentation page that could be stored on local AstLinux box.
 # The topic name can be enclosed within either single ' or double "
 echo "====== STEP 1: Scan all web interface files looking for links to online documents"
-USERDOC_LIST="$(sed -n "s/.*includeTOPICinfo([\"']\/\(${USERDOC_NAME}:[^\"']*\)[\"'].*/\1/p" $FILELIST 2>/dev/null)"
-USERDOC_LIST="${USERDOC_LIST} $(sed -n "s/.*tt([\"']\/\(${USERDOC_NAME}:[^\"']*\)[\"'].*/\1/p" $FILELIST 2>/dev/null)"
-DEVDOC_LIST="$(sed -n "s/.*includeTOPICinfo([\"']\/\(${DEVDOC_NAME}:[^\"']*\)[\"'].*/\1/p" $FILELIST 2>/dev/null)"
-DEVDOC_LIST="${DEVDOC_LIST} $(sed -n "s/.*tt([\"']\/\(${DEVDOC_NAME}:[^\"']*\)[\"'].*/\1/p" $FILELIST 2>/dev/null)"
+USERDOC_LIST="$(sed -n "s/.*includeTOPICinfo([\"']\/\?\(${USERDOC_NAME}:[^\"']*\)[\"'].*/\1/p" $FILELIST 2>/dev/null)"
+USERDOC_LIST="${USERDOC_LIST} $(sed -n "s/.*tt([\"']\/\?\(${USERDOC_NAME}:[^\"']*\)[\"'].*/\1/p" $FILELIST 2>/dev/null)"
+USERDOC_LIST="${USERDOC_LIST} $(sed -n "s/.*ttx([\"']\/\?\(${USERDOC_NAME}:[^\"']*\)[\"'].*/\1/p" $FILELIST 2>/dev/null)"
+DEVDOC_LIST="$(sed -n "s/.*includeTOPICinfo([\"']\/\?\(${DEVDOC_NAME}:[^\"']*\)[\"'].*/\1/p" $FILELIST 2>/dev/null)"
+DEVDOC_LIST="${DEVDOC_LIST} $(sed -n "s/.*tt([\"']\/\?\(${DEVDOC_NAME}:[^\"']*\)[\"'].*/\1/p" $FILELIST 2>/dev/null)"
+DEVDOC_LIST="${DEVDOC_LIST} $(sed -n "s/.*ttx([\"']\/\?\(${DEVDOC_NAME}:[^\"']*\)[\"'].*/\1/p" $FILELIST 2>/dev/null)"
 USERDOC_DONE=""
 DEVDOC_DONE=""
 
@@ -89,6 +91,8 @@ while [ $PASS -le 5 ]; do
     regex="\b${doc}\b"
     if [[ ! "$USERDOC_DONE" =~ $regex ]]; then
       URL="${URL_FRONT}${doc}${URL_BACK}"
+      # we have to add .html to every file so that lighttpd sets
+      # the mime type correctly, required by some browsers.
       FILE="${USERDOC_DIR}${doc}.html"
       echo "($COUNT of $TOTAL_COUNT) ${doc}"
       # The -z on curl checks to only download files updated since last
