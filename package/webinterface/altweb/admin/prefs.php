@@ -1273,7 +1273,7 @@ require_once '../common/header.php';
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'tab_monit_show') === 'yes') ? ' checked="checked"' : '';
   putHtml('<input type="checkbox" value="tab_monit" name="tab_monit"'.$sel.' /></td><td colspan="5">Show Monit Tab');
-  putHtml(tt('/userdoc:tt_monit_monitoring','Monit is a free open source utility for managing and monitoring; networks, processes, programs, files, directories and filesystems on a UNIX system.  <Strong>More...</Strong>'));
+  putHtml(tt('userdoc:tt_monit_monitoring','Monit is a free open source utility for managing and monitoring; networks, processes, programs, files, directories and filesystems on a UNIX system.  <Strong>More...</Strong>'));
   putHtml('</td></tr>');
 
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
@@ -1301,7 +1301,7 @@ require_once '../common/header.php';
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getPREFdef($global_prefs, 'tab_fossil_show') === 'yes') ? ' checked="checked"' : '';
   putHtml('<input type="checkbox" value="tab_fossil" name="tab_fossil"'.$sel.' /></td><td colspan="5">Show Fossil Tab');
-  putHtml(tt('/userdoc:tt_fossil','AstLinux now supports the Fossil package, a simple, high-reliability, distributed software configuration management system.  <Strong>More...</Strong>'));
+  putHtml(tt('userdoc:tt_fossil','AstLinux now supports the Fossil package, a simple, high-reliability, distributed software configuration management system.  <Strong>More...</Strong>'));
   putHtml('</td></tr>');
 
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
