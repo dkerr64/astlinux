@@ -377,8 +377,7 @@ function delayPopup(e, url, w, h, title, fixed, delay) {
     else popupOnHover = false;
 
     var popupLink = document.getElementById('popup_external_link');
-    var externUrl = url.split('?'); // remove part after the question mark
-    popupLink.innerHTML ='<a href="'+externUrl[0]+'" target="_blank"><img src="../common/open-new-window.png" height="20" width="20" alt="->"/></a>';
+    popupLink.innerHTML ='<a href="'+url+'" target="_blank"><img src="../common/open-new-window.png" height="20" width="20" alt="->"/></a>';
     popup.style.display = '';
 
     // If this was a delayed (onmouseover) request, then look see if it was in the cache first.
