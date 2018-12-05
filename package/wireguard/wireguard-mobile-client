@@ -63,13 +63,9 @@ PrivateKey = $(cat "$CLIENTS_KEYS_DIR/$client.privatekey")"
       -e 's/^#.*//' \
       -e '/^$/ d'
 
-  echo "
-[Peer]"
-
-  sed -n '/^\[Remote_Peer/,/^\[/ p' "$CLIENTS_PEER_DIR/$client.peer" | \
-  sed -e 's/^\[.*//' \
-      -e 's/^#.*//' \
-      -e '/^$/ d'
+  awk '/^\[Remote_Peer/{f=1;printf "\[Peer\]\n";next}; /^\[/{f=0}f' "$CLIENTS_PEER_DIR/$client.peer" | \
+  sed -e '/^ *$/d' \
+      -e '/\[Peer\]/i'
 
   echo ""
 }
