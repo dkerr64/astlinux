@@ -14,6 +14,8 @@ Released @TBD@
 
 -- Linux Kernel 3.16.61, security and bug fixes
 
+-- RUNNIX, version bump to runnix-0.5.7, with Linux Kernel 3.16.61, kexec 2.0.18
+
 -- igb, version bump to 5.3.5.22, Intel Gigabit Ethernet Network Driver
 
 -- liburiparser, version bump to 0.9.0, security fixes
@@ -22,13 +24,21 @@ Released @TBD@
 
 -- libpng, version 1.6.36, new package used by qrencode.
 
+-- libedit, version bump to 20181209-3.1
+
 -- ethtool, version bump to 4.19
 
 -- kexec, version bump to 2.0.18
 
+-- logrotate, version bump to 3.15.0
+
+-- jansson, version bump to 2.12 (Asterisk 13)
+
 -- ncurses, major version bump to 6.1
 
 -- pciutils, version bump to 3.6.2
+
+-- php, version bump to 5.6.39
 
 -- sqlite, version bump to 3.25.3
 
@@ -48,7 +58,7 @@ Released @TBD@
 
 -- system-vendor, update system-vendor.ids
 
--- ca-certificates, update trusted root certificates 2018-10-17
+-- ca-certificates, update trusted root certificates 2018-12-05
 
 -- Time Zone Database update, tzdata2018g and php-timezonedb-2018.7
 
@@ -63,7 +73,7 @@ Released @TBD@
 -- WireGuard VPN, add wireguard-mobile-client script to manage mobile clients.  Also used by the web interface.
    New rc.conf variables WIREGUARD_HOSTNAME and WIREGUARD_CLIENT_ROUTING
 
--- libcurl (curl) version bump to 7.62.0, security fixes: CVE-2018-16839, CVE-2018-16840, CVE-2018-16842
+-- libcurl (curl) version bump to 7.63.0, security fixes: CVE-2018-16839, CVE-2018-16840, CVE-2018-16842
 
 -- prosody, version bump to 0.10.3
 
@@ -84,11 +94,13 @@ Released @TBD@
    Add OVPN_CLIENT_ISOLATION and WIREGUARD_PEER_ISOLATION rc.conf variables, OpenVPN and WireGuard plugins, disabled by default.
    Add WIREGUARD_REDIRECT_PORTS rc.conf variable, WireGuard plugin, disabled by default.
 
+-- msmtp, version bump to 1.8.1
+
 -- ngrep, version bump to 1.47
 
 -- sngrep, version bump to 1.4.6
 
--- unbound (host), version bump to 1.8.2
+-- unbound (host), version bump to 1.8.3
 
 -- whois, version bump to 5.4.0
 
@@ -97,11 +109,11 @@ Released @TBD@
 
 ** Asterisk
 
--- Asterisk 11.25.3 (no change) and 13.23.1 (no change)
+-- Asterisk 11.25.3 (no change) and 13.24.0 (version bump)
 
 -- DAHDI, dahdi-linux 2.10.2 (no change) and dahdi-tools 2.10.2 (no change)
 
--- pjsip 2.7.2 (no change)
+-- pjsip 2.8 (version bump)
 
 -- FOP2, available version bump to 2.31.20.
    Note: If you have a license, you may need to purchase an "Annual Software Maintenance" license if you upgrade.
