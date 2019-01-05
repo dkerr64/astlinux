@@ -26,6 +26,8 @@ Released @TBD@
 
 -- libedit, version bump to 20181209-3.1
 
+-- e2fsprogs, version bump to 1.44.5
+
 -- ethtool, version bump to 4.19
 
 -- kexec, version bump to 2.0.18
@@ -33,6 +35,8 @@ Released @TBD@
 -- logrotate, version bump to 3.15.0
 
 -- jansson, version bump to 2.12 (Asterisk 13)
+
+-- lm-sensors, version bump to 3.5.0
 
 -- ncurses, major version bump to 6.1
 
@@ -42,7 +46,7 @@ Released @TBD@
 
 -- sqlite, version bump to 3.25.3
 
--- strace, version bump to 4.25
+-- strace, version bump to 4.26
 
 -- sudo, version bump to 1.8.26
 
@@ -68,7 +72,7 @@ Released @TBD@
 
 -- OpenSSL, version bump to 1.0.2q, security fixes: CVE-2018-0734, CVE-2018-5407
 
--- WireGuard VPN, version bump to 0.0.20181119
+-- WireGuard VPN, version bump to 0.0.20181218
 
 -- WireGuard VPN, add wireguard-mobile-client script to manage mobile clients.  Also used by the web interface.
    New rc.conf variables WIREGUARD_HOSTNAME and WIREGUARD_CLIENT_ROUTING
@@ -78,6 +82,8 @@ Released @TBD@
 -- prosody, version bump to 0.10.3
 
 -- dnsmasq, version bump to 2.80
+
+-- getdns/stubby, version bump to 1.5.0/0.2.4
 
 -- fping, major version bump to 4.1
    Note: Now handles both IPv4 and IPv6 via a single binary, fping6 is a sym-link for backward compatibility.
@@ -98,6 +104,8 @@ Released @TBD@
 
 -- ngrep, version bump to 1.47
 
+-- openldap, version bump to 2.4.47
+
 -- sngrep, version bump to 1.4.6
 
 -- unbound (host), version bump to 1.8.3
@@ -109,13 +117,13 @@ Released @TBD@
 
 ** Asterisk
 
--- Asterisk 11.25.3 (no change) and 13.24.0 (version bump)
+-- Asterisk 11.25.3 (no change) and 13.24.1 (version bump)
 
 -- DAHDI, dahdi-linux 2.10.2 (no change) and dahdi-tools 2.10.2 (no change)
 
 -- pjsip 2.8 (version bump)
 
--- FOP2, available version bump to 2.31.20.
+-- FOP2, available version bump to 2.31.21.
    Note: If you have a license, you may need to purchase an "Annual Software Maintenance" license if you upgrade.
    More info: http://doc.astlinux-project.org/userdoc:tt_asterisk-fop2-upgrade
 
