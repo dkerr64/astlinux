@@ -668,7 +668,9 @@ if (is_file('/var/lock/wireguard.lock')) {
     $cmd = '. /etc/rc.conf; wg_if="${WIREGUARD_IF:-wg0}"';
     $cmd .= '; /usr/bin/wg show $wg_if latest-handshakes';
     $cmd .= '; echo "#next#"';
-    $cmd .= '; grep -H \'^[Pp]ublic[Kk]ey *= *[^ ][^ ].*$\' /mnt/kd/wireguard/peer/$wg_if.clients/*.peer';
+    $cmd .= '; awk \'/^\[[Pp]eer\]/{f=1;printf FILENAME"\\n";next}; /^\[/{f=0}f\' /mnt/kd/wireguard/peer/$wg_if.clients/*.peer'; // filter for only [Peer] sections
+    $cmd .= '| grep -e \'^[Pp]ublic[Kk]ey *= *[^ ][^ ].*$\' -e \'^/mnt/kd/wireguard/peer/\''; // extract filename and public key
+    $cmd .= '| sed \'$!N;s/\n/:/\''; // combine filename and key onto one line
     $cmd .= '; echo "#next#"';
     $cmd .= '; /usr/bin/wg show $wg_if | sed -n \'/^peer/,$ p\'';
     $status_wireguard_vpn = @popen($cmd, 'r');
