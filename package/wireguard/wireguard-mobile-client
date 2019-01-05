@@ -33,7 +33,7 @@ CLIENTS_PEER_DIR="$CONFIG_DIR/peer/${WIREGUARD_IF:-wg0}.clients"
 extract_client_peer() {
   local client="$1"
 
-  if ! grep -q '^\[Peer' "$CLIENTS_PEER_DIR/$client.peer"; then
+  if ! grep -q '^\[[Pp]eer' "$CLIENTS_PEER_DIR/$client.peer"; then
     echo "
 ## Disabled Client: $client
 "
@@ -44,7 +44,7 @@ extract_client_peer() {
 [Peer]
 ## $client"
 
-  sed -n '/^\[Peer/,/^\[/ p' "$CLIENTS_PEER_DIR/$client.peer" | \
+  sed -n '/^\[[Pp]eer/,/^\[/ p' "$CLIENTS_PEER_DIR/$client.peer" | \
   sed -e 's/^\[.*//' \
       -e 's/^#.*//' \
       -e '/^$/ d'
@@ -58,15 +58,15 @@ extract_client_remote() {
   echo "[Interface]
 PrivateKey = $(cat "$CLIENTS_KEYS_DIR/$client.privatekey")"
 
-  sed -n '/^\[Remote_Config/,/^\[/ p' "$CLIENTS_PEER_DIR/$client.peer" | \
+  sed -n '/^\[[Rr]emote_[Cc]onfig/,/^\[/ p' "$CLIENTS_PEER_DIR/$client.peer" | \
   sed -e 's/^\[.*//' \
       -e 's/^#.*//' \
       -e '/^$/ d'
 
-  awk '/^\[Remote_Peer/{f=1;printf "\[Peer\]\n";next}; /^\[/{f=0}f' "$CLIENTS_PEER_DIR/$client.peer" | \
+  awk '/^\[[Rr]emote_[Pp]eer/{f=1;printf "\[Peer\]\n";next}; /^\[/{f=0}f' "$CLIENTS_PEER_DIR/$client.peer" | \
   sed -e '/^ *$/d' \
       -e '/#.*/d' \
-      -e '/\[Peer\]/i'
+      -e '/\[[Pp]eer\]/i'
 
   echo ""
 }
