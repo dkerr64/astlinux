@@ -64,7 +64,7 @@ PrivateKey = $(cat "$CLIENTS_KEYS_DIR/$client.privatekey")"
       -e '/^$/ d'
 
   # Handle multiple [Remote_Peer] contexts
-  awk '/^\[Remote_Peer/{p=1; printf "\n[Peer]\n"; next} /^#/{next} /^$/{next} /^\[/{p=0} p' "$CLIENTS_PEER_DIR/$client.peer"
+  awk '/^\[[Rr]emote_[Pp]eer/{p=1; printf "\n[Peer]\n"; next} /^#/{next} /^$/{next} /^\[/{p=0} p' "$CLIENTS_PEER_DIR/$client.peer"
   echo ""
 }
 
