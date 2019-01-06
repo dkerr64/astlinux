@@ -63,11 +63,8 @@ PrivateKey = $(cat "$CLIENTS_KEYS_DIR/$client.privatekey")"
       -e 's/^#.*//' \
       -e '/^$/ d'
 
-  awk '/^\[[Rr]emote_[Pp]eer/{f=1;printf "\[Peer\]\n";next}; /^\[/{f=0}f' "$CLIENTS_PEER_DIR/$client.peer" | \
-  sed -e '/^ *$/d' \
-      -e '/#.*/d' \
-      -e '/\[[Pp]eer\]/i'
-
+  # Handle multiple [Remote_Peer] contexts
+  awk '/^\[Remote_Peer/{p=1; printf "\n[Peer]\n"; next} /^#/{next} /^$/{next} /^\[/{p=0} p' "$CLIENTS_PEER_DIR/$client.peer"
   echo ""
 }
 
