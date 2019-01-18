@@ -1,6 +1,6 @@
 <?php
 
-// Copyright (C) 2008-2018 Lonnie Abelbeck
+// Copyright (C) 2008-2019 Lonnie Abelbeck
 // This is free software, licensed under the GNU General Public License
 // version 3 as published by the Free Software Foundation; you can
 // redistribute it and/or modify it under the terms of the GNU
@@ -668,9 +668,7 @@ if (is_file('/var/lock/wireguard.lock')) {
     $cmd = '. /etc/rc.conf; wg_if="${WIREGUARD_IF:-wg0}"';
     $cmd .= '; /usr/bin/wg show $wg_if latest-handshakes';
     $cmd .= '; echo "#next#"';
-    $cmd .= '; awk \'/^\[[Pp]eer\]/{f=1;printf FILENAME"\\n";next}; /^\[/{f=0}f\' /mnt/kd/wireguard/peer/$wg_if.clients/*.peer'; // filter for only [Peer] sections
-    $cmd .= '| grep -e \'^[Pp]ublic[Kk]ey *= *[^ ][^ ].*$\' -e \'^/mnt/kd/wireguard/peer/\''; // extract filename and public key
-    $cmd .= '| sed \'$!N;s/\n/:/\''; // combine filename and key onto one line
+    $cmd .= '; awk \'/^\[[Pp]eer\]/{p=1; next} /^\[/{p=0; next} !/^[Pp]ublic[Kk]ey *= *[^ ][^ ].*$/{next} p==1{printf "%s:", FILENAME} p\' /mnt/kd/wireguard/peer/$wg_if.clients/*.peer';
     $cmd .= '; echo "#next#"';
     $cmd .= '; /usr/bin/wg show $wg_if | sed -n \'/^peer/,$ p\'';
     $status_wireguard_vpn = @popen($cmd, 'r');
