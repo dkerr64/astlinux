@@ -78,6 +78,24 @@ restart_failover_service()
 
 case "$ACTION" in
 
+  leasefail)
+    if [ "$EXTIF" = "${interface}" ]; then
+      ext_ip=$(cat /tmp/mydhcpip)
+      if [ "${ext_ip:0:7}" != "169.254" ]; then
+        ip link set dev ${interface} up
+        ip -4 addr flush dev ${interface} scope global
+        auto_ip="169.254.$(((RANDOM%250)+2)).$(((RANDOM%250)+2))"
+        logger -t udhcpc.script -p daemon.warning "Assigning autoconfigured IP $auto_ip to $interface"
+        ip -4 addr add "${auto_ip}/255.255.0.0" brd "169.254.255.255" dev ${interface}
+        echo "${auto_ip}" > /tmp/mydhcpip
+        echo "IP=$auto_ip
+NETMASK=255.255.0.0" > $udhcpc_conf
+        ip route add default via ${auto_ip} dev ${interface} metric 0
+        restart_failover_service
+      fi
+    fi
+    ;;
+
   deconfig)
     ip link set dev ${interface} up
     ip -4 addr flush dev ${interface} scope global
