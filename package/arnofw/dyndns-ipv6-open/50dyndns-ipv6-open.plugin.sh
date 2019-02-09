@@ -51,7 +51,7 @@ dyndns_open_generate_rules()
         for port in $ports; do
           for destip in $destips; do
             for interface in $interfaces; do
-              echo "-A DYNDNS_CHAIN -i $interface -s $host -d $destip -p tcp --dport $port -j ACCEPT" >> "$rules_file"
+              echo "-A DYNDNS_CHAIN $(ipt_if -i "$interface") -s $host -d $destip -p tcp --dport $port -j ACCEPT" >> "$rules_file"
             done
           done
         done
@@ -73,7 +73,7 @@ dyndns_open_generate_rules()
         for port in $ports; do
           for destip in $destips; do
             for interface in $interfaces; do
-              echo "-A DYNDNS_CHAIN -i $interface -s $host -d $destip -p udp --dport $port -j ACCEPT" >> "$rules_file"
+              echo "-A DYNDNS_CHAIN $(ipt_if -i "$interface") -s $host -d $destip -p udp --dport $port -j ACCEPT" >> "$rules_file"
             done
           done
         done
@@ -95,7 +95,7 @@ dyndns_open_generate_rules()
         for proto in $protos; do
           for destip in $destips; do
             for interface in $interfaces; do
-              echo "-A DYNDNS_CHAIN -i $interface -s $host -d $destip -p $proto -j ACCEPT" >> "$rules_file"
+              echo "-A DYNDNS_CHAIN $(ipt_if -i "$interface") -s $host -d $destip -p $proto -j ACCEPT" >> "$rules_file"
             done
           done
         done
@@ -163,12 +163,12 @@ plugin_stop()
 {
 
   printf "${INDENT}DynDNS IPv6 Open - Stopping... "
-  
+
   # Stop helper script on next iteration
   "$PLUGIN_BIN_PATH/dyndns-ipv6-open-helper" stop "$IP6TABLES"
-  
+
   echo "Stopped."
-  
+
   # Remove the rules file
   rm -f "$DYNDNS_OPEN_RULES"
 

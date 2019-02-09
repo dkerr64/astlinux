@@ -5,45 +5,146 @@
 === docs/ChangeLog.txt
 =========================================================
 
-Additions for AstLinux 1.3.5:
+Additions for AstLinux 1.3.6:
 =============================
 
 Released @TBD@
 
+
+Additions for AstLinux 1.3.5.1:
+===============================
+
+Released 2019-02-08
+
 ** System
+
+-- Linux Kernel 3.16.61, security and bug fixes
+
+-- RUNNIX, version bump to runnix-0.5.7, with Linux Kernel 3.16.61, kexec 2.0.18
+
+-- igb, version bump to 5.3.5.22, Intel Gigabit Ethernet Network Driver
+
+-- e1000e version bump to 3.4.2.3 Intel PCI-Express PRO/1000 Ethernet Linux driver
+
+-- genx86_64-vm board type, version bump QEMU Guest Agent to qemu-ga 3.1.0
+
+-- liburiparser, version bump to 0.9.1, security fixes
+
+-- libqrencode, version 4.0.2, new package used to generate QR codes.  Securely transfer credentials to mobile devices.
+
+-- libpng, version 1.6.36, new package used by qrencode.
+
+-- libedit, version bump to 20181209-3.1
+
+-- libsodium, version bump to 1.0.17
+
+-- libxml2, version bump to 2.9.9
+
+-- e2fsprogs, version bump to 1.44.5
+
+-- ethtool, version bump to 4.19
+
+-- kexec, version bump to 2.0.18
+
+-- logrotate, version bump to 3.15.0
+
+-- jansson, version bump to 2.12 (Asterisk 13)
+
+-- lm-sensors, version bump to 3.5.0
+
+-- ncurses, major version bump to 6.1
 
 -- pciutils, version bump to 3.6.2
 
--- ca-certificates, update trusted root certificates 2018-10-17
+-- php, version bump to 5.6.40
 
--- Time Zone Database update, tzdata2018f and php-timezonedb-2018.6
+-- sqlite, version bump to 3.25.3
+
+-- strace, version bump to 4.26
+
+-- sudo, version bump to 1.8.27
+
+-- tiff, version bump to 4.0.10
+
+-- fossil, new feature to optionally send commit notifications via email while using 'fossil-commit'.
+   New rc.conf variable FOSSIL_NOTIFY must be defined (via user.conf) as To: email address to enable.
+   Additional new, optional rc.conf variables: FOSSIL_NOTIFY_FROM, FOSSIL_HOSTNAME
+
+-- alert, on boot create a /etc/motd MOTD (Message of the Day) file containing system information.
+   The MOTD is displayed at post-login by ssh, console and web interface CLI tab login.
+   New rc.conf variable ENABLE_MOTD, display MOTD at post-login, "yes" or "no", defaults to "yes"
+
+-- system-vendor, update system-vendor.ids
+
+-- ca-certificates, update trusted root certificates 2019-01-23
+
+-- Time Zone Database update, tzdata2018i and php-timezonedb-2018.9
 
 -- mac2vendor, oui.txt database snapshot 2018-10-21
 
 ** Networking
 
--- WireGuard VPN, version bump to 0.0.20181018
+-- OpenSSL, version bump to 1.0.2q, security fixes: CVE-2018-0734, CVE-2018-5407
+
+-- WireGuard VPN, version bump to 0.0.20190123
+
+-- WireGuard VPN, add wireguard-mobile-client script to manage mobile clients.  Also used by the web interface.
+   New rc.conf variables WIREGUARD_HOSTNAME and WIREGUARD_CLIENT_ROUTING
+
+-- OpenSSH, version 7.5p1, security fix: CVE-2018-20685
+
+-- libcurl (curl) version bump to 7.63.0, security fixes: CVE-2018-16839, CVE-2018-16840, CVE-2018-16842
+
+-- prosody, version bump to 0.10.3
 
 -- dnsmasq, version bump to 2.80
+
+-- getdns/stubby, version bump to 1.5.1/0.2.5
 
 -- fping, major version bump to 4.1
    Note: Now handles both IPv4 and IPv6 via a single binary, fping6 is a sym-link for backward compatibility.
 
+-- iperf, version bump to 2.0.13
+
+-- wol-host, new command to send Wake-on-LAN packet to specified host, by IP or DNS name.
+   Example: wol-host --ping 192.168.101.13
+   More info: wol-host --help
+
 -- lighttpd, version bump to 1.4.51, bug and security fixes
 
--- arnofw (AIF), add WIREGUARD_ALLOW_OPENVPN rc.conf variable, Allow WireGuard tunnel to OpenVPN tunnel(s), disabled by default.
+-- keepalived, version bump to 2.0.12
 
--- unbound (host), version bump to 1.8.1
+-- arnofw (AIF), various upstream fixes and tweaks
+
+-- arnofw (AIF), add WIREGUARD_ALLOW_OPENVPN rc.conf variable, Allow WireGuard tunnel to OpenVPN tunnel(s), disabled by default.
+   Add OVPN_CLIENT_ISOLATION and WIREGUARD_PEER_ISOLATION rc.conf variables, OpenVPN and WireGuard plugins, disabled by default.
+   Add WIREGUARD_REDIRECT_PORTS rc.conf variable, WireGuard plugin, disabled by default.
+
+-- ngrep, version bump to 1.47
+
+-- openldap, version bump to 2.4.47
+
+-- sngrep, version bump to 1.4.6
+
+-- unbound (host), version bump to 1.8.3
+
+-- whois, version bump to 5.4.0
+
+-- wide-dhcpv6, when no suitable internal interfaces are defined to receive a prefix delegation,
+   use a dummy interface named 'ip6pd'.
+
+-- network, udhcpc.script, add support for 'leasefail' condition
+   If no DHCP lease is established, generate a temporary 169.254/16 (RFC 3927) IPv4 Link-Local address
 
 ** Asterisk
 
--- Asterisk 11.25.3 (no change) and 13.23.1 (no change)
+-- Asterisk 11.25.3 (no change) and 13.24.1 (version bump)
 
 -- DAHDI, dahdi-linux 2.10.2 (no change) and dahdi-tools 2.10.2 (no change)
 
--- pjsip 2.7.2 (no change)
+-- pjsip 2.8 (version bump)
 
--- FOP2, available version bump to 2.31.20.
+-- FOP2, available version bump to 2.31.21.
    Note: If you have a license, you may need to purchase an "Annual Software Maintenance" license if you upgrade.
    More info: http://doc.astlinux-project.org/userdoc:tt_asterisk-fop2-upgrade
 
@@ -52,6 +153,17 @@ Released @TBD@
 -- OpenVPN Server and Client sub-tabs, Disable Compression by default
 
 -- Firewall sub-tab, add WIREGUARD_ALLOW_OPENVPN rc.conf variable support
+
+-- WireGuard VPN sub-tab, add "Mobile Client Defaults" and "Mobile Client Credentials" sections.
+   Mobile clients can be added and deleted, configurations edited and credentials (including a QR code) downloaded.
+
+-- Status tab, improve layout of "WireGuard VPN Status" section.
+
+-- OpenVPN Server and WireGuard VPN sub-tabs, add "Client Isolation" and "Peer Isolation" firewall options.
+
+-- WireGuard VPN sub-tab, add "Redirect Ports" firewall option.
+
+-- CSS style sheet, add 'Menlo' to included monospace font-family.
 
 
 Additions for AstLinux 1.3.4:
