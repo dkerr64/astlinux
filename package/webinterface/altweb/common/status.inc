@@ -1118,11 +1118,13 @@ if ($daemon['dnsmasq'] > 0) {
     putHtml("<h2>DHCP Leases:</h2>");
 
     if (! is_null($dhcp = parseDNSMASQleaseDB($DNSMASQLEASEDB, FALSE))) {
+      putHtml("<pre>");
       foreach (array(FALSE, TRUE) as $dhcpv6) {
         if ($dhcpv6 && is_null($dhcp = parseDNSMASQleaseDB($DNSMASQLEASE6DB, TRUE))) {
           break;
         }
-        putHtml('<pre><table class="statusdatatable">');
+        echo ($dhcpv6 ? "<br>" : "");
+        putHtml('<table class="statusdatatable">');
         putHtml("<tr>");
         if (($n = count($dhcp['clients'])) > 0) {
           echo "<td>", ($dhcpv6 ? "IPv6" : "IPv4")." Address", "</td>";
@@ -1144,8 +1146,9 @@ if ($daemon['dnsmasq'] > 0) {
           echo '<td colspan="5">'.$n.' Active '.($dhcpv6 ? "DHCPv6" : "DHCP").' Leases</td>';
         }
         putHtml("</tr>");
-        putHtml("</table></pre>");
+        echo "</table>";
       }
+      putHtml("</pre>");
     } elseif (! is_null($dhcp = parseDNSMASQleases($DNSMASQLEASES))) {
       $is_mac2vendor = is_mac2vendor();
       putHtml("<pre>");
