@@ -1118,6 +1118,7 @@ if ($daemon['dnsmasq'] > 0) {
     putHtml("<h2>DHCP Leases:</h2>");
 
     if (! is_null($dhcp = parseDNSMASQleaseDB($DNSMASQLEASEDB, FALSE))) {
+      $names = array();
       putHtml("<pre>");
       foreach (array(FALSE, TRUE) as $dhcpv6) {
         if ($dhcpv6 && is_null($dhcp = parseDNSMASQleaseDB($DNSMASQLEASE6DB, TRUE))) {
@@ -1134,13 +1135,16 @@ if ($daemon['dnsmasq'] > 0) {
           echo "<td>", "Start Time", "</td>";
           echo "<td>", "Vendor Name", "</td>";
           for ($i = 0; $i < $n; $i++) {
+            $macaddr = $dhcp['clients'][$i]['mac'];
             putHtml("</tr><tr>");
             echo "<td>", $dhcp['clients'][$i]['ip'], "</td>";
             echo "<td>", $dhcp['clients'][$i]['mac'], "</td>";
-            echo "<td>", $dhcp['clients'][$i]['hostname'], "</td>";
-            echo "<td>", htmlspecialchars($dhcp['clients'][$i]['clientname']), "</td>";
+            echo "<td>", (empty($dhcp['clients'][$i]['hostname']) ? $names[$macaddr]['hostname'] : $dhcp['clients'][$i]['hostname']), "</td>";
+            echo "<td>", (empty($dhcp['clients'][$i]['clientname']) ? $names[$macaddr]['clientname'] : htmlspecialchars($dhcp['clients'][$i]['clientname'])), "</td>";
             echo "<td>", date('Y-m-d H:i:s', $dhcp['clients'][$i]['time']), "</td>";
             echo "<td>", htmlspecialchars($dhcp['clients'][$i]['vendor']), "</td>";
+            $names[$macaddr]['hostname'] = '<span style="color: #808080">'.$dhcp['clients'][$i]['hostname'].'</span>';
+            $names[$macaddr]['clientname'] = '<span style="color: #808080">'.htmlspecialchars($dhcp['clients'][$i]['clientname']).'</span>';
           }
           putHtml("</tr><tr>");
           echo '<td colspan="5">'.$n.' Active '.($dhcpv6 ? "DHCPv6" : "DHCP").' Leases</td>';
