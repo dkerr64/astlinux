@@ -14,6 +14,8 @@ Released @TBD@
 
 -- sqlite, version bump to 3.27.2
 
+-- Monit, version bump to 5.25.3, security and bug fixes.
+
 ** Networking
 
 -- OpenSSL, version bump to 1.0.2r, security fixes: CVE-2019-1559
@@ -23,6 +25,8 @@ Released @TBD@
 -- WireGuard VPN, version bump to 0.0.20190227
 
 -- libcurl (curl) version bump to 7.64.0, security fixes: CVE-2018-16890, CVE-2019-3822, CVE-2019-3823
+
+-- darkstat, add NETSTAT_EXTIF rc.conf variable to specify the External Interface, defaults to the $EXTIF interface.
 
 -- fping, version bump to 4.2
 
@@ -44,7 +48,7 @@ Released @TBD@
 
 ** Web Interface
 
--- no change
+-- Network tab, add NETSTAT_EXTIF support
 
 
 Additions for AstLinux 1.3.5.2:
