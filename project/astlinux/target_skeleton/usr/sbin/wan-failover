@@ -40,6 +40,8 @@ TEST_INTERVAL=$INTERVAL
 NO_OF_TARGETS=0
 TEST_FAILOVER=0
 
+START_STR="START"
+STOP_STR="STOP"
 PRIMARY_STR="PRIMARY"
 SECONDARY_STR="SECONDARY"
 WAN_LINK_STR="WAN Link: "
@@ -288,11 +290,11 @@ switch() {
   if [ "$ACTIVE_CONNECTION" = "$PRIMARY_STR" ]; then
     switch_to_secondary
     if [ -x $SCRIPTFILE ]; then
-      $SCRIPTFILE "$SECONDARY_STR" "$EXTIF" "$PRIMARY_GW" "$EXT2IF" "$SECONDARY_GW" "$SECONDARY_GWIPV6"
+      rtn_str="$($SCRIPTFILE "$SECONDARY_STR" "$EXTIF" "$PRIMARY_GW" "$EXT2IF" "$SECONDARY_GW" "$SECONDARY_GWIPV6" 3>&1 1>&2)"
     fi
     idle_wait 10
     MESG="Primary WAN link failed on '$HOSTNAME'. Switched to secondary link."
-    BODY="$(gen_body_text)"
+    BODY="$(gen_body_text) $rtn_str"
     log2mail "$MESG" "$BODY"
     log INFO "$MESG"
     log DEBUG "Failover Hysteresis started, sleeping for $SECONDARY_DELAY seconds."
@@ -301,11 +303,11 @@ switch() {
   elif [ "$ACTIVE_CONNECTION" = "$SECONDARY_STR" ]; then
     switch_to_primary
     if [ -x $SCRIPTFILE ]; then
-      $SCRIPTFILE "$PRIMARY_STR" "$EXTIF" "$PRIMARY_GW" "$EXT2IF" "$SECONDARY_GW" "$SECONDARY_GWIPV6"
+      rtn_str="$($SCRIPTFILE "$PRIMARY_STR" "$EXTIF" "$PRIMARY_GW" "$EXT2IF" "$SECONDARY_GW" "$SECONDARY_GWIPV6" 3>&1 1>&2)"
     fi
     idle_wait 10
     MESG="Primary WAN link OK on '$HOSTNAME'. Switched back to primary link."
-    BODY="$(gen_body_text)"
+    BODY="$(gen_body_text) $rtn_str"
     log2mail "$MESG" "$BODY"
     log INFO "$MESG"
     log DEBUG "Failback Hysteresis started, sleeping for $PRIMARY_DELAY seconds."
@@ -347,11 +349,15 @@ start_monitor() {
   add_target_static_routes
   display_header
   update_log_status
-
+  if [ -x $SCRIPTFILE ]; then
+    $SCRIPTFILE "$START_STR" "$EXTIF" "$PRIMARY_GW" "$EXT2IF" "$SECONDARY_GW" "$SECONDARY_GWIPV6"
+  fi
   while [ -f "$PIDFILE" ]; do
     test_wan_status
   done
-
+  if [ -x $SCRIPTFILE ]; then
+    $SCRIPTFILE "$STOP_STR" "$EXTIF" "$PRIMARY_GW" "$EXT2IF" "$SECONDARY_GW" "$SECONDARY_GWIPV6"
+  fi
   remove_target_static_routes
 
   log INFO "Stopping monitoring of WAN link."
