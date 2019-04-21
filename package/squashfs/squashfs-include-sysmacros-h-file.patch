@@ -1,0 +1,22 @@
+diff -Naur a/squashfs-tools/mksquashfs.c b/squashfs-tools/mksquashfs.c
+--- a/squashfs-tools/mksquashfs.c	2019-04-21 12:23:39.820136336 -0400
++++ b/squashfs-tools/mksquashfs.c	2019-04-21 13:09:56.308096445 -0400
+@@ -42,6 +42,7 @@
+ #include <stdlib.h>
+ #include <signal.h>
+ #include <setjmp.h>
++#include <sys/sysmacros.h>
+ #include <sys/types.h>
+ #include <sys/mman.h>
+ #include <pthread.h>
+diff -Naur a/squashfs-tools/unsquashfs.c b/squashfs-tools/unsquashfs.c
+--- a/squashfs-tools/unsquashfs.c	2014-05-12 18:18:35.000000000 -0400
++++ b/squashfs-tools/unsquashfs.c	2019-04-21 13:10:00.107036898 -0400
+@@ -32,6 +32,7 @@
+ #include "stdarg.h"
+ 
+ #include <sys/sysinfo.h>
++#include <sys/sysmacros.h>
+ #include <sys/types.h>
+ #include <sys/time.h>
+ #include <sys/resource.h>
