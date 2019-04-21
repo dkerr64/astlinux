@@ -23,6 +23,8 @@ Released @TBD@
 
 -- libedit, version bump to 20190324-3.1
 
+-- libpng, version bump to 1.6.37
+
 -- ne, new package, version 3.1.2, the nice editor, alternative to nano
    ne is easy to use for the beginner, but powerful and fully configurable for the wizard.
    Includes syntax checking for: asterisk, conf, ini, perl, sh
@@ -70,8 +72,13 @@ Released @TBD@
 
 ** Asterisk
 
--- Asterisk 11.25.3 (no change), 13.26.0 (version bump) and 16.3.0 (new version)
-                                 Adds: res_mwi_devstate.so, MWI Device State Subscriptions
+-- Asterisk 11.x, no longer included, officially EOL 2017-10-25
+
+-- Asterisk 13.23.1 (new '13se' version)
+   Older than latest Asterisk 13.x version but more tested, built --without-pjproject
+
+-- Asterisk 13.26.0 (version bump) and 16.3.0 (new version)
+   Adds: res_mwi_devstate.so, MWI Device State Subscriptions
 
 -- DAHDI, dahdi-linux 2.10.2 (no change) and dahdi-tools 2.10.2 (no change)
 
