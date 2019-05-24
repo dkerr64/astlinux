@@ -4,7 +4,7 @@
 #
 ################################################################################
 
-ACME_VERSION = 2.8.0
+ACME_VERSION = 2.8.1
 ACME_SOURCE = acme.sh-$(ACME_VERSION).tar.gz
 ACME_SITE = https://s3.amazonaws.com/files.astlinux-project
 
