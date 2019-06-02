@@ -1,20 +1,27 @@
-#############################################################
+################################################################################
 #
 # util-linux
 #
-#############################################################
+################################################################################
 
-UTIL_LINUX_VERSION_MAJOR = 2.28
-UTIL_LINUX_VERSION = $(UTIL_LINUX_VERSION_MAJOR).2
+UTIL_LINUX_VERSION_MAJOR = 2.33
+UTIL_LINUX_VERSION = $(UTIL_LINUX_VERSION_MAJOR)
 UTIL_LINUX_SOURCE = util-linux-$(UTIL_LINUX_VERSION).tar.xz
 UTIL_LINUX_SITE = $(BR2_KERNEL_MIRROR)/linux/utils/util-linux/v$(UTIL_LINUX_VERSION_MAJOR)
 UTIL_LINUX_INSTALL_STAGING = YES
-UTIL_LINUX_DEPENDENCIES = host-pkg-config
-UTIL_LINUX_CONF_ENV = scanf_cv_type_modifier=no
+UTIL_LINUX_DEPENDENCIES = host-pkg-config $(TARGET_NLS_DEPENDENCIES)
+UTIL_LINUX_CONF_OPT += \
+	--disable-rpath \
+	--disable-makeinstall-chown
+UTIL_LINUX_LIBS = $(TARGET_NLS_LIBS)
+
+# system depends on util-linux so we enable systemd support
+# (which needs systemd to be installed)
+UTIL_LINUX_CONF_OPT += \
+	--without-systemd \
+	--with-systemdsystemunitdir=no
 
 UTIL_LINUX_CONF_OPT += \
-	--localstatedir=/var/run \
-	--libdir=/usr/lib \
 	--disable-static \
 	--disable-rpath \
 	--disable-makeinstall-chown \
@@ -22,28 +29,66 @@ UTIL_LINUX_CONF_OPT += \
 	--disable-bash-completion \
 	--with-bashcompletiondir="" \
 	--without-tinfo \
-	--without-readline \
 	--without-utempter \
 	--without-cap-ng \
 	--without-user \
-	--without-audit \
 	--without-udev \
-	--without-python \
-	--without-btrfs \
-	--without-systemd \
-	--without-systemdsystemunitdir
+	--without-btrfs
 
-# If both util-linux and busybox are selected, make certain util-linux
-# wins the fight over who gets to have their utils actually installed
-ifeq ($(BR2_PACKAGE_BUSYBOX),y)
-UTIL_LINUX_DEPENDENCIES += busybox
+# Prevent the installation from attempting to move shared libraries from
+# ${usrlib_execdir} (/usr/lib) to ${libdir} (/lib), since both paths are
+# the same when merged usr is in use.
+ifeq ($(BR2_ROOTFS_MERGED_USR),y)
+UTIL_LINUX_CONF_OPT += --bindir=/usr/bin --sbindir=/usr/sbin --libdir=/usr/lib
 endif
 
 ifeq ($(BR2_PACKAGE_NCURSES),y)
 UTIL_LINUX_DEPENDENCIES += ncurses
+ifeq ($(BR2_PACKAGE_NCURSES_WCHAR),y)
+UTIL_LINUX_CONF_OPT += --with-ncursesw
+UTIL_LINUX_CONF_ENV += NCURSESW6_CONFIG=$(STAGING_DIR)/usr/bin/$(NCURSES_CONFIG_SCRIPTS)
 else
-UTIL_LINUX_CONF_OPT += --without-ncurses
+UTIL_LINUX_CONF_OPT += --without-ncursesw --with-ncurses --disable-widechar
+UTIL_LINUX_CONF_ENV += NCURSES6_CONFIG=$(STAGING_DIR)/usr/bin/$(NCURSES_CONFIG_SCRIPTS)
 endif
+else
+ifeq ($(BR2_USE_WCHAR),y)
+UTIL_LINUX_CONF_OPT += --enable-widechar
+else
+UTIL_LINUX_CONF_OPT += --disable-widechar
+endif
+UTIL_LINUX_CONF_OPT += --without-ncursesw --without-ncurses
+endif
+
+ifeq ($(BR2_PACKAGE_LIBCAP_NG),y)
+UTIL_LINUX_DEPENDENCIES += libcap-ng
+endif
+
+# Unfortunately, the util-linux does LIBS="" at the end of its
+# configure script. So we have to pass the proper LIBS value when
+# calling the configure script to make configure tests pass properly,
+# and then pass it again at build time.
+UTIL_LINUX_CONF_ENV += LIBS="$(UTIL_LINUX_LIBS)"
+UTIL_LINUX_MAKE_OPT += LIBS="$(UTIL_LINUX_LIBS)"
+
+ifeq ($(BR2_PACKAGE_LIBSELINUX),y)
+UTIL_LINUX_DEPENDENCIES += libselinux
+UTIL_LINUX_CONF_OPT += --with-selinux
+define UTIL_LINUX_SELINUX_PAMFILES_TWEAK
+	$(foreach f,su su-l,
+		$(SED) 's/^# \(.*pam_selinux.so.*\)$$/\1/' \
+			$(TARGET_DIR)/etc/pam.d/$(f)
+	)
+endef
+else
+UTIL_LINUX_CONF_OPT += --without-selinux
+endif
+
+# Used by cramfs utils
+UTIL_LINUX_DEPENDENCIES += $(if $(BR2_PACKAGE_ZLIB),zlib)
+
+# Used by login-utils
+UTIL_LINUX_DEPENDENCIES += $(if $(BR2_PACKAGE_LINUX_PAM),linux-pam)
 
 # Disable/Enable utilities
 UTIL_LINUX_CONF_OPT += \
@@ -52,6 +97,7 @@ UTIL_LINUX_CONF_OPT += \
 	$(if $(BR2_PACKAGE_UTIL_LINUX_BFS),--enable-bfs,--disable-bfs) \
 	$(if $(BR2_PACKAGE_UTIL_LINUX_CAL),--enable-cal,--disable-cal) \
 	$(if $(BR2_PACKAGE_UTIL_LINUX_CHFN_CHSH),--enable-chfn-chsh,--disable-chfn-chsh) \
+	$(if $(BR2_PACKAGE_UTIL_LINUX_CHMEM),--enable-chmem,--disable-chmem) \
 	$(if $(BR2_PACKAGE_UTIL_LINUX_CRAMFS),--enable-cramfs,--disable-cramfs) \
 	$(if $(BR2_PACKAGE_UTIL_LINUX_EJECT),--enable-eject,--disable-eject) \
 	$(if $(BR2_PACKAGE_UTIL_LINUX_FALLOCATE),--enable-fallocate,--disable-fallocate) \
@@ -69,9 +115,10 @@ UTIL_LINUX_CONF_OPT += \
 	$(if $(BR2_PACKAGE_UTIL_LINUX_LIBUUID),--enable-libuuid,--disable-libuuid) \
 	$(if $(BR2_PACKAGE_UTIL_LINUX_LINE),--enable-line,--disable-line) \
 	$(if $(BR2_PACKAGE_UTIL_LINUX_LOGGER),--enable-logger,--disable-logger) \
-	$(if $(BR2_PACKAGE_UTIL_LINUX_LOGIN_UTILS),--enable-last --enable-login --enable-runuser --enable-su --enable-sulogin,--disable-last --disable-login --disable-runuser --disable-su --disable-sulogin) \
+	$(if $(BR2_PACKAGE_UTIL_LINUX_LOGIN),--enable-login,--disable-login) \
 	$(if $(BR2_PACKAGE_UTIL_LINUX_LOSETUP),--enable-losetup,--disable-losetup) \
 	$(if $(BR2_PACKAGE_UTIL_LINUX_LSLOGINS),--enable-lslogins,--disable-lslogins) \
+	$(if $(BR2_PACKAGE_UTIL_LINUX_LSMEM),--enable-lsmem,--disable-lsmem) \
 	$(if $(BR2_PACKAGE_UTIL_LINUX_MESG),--enable-mesg,--disable-mesg) \
 	$(if $(BR2_PACKAGE_UTIL_LINUX_MINIX),--enable-minix,--disable-minix) \
 	$(if $(BR2_PACKAGE_UTIL_LINUX_MORE),--enable-more,--disable-more) \
@@ -85,10 +132,13 @@ UTIL_LINUX_CONF_OPT += \
 	$(if $(BR2_PACKAGE_UTIL_LINUX_PIVOT_ROOT),--enable-pivot_root,--disable-pivot_root) \
 	$(if $(BR2_PACKAGE_UTIL_LINUX_RAW),--enable-raw,--disable-raw) \
 	$(if $(BR2_PACKAGE_UTIL_LINUX_RENAME),--enable-rename,--disable-rename) \
-	$(if $(BR2_PACKAGE_UTIL_LINUX_RESET),--enable-reset,--disable-reset) \
+	$(if $(BR2_PACKAGE_UTIL_LINUX_RFKILL),--enable-rfkill,--disable-rfkill) \
+	$(if $(BR2_PACKAGE_UTIL_LINUX_RUNUSER),--enable-runuser,--disable-runuser) \
 	$(if $(BR2_PACKAGE_UTIL_LINUX_SCHEDUTILS),--enable-schedutils,--disable-schedutils) \
 	$(if $(BR2_PACKAGE_UTIL_LINUX_SETPRIV),--enable-setpriv,--disable-setpriv) \
 	$(if $(BR2_PACKAGE_UTIL_LINUX_SETTERM),--enable-setterm,--disable-setterm) \
+	$(if $(BR2_PACKAGE_UTIL_LINUX_SU),--enable-su,--disable-su) \
+	$(if $(BR2_PACKAGE_UTIL_LINUX_SULOGIN),--enable-sulogin,--disable-sulogin) \
 	$(if $(BR2_PACKAGE_UTIL_LINUX_SWITCH_ROOT),--enable-switch_root,--disable-switch_root) \
 	$(if $(BR2_PACKAGE_UTIL_LINUX_TUNELP),--enable-tunelp,--disable-tunelp) \
 	$(if $(BR2_PACKAGE_UTIL_LINUX_UL),--enable-ul,--disable-ul) \
@@ -101,27 +151,59 @@ UTIL_LINUX_CONF_OPT += \
 	$(if $(BR2_PACKAGE_UTIL_LINUX_WRITE),--enable-write,--disable-write) \
 	$(if $(BR2_PACKAGE_UTIL_LINUX_ZRAMCTL),--enable-zramctl,--disable-zramctl)
 
-
-define UTIL_LINUX_REMOVE_BINARIES
-	## Removing selected /sbin binaries
-	for i in ctrlaltdel fsfreeze blkdiscard chcpu wipefs mkfs mkswap swaplabel sfdisk cfdisk; do \
-	  rm -f $(TARGET_DIR)/sbin/$$i ; \
-	done
-	## Removing selected /usr/bin binaries
-	for i in colcrt colrm column rev tailf pg script scriptreplay flock ipcmk ipcrm lsns look mcookie namei; do \
-	  rm -f $(TARGET_DIR)/usr/bin/$$i ; \
-	done
-	## Removing selected /usr/sbin binaries
-	for i in readprofile ldattach rtcwake; do \
-	  rm -f $(TARGET_DIR)/usr/sbin/$$i ; \
-	done
-endef
-
-ifeq ($(BR2_PACKAGE_UTIL_LINUX_MINIMAL_BINARIES),y)
-UTIL_LINUX_POST_INSTALL_TARGET_HOOKS = UTIL_LINUX_REMOVE_BINARIES
+# Install libmount Python bindings
+ifeq ($(BR2_PACKAGE_PYTHON)$(BR2_PACKAGE_PYTHON3),y)
+UTIL_LINUX_CONF_OPT += --with-python
+UTIL_LINUX_DEPENDENCIES += $(if $(BR2_PACKAGE_PYTHON),python,python3)
+ifeq ($(BR2_PACKAGE_UTIL_LINUX_LIBMOUNT),y)
+UTIL_LINUX_CONF_OPT += --enable-pylibmount
+else
+UTIL_LINUX_CONF_OPT += --disable-pylibmount
+endif
+else
+UTIL_LINUX_CONF_OPT += --without-python
 endif
 
+ifeq ($(BR2_PACKAGE_READLINE),y)
+UTIL_LINUX_CONF_OPT += --with-readline
+UTIL_LINUX_LIBS += $(if $(BR2_STATIC_LIBS),-lcurses)
+UTIL_LINUX_DEPENDENCIES += readline
+else
+UTIL_LINUX_CONF_OPT += --without-readline
+endif
+
+ifeq ($(BR2_PACKAGE_AUDIT),y)
+UTIL_LINUX_CONF_OPT += --with-audit
+UTIL_LINUX_DEPENDENCIES += audit
+else
+UTIL_LINUX_CONF_OPT += --without-audit
+endif
+
+# Install PAM configuration files
+ifeq ($(BR2_PACKAGE_UTIL_LINUX_SU)$(BR2_PACKAGE_LINUX_PAM),yy)
+define UTIL_LINUX_INSTALL_PAMFILES
+	$(INSTALL) -m 0644 package/util-linux/su.pam \
+		$(TARGET_DIR)/etc/pam.d/su
+	$(INSTALL) -m 0644 package/util-linux/su.pam \
+		$(TARGET_DIR)/etc/pam.d/su-l
+	$(UTIL_LINUX_SELINUX_PAMFILES_TWEAK)
+endef
+UTIL_LINUX_POST_INSTALL_TARGET_HOOKS += UTIL_LINUX_INSTALL_PAMFILES
+endif
+
+# Install agetty->getty symlink to avoid breakage when there's no busybox
+ifeq ($(BR2_PACKAGE_UTIL_LINUX_AGETTY),y)
+ifeq ($(BR2_PACKAGE_BUSYBOX),)
+define UTIL_LINUX_GETTY_SYMLINK
+	ln -sf agetty $(TARGET_DIR)/sbin/getty
+endef
+endif
+endif
+
+UTIL_LINUX_POST_INSTALL_TARGET_HOOKS += UTIL_LINUX_GETTY_SYMLINK
+
 $(eval $(call AUTOTARGETS,package,util-linux))
+# $(eval $(call AUTOTARGETS,package,util-linux,host))
 
 # MKINSTALLDIRS comes from tweaked m4/nls.m4, but autoreconf uses staging
 # one, so it disappears
