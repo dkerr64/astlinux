@@ -11,8 +11,8 @@ ACME_SITE = https://s3.amazonaws.com/files.astlinux-project
 ACME_REMOVE_TARGET_DNSAPI = dns_myapi.sh dns_lexicon.sh dns_cyon.sh dns_inwx.sh $(if $(BR2_PACKAGE_BIND),,dns_nsupdate.sh) README.md
 
 ##
-## curl -L -o dl/acme.sh-2.8.0.tar.gz https://github.com/Neilpang/acme.sh/archive/2.8.0.tar.gz
-## ./scripts/upload-dl-pair dl/acme.sh-2.8.0.tar.gz
+## curl -L -o dl/acme.sh-2.8.1.tar.gz https://github.com/Neilpang/acme.sh/archive/2.8.1.tar.gz
+## ./scripts/upload-dl-pair dl/acme.sh-2.8.1.tar.gz
 ##
 
 define ACME_INSTALL_TARGET_CMDS
