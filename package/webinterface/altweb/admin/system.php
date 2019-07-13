@@ -1,6 +1,6 @@
 <?php
 
-// Copyright (C) 2008-2017 Lonnie Abelbeck
+// Copyright (C) 2008-2019 Lonnie Abelbeck
 // This is free software, licensed under the GNU General Public License
 // version 3 as published by the Free Software Foundation; you can
 // redistribute it and/or modify it under the terms of the GNU
@@ -19,6 +19,8 @@
 // 01-16-2011, Added runnix check, upgrade, show, revert
 // 07-21-2013, Added Add-On Packages
 // 12-16-2017, Updated backup files
+// 06-25-2019, Updated backup files
+// 07-11-2019, Added Backup Exclude Suffixes support
 //
 // System location of rc.conf file
 $CONFFILE = '/etc/rc.conf';
@@ -186,8 +188,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $asturw = (getPREFdef($global_prefs, 'system_backup_asturw') === 'yes') ? '/mnt/kd/asturw'.$suffix : '';
     $prefix = (getPREFdef($global_prefs, 'system_backup_temp_disk') === 'yes') ? '/mnt/kd/.' : '/tmp/';
     $tmpfile = $backup_name.'-'.$backup_type.'-'.date('Y-m-d').$suffix;
+    $xsuffix = gen_BackupExcludeSuffix_args(getPREFdef($global_prefs, 'system_backup_exclude_suffix_cmdstr'));
     if ($backup_type === 'basic') {
       $firewall = is_dir('/mnt/kd/arno-iptables-firewall/plugins') ? ' "arno-iptables-firewall/plugins"' : '';
+      $firewall .= is_file('/mnt/kd/arno-iptables-firewall/custom-rules') ? ' "arno-iptables-firewall/custom-rules"' : '';
       $phoneprov_base_dir = rtrim(trim(shell_exec('. /etc/rc.conf; echo "${PHONEPROV_BASE_DIR:-/mnt/kd/phoneprov}"')), '/');
       if (is_dir("$phoneprov_base_dir/templates") && (strncmp($phoneprov_base_dir, '/mnt/kd', strlen('/mnt/kd')) == 0)) {
         $templates = ' "'.substr("$phoneprov_base_dir/templates", strlen('/mnt/kd/')).'"';
@@ -223,13 +227,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     if ($asturw !== '') {
       $excludefile = tempnam("/tmp", "PHP_");
-      $excludecmd = 'find /oldroot/mnt/asturw/ -type f | sed -e "s:^/oldroot/mnt/asturw/::" | sed -n';
-      $excludecmd .= ' -e "s:^stat/var/lib/asterisk/sounds/.*$:&:p"';
-      $excludecmd .= ' -e "s:^stat/var/lib/asterisk/moh/.*$:&:p"';
-      $excludecmd .= ' -e "s:^stat/var/www/cache/.*$:&:p"';
-      $excludecmd .= ' -e "s:^stat/var/packages/.*$:&:p"';
-      $excludecmd .= ' -e "s:^usr/lib/locale/.*$:&:p"';
-      shell($excludecmd.' >'.$excludefile.' 2>/dev/null', $status);
+      $excludepath  = 'stat/var/lib/asterisk/sounds/*'."\n";
+      $excludepath .= 'stat/var/lib/asterisk/moh/*'."\n";
+      $excludepath .= 'stat/var/www/cache/*'."\n";
+      $excludepath .= 'stat/var/packages/*'."\n";
+      $excludepath .= 'usr/lib/locale/*'."\n";
+      @file_put_contents($excludefile, $excludepath);
       shell($tarcmd.$asturw.' -X '.$excludefile.' $(ls -1 /oldroot/mnt/asturw/ | sed -e "s/^mnt$//") -C /oldroot/mnt/asturw >/dev/null 2>/dev/null', $status);
       @unlink($excludefile);
       if ($status != 0) {
@@ -239,7 +242,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
       }
     }
-    shell($tarcmd.$prefix.$tmpfile.' '.$srcfile.' -C /mnt/kd >/dev/null 2>/dev/null', $status);
+    shell($tarcmd.$prefix.$tmpfile.$xsuffix.' '.$srcfile.' -C /mnt/kd >/dev/null 2>/dev/null', $status);
     if ($asturw !== '') {
       @unlink($asturw);
     }
@@ -251,7 +254,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       header('Content-Disposition: attachment; filename="'.$tmpfile.'"');
       header('Content-Transfer-Encoding: binary');
       header('Content-Length: '.filesize($prefix.$tmpfile));
-      ob_clean();
+      ob_end_clean();
       flush();
       @readfile($prefix.$tmpfile);
       @unlink($prefix.$tmpfile);
@@ -689,6 +692,9 @@ require_once '../common/header.php';
 
   putHtml('</td><td style="text-align: center;">');
   putHtml('<select name="backup_type">');
+  if (($sel = getPREFdef($global_prefs, 'system_backup_exclude_suffix_cmdstr')) !== '') {
+    putHtml('<option value="xsuffix" disabled="disabled">Excluding: '.$sel.'</option>');
+  }
   $sel = (getPREFdef($global_prefs, 'system_backup_asturw') === 'yes') ? '&amp; unionfs ' : '';
   putHtml('<option value="full">All /mnt/kd/ '.$sel.'files</option>');
 ?>

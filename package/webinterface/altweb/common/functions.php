@@ -24,6 +24,7 @@
 // 09-02-2017, Updates to includeTOPICinfo()
 // 12-01-2018, Added console_log()
 // 12-01-2018, Updates to includeTOPICinfo()
+// 07-11-2019, Added gen_BackupExcludeSuffix_args()
 //
 // System location of prefs file
 $KD_PREFS_LOCATION = '/mnt/kd/webgui-prefs.txt';
@@ -1029,6 +1030,23 @@ function getAstDB($family, $key) {
     @unlink($tmpfile);
   }
   return($result);
+
+// Function: gen_BackupExcludeSuffix_args
+//
+function gen_BackupExcludeSuffix_args($suffix_str) {
+
+  $str = '';
+
+  if ($suffix_str !== '') {
+    $suffixes = preg_split('/[ ,]+/', $suffix_str);
+    foreach ($suffixes as $suffix) {
+      if ($suffix !== '') {
+        $suffix = strtr($suffix, '$`[]\'\\', '......');   // map special chars to dot
+        $str .= " --exclude '*.$suffix'";
+      }
+    }
+  }
+  return($str);
 }
 
 // Function: getPREFdef

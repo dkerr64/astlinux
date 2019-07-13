@@ -1,6 +1,6 @@
 <?php
 
-// Copyright (C) 2008-2016 Lonnie Abelbeck
+// Copyright (C) 2008-2019 Lonnie Abelbeck
 // This is free software, licensed under the GNU General Public License
 // version 3 as published by the Free Software Foundation; you can
 // redistribute it and/or modify it under the terms of the GNU
@@ -11,6 +11,7 @@
 // 01-21-2013, Add Restart Asterisk
 // 01-15-2016, Add Restart FOP2
 // 01-18-2016, Add Primary /mnt/kd/ files Backup
+// 07-11-2019, Added Backup Exclude Suffixes support
 //
 // System location of webgui-staff-backup.conf
 $CONFFILE = '/mnt/kd/webgui-staff-backup.conf';
@@ -61,6 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $asturw = (getPREFdef($global_prefs, 'system_backup_asturw') === 'yes') ? '/mnt/kd/asturw'.$suffix : '';
     $prefix = '/mnt/kd/.';
     $tmpfile = $backup_name.'-'.$backup_type.'-'.date('Y-m-d').$suffix;
+    $xsuffix = gen_BackupExcludeSuffix_args(getPREFdef($global_prefs, 'system_backup_exclude_suffix_cmdstr'));
     if ($backup_type === 'primary') {
       $wanpipe = '';
       foreach (glob('/mnt/kd/wanpipe/*.conf') as $globfile) {
@@ -77,13 +79,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     if ($asturw !== '') {
       $excludefile = tempnam("/tmp", "PHP_");
-      $excludecmd = 'find /oldroot/mnt/asturw/ -type f | sed -e "s:^/oldroot/mnt/asturw/::" | sed -n';
-      $excludecmd .= ' -e "s:^stat/var/lib/asterisk/sounds/.*$:&:p"';
-      $excludecmd .= ' -e "s:^stat/var/lib/asterisk/moh/.*$:&:p"';
-      $excludecmd .= ' -e "s:^stat/var/www/cache/.*$:&:p"';
-      $excludecmd .= ' -e "s:^stat/var/packages/.*$:&:p"';
-      $excludecmd .= ' -e "s:^usr/lib/locale/.*$:&:p"';
-      shell($excludecmd.' >'.$excludefile.' 2>/dev/null', $status);
+      $excludepath  = 'stat/var/lib/asterisk/sounds/*'."\n";
+      $excludepath .= 'stat/var/lib/asterisk/moh/*'."\n";
+      $excludepath .= 'stat/var/www/cache/*'."\n";
+      $excludepath .= 'stat/var/packages/*'."\n";
+      $excludepath .= 'usr/lib/locale/*'."\n";
+      @file_put_contents($excludefile, $excludepath);
       shell($tarcmd.$asturw.' -X '.$excludefile.' $(ls -1 /oldroot/mnt/asturw/ | sed -e "s/^mnt$//") -C /oldroot/mnt/asturw >/dev/null 2>/dev/null', $status);
       @unlink($excludefile);
       if ($status != 0) {
@@ -93,7 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
       }
     }
-    shell($tarcmd.$prefix.$tmpfile.' '.$srcfile.' -C /mnt/kd >/dev/null 2>/dev/null', $status);
+    shell($tarcmd.$prefix.$tmpfile.$xsuffix.' '.$srcfile.' -C /mnt/kd >/dev/null 2>/dev/null', $status);
     if ($asturw !== '') {
       @unlink($asturw);
     }
@@ -126,7 +127,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header('Content-Disposition: attachment; filename="'.$aesfile.'"');
         header('Content-Transfer-Encoding: binary');
         header('Content-Length: '.$aessize);
-        ob_clean();
+        ob_end_clean();
         flush();
         @readfile($prefix.$aesfile);
         @unlink($prefix.$aesfile);
