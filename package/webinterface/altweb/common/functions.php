@@ -1030,6 +1030,7 @@ function getAstDB($family, $key) {
     @unlink($tmpfile);
   }
   return($result);
+}
 
 // Function: gen_BackupExcludeSuffix_args
 //
