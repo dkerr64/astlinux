@@ -4,6 +4,8 @@
 ##
 ## Ethernet support
 ## 10/100 first, then Gigabit
+igb
+virtio_net
 3c59x
 typhoon
 tulip
@@ -19,7 +21,6 @@ pcnet32
 acenic
 e1000
 e1000e
-igb
 ns83820
 r8168
 r8169

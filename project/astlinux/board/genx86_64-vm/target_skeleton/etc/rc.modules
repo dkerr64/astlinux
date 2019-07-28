@@ -4,6 +4,7 @@
 ##
 ## Ethernet support
 ## Virtual first, then Emulated
+igb
 virtio_net
 vmxnet3
 pcnet32
