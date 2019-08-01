@@ -3,8 +3,8 @@
 # libglib2
 #
 #############################################################
-LIBGLIB2_VERSION_MAJOR = 2.56
-LIBGLIB2_VERSION = $(LIBGLIB2_VERSION_MAJOR).4
+LIBGLIB2_VERSION_MAJOR = 2.46
+LIBGLIB2_VERSION = $(LIBGLIB2_VERSION_MAJOR).2
 LIBGLIB2_SOURCE = glib-$(LIBGLIB2_VERSION).tar.xz
 LIBGLIB2_SITE = http://ftp.gnome.org/pub/gnome/sources/glib/$(LIBGLIB2_VERSION_MAJOR)
 # 0002-disable-tests.patch
@@ -77,41 +77,35 @@ LIBGLIB2_CONF_ENV = \
 	ac_cv_func_strtoull_l=no \
 	gt_cv_c_wchar_t=$(if $(BR2_USE_WCHAR),yes,no)
 
-LIBGLIB2_DEPENDENCIES = \
-	host-pkg-config \
-	libffi util-linux zlib pcre $(TARGET_NLS_DEPENDENCIES)
-
-# We explicitly specify a giomodule-dir to avoid having a value
-# containing ${libdir} in gio-2.0.pc. Indeed, a value depending on
-# ${libdir} would be prefixed by the sysroot by pkg-config, causing a
-# bogus installation path once combined with $(DESTDIR).
 LIBGLIB2_CONF_OPT = \
-	--with-pcre=system \
+	--disable-compile-warnings
+
+HOST_LIBGLIB2_CONF_OPT = \
 	--disable-compile-warnings \
-	--with-gio-module-dir=/usr/lib/gio/modules
+	--disable-coverage \
+	--disable-dtrace \
+	--disable-fam \
+	--disable-libelf \
+	--disable-selinux \
+	--disable-systemtap \
+	--disable-xattr
+
+LIBGLIB2_DEPENDENCIES = host-pkg-config host-libglib2 libffi zlib $(if $(BR2_NEEDS_GETTEXT),gettext libintl)
+
+HOST_LIBGLIB2_DEPENDENCIES = host-pkg-config host-libffi host-zlib
 
 ifneq ($(BR2_ENABLE_LOCALE),y)
 LIBGLIB2_DEPENDENCIES += libiconv
 endif
 
-ifeq ($(BR2_PACKAGE_ELFUTILS),y)
-LIBGLIB2_CONF_OPT += --enable-libelf
-LIBGLIB2_DEPENDENCIES += elfutils
-else
 LIBGLIB2_CONF_OPT += --disable-libelf
-endif
 
 ifeq ($(BR2_PACKAGE_LIBICONV),y)
 LIBGLIB2_CONF_OPT += --with-libiconv=gnu
 LIBGLIB2_DEPENDENCIES += libiconv
 endif
 
-ifeq ($(BR2_PACKAGE_LIBSELINUX),y)
-LIBGLIB2_CONF_OPT += --enable-selinux
-LIBGLIB2_DEPENDENCIES += libselinux
-else
-LIBGLIB2_CONF_OPT += --disable-selinux
-endif
+LIBGLIB2_CONF_OPT += --with-pcre=internal
 
 define LIBGLIB2_REMOVE_DEV_FILES
 	rm -rf $(TARGET_DIR)/usr/lib/glib-2.0
@@ -132,3 +126,6 @@ LIBGLIB2_POST_INSTALL_TARGET_HOOKS += LIBGLIB2_REMOVE_GDB_FILES
 endif
 
 $(eval $(call AUTOTARGETS,package,libglib2))
+$(eval $(call AUTOTARGETS,package,libglib2,host))
+
+LIBGLIB2_HOST_BINARY:=$(HOST_DIR)/usr/bin/glib-genmarshal
