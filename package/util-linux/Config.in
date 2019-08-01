@@ -1,5 +1,7 @@
-menuconfig BR2_PACKAGE_UTIL_LINUX
+config BR2_PACKAGE_UTIL_LINUX
 	bool "util-linux"
+	depends on BR2_LARGEFILE
+	depends on BR2_USE_WCHAR
 	help
 	  Various useful/essential linux libraries and utilities.
 
@@ -13,6 +15,7 @@ config BR2_PACKAGE_UTIL_LINUX_LIBBLKID
 	bool "libblkid"
 	depends on BR2_USE_MMU # fork()
 	select BR2_PACKAGE_UTIL_LINUX_LIBUUID
+	default y
 	help
 	  Install libblkid.
 
@@ -21,6 +24,7 @@ config BR2_PACKAGE_UTIL_LINUX_LIBFDISK
 	depends on BR2_USE_MMU # fork()
 	select BR2_PACKAGE_UTIL_LINUX_LIBBLKID
 	select BR2_PACKAGE_UTIL_LINUX_LIBUUID
+	default y
 	help
 	  Install libfdisk.
 
@@ -34,11 +38,13 @@ config BR2_PACKAGE_UTIL_LINUX_LIBMOUNT
 config BR2_PACKAGE_UTIL_LINUX_LIBSMARTCOLS
 	bool "libsmartcols"
 	depends on BR2_USE_MMU # fork()
+	default y
 	help
 	  Install libsmartcols.
 
 config BR2_PACKAGE_UTIL_LINUX_LIBUUID
 	bool "libuuid"
+	default y
 	help
 	  Install libuuid.
 
@@ -46,24 +52,29 @@ config BR2_PACKAGE_UTIL_LINUX_BINARIES
 	bool "basic set"
 	depends on BR2_USE_MMU # fork()
 	select BR2_PACKAGE_UTIL_LINUX_LIBBLKID
-	select BR2_PACKAGE_UTIL_LINUX_LIBMOUNT
-	select BR2_PACKAGE_UTIL_LINUX_LIBFDISK
 	select BR2_PACKAGE_UTIL_LINUX_LIBSMARTCOLS
 	select BR2_PACKAGE_UTIL_LINUX_LIBUUID
+	default y
 	help
 	  Install the basic set of util-linux binaries.
 
-	  blkdiscard, blkid, blockdev, chcpu, choom, col, colcrt, colrm,
-	  column, ctrlaltdel, dmesg, fdisk, fincore, findfs, findmnt,
-	  flock, fsfreeze, fstrim, getopt, hexdump, ipcmk, isosize,
-	  ldattach, look, lsblk, lscpu, lsipc, lslocks, lsns, mcookie,
-	  mkfs, mkswap, namei, prlimit, readprofile, renice, rev,
-	  rtcwake, script, scriptreplay, setarch, setsid, sfdisk,
-	  swaplabel, swapoff, swapon, uuidgen, uuidparse, whereis,
-	  wipefs
+	  blkdiscard, blkid, blockdev, chcpu, col, colcrt, colrm,
+	  column, ctrlaltdel, dmesg, fdisk, findfs, flock,
+	  fsfreeze, getopt, hexdump, ipcmk, isosize, ldattach,
+	  look, lscpu, lsipc, lsns, mcookie, mkfs,
+	  mkswap, namei, prlimit, readprofile, renice, rev, rtcwake,
+	  script, scriptreplay, setarch, setsid, sfdisk, swaplabel,
+	  swapoff, tailf, uuidgen, whereis, wipefs
 
 	  The setarch utility also installs architecture-specific
 	  symlinks like linux32, linux64, uname26, i386 and x86_64.
+
+config BR2_PACKAGE_UTIL_LINUX_MINIMAL_BINARIES
+	bool "minimal set"
+	select BR2_PACKAGE_UTIL_LINUX_BINARIES
+	help
+	  Install the basic set,
+	  then remove many binaries to create a minimal set.
 
 config BR2_PACKAGE_UTIL_LINUX_AGETTY
 	bool "agetty"
@@ -78,34 +89,25 @@ config BR2_PACKAGE_UTIL_LINUX_BFS
 
 config BR2_PACKAGE_UTIL_LINUX_CAL
 	bool "cal"
+	default y
 	help
 	  Display a calendar, or some part of it
 
 config BR2_PACKAGE_UTIL_LINUX_CHFN_CHSH
 	bool "chfn/chsh"
 	depends on (BR2_ENABLE_LOCALE && BR2_USE_WCHAR) # linux-pam
-	depends on !BR2_STATIC_LIBS
-	depends on !BR2_TOOLCHAIN_USES_MUSL # linux-pam
 	depends on BR2_USE_MMU # linux-pam
-	select BR2_PACKAGE_LINUX_PAM
 	help
 	  Change login shell, real user name and information
 
 comment "chfn/chsh needs a uClibc or glibc toolchain w/ wchar, locale, dynamic library"
-	depends on !(BR2_ENABLE_LOCALE && BR2_USE_WCHAR) \
-		|| BR2_STATIC_LIBS || BR2_TOOLCHAIN_USES_MUSL
-
-config BR2_PACKAGE_UTIL_LINUX_CHMEM
-	bool "chmem"
-	help
-	  Sets a particular size or range of memory online or offline
+	depends on !(BR2_ENABLE_LOCALE && BR2_USE_WCHAR)
 
 config BR2_PACKAGE_UTIL_LINUX_CRAMFS
 	bool "cramfs utilities"
 	select BR2_PACKAGE_ZLIB
 	help
-	  Utilities for compressed ROM file system (fsck.cramfs,
-	  mkfs.cramfs)
+	  Utilities for compressed ROM file system (fsck.cramfs, mkfs.cramfs)
 
 config BR2_PACKAGE_UTIL_LINUX_EJECT
 	bool "eject"
@@ -137,16 +139,19 @@ config BR2_PACKAGE_UTIL_LINUX_FSCK
 
 config BR2_PACKAGE_UTIL_LINUX_HWCLOCK
 	bool "hwclock"
+	default y
 	help
 	  Query or set the hardware clock (RTC)
 
 config BR2_PACKAGE_UTIL_LINUX_IPCRM
 	bool "ipcrm"
+	default y
 	help
 	  Remove certain IPC resources
 
 config BR2_PACKAGE_UTIL_LINUX_IPCS
 	bool "ipcs"
+	default y
 	help
 	  Show information on IPC facilities
 
@@ -165,30 +170,27 @@ config BR2_PACKAGE_UTIL_LINUX_LINE
 	help
 	  Read one line
 
+config BR2_PACKAGE_UTIL_LINUX_LOGIN_UTILS
+	bool "login utilities"
+	depends on BR2_USE_MMU # fork() (login, runuser, su, sulogin)
+	depends on (BR2_ENABLE_LOCALE && BR2_USE_WCHAR) # linux-pam
+	help
+	  Login utilities (last, login, runuser, su, sulogin)
+
+comment "login utilities needs a uClibc or glibc toolchain w/ wchar, locale, dynamic library"
+	depends on !(BR2_ENABLE_LOCALE && BR2_USE_WCHAR)
+
 config BR2_PACKAGE_UTIL_LINUX_LOGGER
 	bool "logger"
+	default y
 	help
 	  Enter messages into the system log
-
-config BR2_PACKAGE_UTIL_LINUX_LOGIN
-	bool "login"
-	depends on BR2_ENABLE_LOCALE # linux-pam
-	depends on BR2_USE_WCHAR # linux-pam
-	depends on !BR2_STATIC_LIBS # linux-pam
-	depends on !BR2_TOOLCHAIN_USES_MUSL # linux-pam
-	depends on BR2_USE_MMU # fork(), linux-pam
-	select BR2_PACKAGE_LINUX_PAM
-	help
-	  Begin a session on the system
-
-comment "login needs a uClibc or glibc toolchain w/ wchar, locale, dynamic library"
-	depends on !(BR2_ENABLE_LOCALE && BR2_USE_WCHAR) \
-		|| BR2_STATIC_LIBS || BR2_TOOLCHAIN_USES_MUSL
 
 config BR2_PACKAGE_UTIL_LINUX_LOSETUP
 	bool "losetup"
 	depends on BR2_USE_MMU # libsmartcols
 	select BR2_PACKAGE_UTIL_LINUX_LIBSMARTCOLS
+	default y
 	help
 	  Set up and control loop devices
 
@@ -198,13 +200,6 @@ config BR2_PACKAGE_UTIL_LINUX_LSLOGINS
 	select BR2_PACKAGE_UTIL_LINUX_LIBSMARTCOLS
 	help
 	  Display information about known users in the system
-
-config BR2_PACKAGE_UTIL_LINUX_LSMEM
-	bool "lsmem"
-	depends on BR2_USE_MMU # libsmartcols
-	select BR2_PACKAGE_UTIL_LINUX_LIBSMARTCOLS
-	help
-	  List the ranges of available memory with their online status
 
 config BR2_PACKAGE_UTIL_LINUX_MESG
 	bool "mesg"
@@ -220,6 +215,7 @@ config BR2_PACKAGE_UTIL_LINUX_MORE
 	bool "more"
 	depends on BR2_USE_MMU # fork()
 	select BR2_PACKAGE_NCURSES
+	default y
 	help
 	  File perusal filter for crt viewing
 
@@ -254,17 +250,14 @@ config BR2_PACKAGE_UTIL_LINUX_NOLOGIN
 config BR2_PACKAGE_UTIL_LINUX_NSENTER
 	bool "nsenter"
 	depends on BR2_USE_MMU # fork()
-	depends on BR2_TOOLCHAIN_HEADERS_AT_LEAST_3_0
 	help
 	  Enter the namespaces of another process
-
-comment "nsenter needs a toolchain w/ headers >= 3.0"
-	depends on !BR2_TOOLCHAIN_HEADERS_AT_LEAST_3_0
 
 config BR2_PACKAGE_UTIL_LINUX_PG
 	bool "pg"
 	depends on BR2_USE_MMU # fork()
 	select BR2_PACKAGE_NCURSES
+	default y
 	help
 	  Browse pagewise through text files
 
@@ -292,67 +285,28 @@ config BR2_PACKAGE_UTIL_LINUX_RENAME
 	help
 	  Rename files
 
-config BR2_PACKAGE_UTIL_LINUX_RFKILL
-	bool "rfkill"
-	depends on BR2_USE_MMU # libsmartcols
-	select BR2_PACKAGE_UTIL_LINUX_LIBSMARTCOLS
+config BR2_PACKAGE_UTIL_LINUX_RESET
+	bool "reset"
 	help
-	  Tool for enabling and disabling wireless devices. This new
-	  implementation is based upon, and backward compatible with,
-	  the original rfkill from Johannes Berg and Marcel Holtmann.
-
-config BR2_PACKAGE_UTIL_LINUX_RUNUSER
-	bool "runuser"
-	depends on (BR2_ENABLE_LOCALE && BR2_USE_WCHAR) # linux-pam
-	depends on !BR2_STATIC_LIBS
-	depends on !BR2_TOOLCHAIN_USES_MUSL # linux-pam
-	depends on BR2_USE_MMU # fork(), linux-pam
-	select BR2_PACKAGE_LINUX_PAM
-	help
-	  Run a command with substitute user and group ID (does not need
-	  to ask for a password, because it may be executed by the root
-	  user only)
-
-comment "runuser needs a uClibc or glibc toolchain w/ wchar, locale, dynamic library"
-	depends on !(BR2_ENABLE_LOCALE && BR2_USE_WCHAR) \
-		|| BR2_STATIC_LIBS || BR2_TOOLCHAIN_USES_MUSL
+	  Reset the terminal
 
 config BR2_PACKAGE_UTIL_LINUX_SCHEDUTILS
 	bool "scheduling utilities"
+	default y
 	help
 	  Scheduling utilities (chrt, ionice, taskset)
 
 config BR2_PACKAGE_UTIL_LINUX_SETPRIV
 	bool "setpriv"
-	select BR2_PACKAGE_LIBCAP_NG
 	help
 	  Run a program with different Linux privilege settings
 
 config BR2_PACKAGE_UTIL_LINUX_SETTERM
 	bool "setterm"
 	select BR2_PACKAGE_NCURSES
+	default y
 	help
 	  Set terminal attributes
-
-config BR2_PACKAGE_UTIL_LINUX_SU
-	bool "su"
-	depends on (BR2_ENABLE_LOCALE && BR2_USE_WCHAR) # linux-pam
-	depends on !BR2_STATIC_LIBS
-	depends on !BR2_TOOLCHAIN_USES_MUSL # linux-pam
-	depends on BR2_USE_MMU # fork(), linux-pam
-	select BR2_PACKAGE_LINUX_PAM
-	help
-	  Run a command with substitute user and group ID
-
-comment "su needs a uClibc or glibc toolchain w/ wchar, locale, dynamic library"
-	depends on !(BR2_ENABLE_LOCALE && BR2_USE_WCHAR) \
-		|| BR2_STATIC_LIBS || BR2_TOOLCHAIN_USES_MUSL
-
-config BR2_PACKAGE_UTIL_LINUX_SULOGIN
-	bool "sulogin"
-	depends on BR2_USE_MMU # fork()
-	help
-	  Single-user login
 
 config BR2_PACKAGE_UTIL_LINUX_SWITCH_ROOT
 	bool "switch_root"
@@ -406,6 +360,7 @@ config BR2_PACKAGE_UTIL_LINUX_WDCTL
 	bool "wdctl"
 	depends on BR2_USE_MMU # libsmartcols
 	select BR2_PACKAGE_UTIL_LINUX_LIBSMARTCOLS
+	default y
 	help
 	  Shows hardware watchdog status
 
@@ -422,3 +377,6 @@ config BR2_PACKAGE_UTIL_LINUX_ZRAMCTL
 	  Set up and control zram devices
 
 endif
+
+comment "util-linux requires a toolchain with LARGEFILE + WCHAR support"
+	depends on !(BR2_LARGEFILE && BR2_USE_WCHAR)
