@@ -477,6 +477,7 @@ require_once '../common/header.php';
     'lib/codemirror.css',
     'addon/search/search.js',
     'addon/search/searchcursor.js',
+    'addon/comment/comment.js',
     'addon/dialog/dialog.js',
     'addon/dialog/dialog.css',
     'addon/display/fullscreen.js',
@@ -517,6 +518,9 @@ require_once '../common/header.php';
   }
 
   function setOKhandler() {
+    window.onload = function() {
+      document.getElementById("list").focus();
+    };
     var value = document.getElementById("ed").value;
     old_textSize = value.length;
     old_textHash = murmurhash3_32_gc(value, 6802145);
@@ -536,7 +540,7 @@ require_once '../common/header.php';
     }
     if (name.search('/asterisk/.*[.]conf$') >= 0) {
       cm.setOption("mode", "text/x-asterisk");
-    } else if (name.search('/rc.conf.d/.*[.]conf$') >= 0 ||
+    } else if (name.search('^/mnt/kd/rc[.]') >= 0 ||
                name.search('[.]script$') >= 0 ||
                name.search('/arno-iptables-firewall/(.*[.]conf$|custom-rules)') >= 0) {
       cm.setOption("mode", "text/x-sh");
@@ -546,16 +550,27 @@ require_once '../common/header.php';
     cm.setSize((ta.cols * 1.1) * cm.defaultCharWidth(), ta.rows * cm.defaultTextHeight() + 6);
     // Tab key toggles fullscreen, Esc returns
     cm.setOption("extraKeys", {
-      Tab: function(cm) {
+      'Cmd-/'  : 'toggleComment',
+      'Ctrl-/' : 'toggleComment',
+      'Cmd-.'  : 'toggleComment',
+      'Ctrl-.' : 'toggleComment',
+      'Tab'    : function(cm) {
         cm.setOption("fullScreen", !cm.getOption("fullScreen"));
       },
-      Esc: function(cm) {
+      'Esc'    : function(cm) {
         if (cm.getOption("fullScreen")) cm.setOption("fullScreen", false);
       }
     });
     // Update TextArea value with every CM change
     cm.on("change", function(cm, change) {
       ta.value = cm.getValue();
+    });
+    // Desktop Safari wants a relatedTarget, else fullscreen exits incorrectly
+    cm.on("focus", function(cm, change) {
+      if (change.relatedTarget == null && window.safari !== undefined) {
+        document.getElementById("list").focus();
+        document.getElementById("list").blur();
+      }
     });
   }
   //]]>
@@ -567,7 +582,7 @@ require_once '../common/header.php';
   <tr><td style="text-align: center;" colspan="3">
   <h2>Edit Configuration Files:</h2>
   </td></tr><tr><td style="text-align: left;">
-  <select name="file_list" size="8">
+  <select id="list" name="file_list" size="8">
 <?php
   putHtml('<optgroup label="&mdash;&mdash;&mdash;&mdash; System Configuration &mdash;&mdash;&mdash;&mdash;">');
   if (is_writable($file = '/mnt/kd/rc.conf.d/user.conf')) {

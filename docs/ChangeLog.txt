@@ -89,7 +89,7 @@ Released @TBD@
 
 -- pjsip 2.8 (no change)
 
--- FOP2, available version bump to 2.31.24.
+-- FOP2, available version bump to 2.31.25
    Note: If you have a license, you may need to purchase an "Annual Software Maintenance" license if you upgrade.
    More info: http://doc.astlinux-project.org/userdoc:tt_asterisk-fop2-upgrade
 
@@ -101,6 +101,24 @@ Released @TBD@
    Example, in Prefs tab -> System & Staff Tab Options:
      Backup Exclude Suffixes: | rom,bin,fwu |
    This will exclude all *.rom, *.bin and *.fwu files in all backup types in the System/Staff tabs.
+
+-- Edit tab, add support for CodeMirror text editing.
+   Keyboard Actions: (after clicking text edit area)
+   Note: Windows users, use Ctrl instead of Cmd
+   Cmd-f -> Find
+   Cmd-g -> Find Next
+   Cmd-/ -> Toggle Comment
+   Cmd-. -> Toggle Comment
+   Tab   -> Toggle between "fullscreen" (full-window) mode and normal
+   Esc   -> Return to normal, "fullscreen" (full-window) mode off
+   More info: http://doc.astlinux-project.org/userdoc:tt_web_interface_edit_codemirror_key_map
+
+-- Prefs tab -> Edit Tab Options:
+   _x_ CodeMirror Editor
+       uncheck to use the standard HTML text editor.
+   Theme: [ default ]
+          select the desired theme for CodeMirror.
+          Tip: [solarized], [seti-mks] and [zenburn] are worth a look.
 
 
 Additions for AstLinux 1.3.6:
