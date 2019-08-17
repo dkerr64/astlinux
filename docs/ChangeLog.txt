@@ -24,14 +24,15 @@ Released @TBD@
 
 -- libsrtp, version bump to 2.2.0, adds OpenSSL 1.1 compatibility
 
--- php, version 5.6.40, using "@zsalab" patch for OpenSSL 1.1 compatibility
-   More info: https://github.com/oerdnj/deb.sury.org/issues/566
+-- php, major version bump to 7.2.21, adds OpenSSL 1.1 compatibility
 
 -- sqlite, version bump to 3.29.0
 
 -- strace, version bump to 5.2
 
 -- e2fsprogs, version bump to 1.45.3
+
+-- ethtool, version bump to 5.2
 
 -- nut, version 2.7.4, using "Buildroot" patch for OpenSSL 1.1 compatibility
 
@@ -63,11 +64,13 @@ Released @TBD@
 
 -- iperf3, version bump to 3.7
 
--- keepalived, version bump to 2.0.17
+-- keepalived, version bump to 2.0.18
 
 -- luasec, version bump to 0.8, adds OpenSSL 1.1 compatibility
 
 -- msmtp, version bump to 1.8.5
+
+-- mtr, version bump to 0.93
 
 -- netsnmp, version bump to 5.8, adds OpenSSL 1.1 compatibility
 
@@ -77,17 +80,21 @@ Released @TBD@
 
 -- whois, version bump to 5.5.0
 
+-- (Custom Build Only) mosquitto, MQTT client, version 1.6.4
+
 ** Asterisk
 
 -- Asterisk 13.23.1 ('13se' version)
    Older than latest Asterisk 13.x version but more tested, built --without-pjproject
+   Add json-integer-overflow patches.
    Add security patches for: AST-2019-002, AST-2019-003
 
--- Asterisk 13.27.1 (version bump) and 16.4.1 (version bump)
+-- Asterisk 13.28.0 (version bump) and 16.5.0 (version bump)
+   New modules: app_attended_transfer.so, app_blind_transfer.so
 
 -- DAHDI, dahdi-linux 2.10.2 (no change) and dahdi-tools 2.10.2 (no change)
 
--- pjsip 2.8 (no change)
+-- pjsip 2.9 (version bump)
 
 -- FOP2, available version bump to 2.31.25
    Note: If you have a license, you may need to purchase an "Annual Software Maintenance" license if you upgrade.
@@ -119,6 +126,8 @@ Released @TBD@
    Theme: [ default ]
           select the desired theme for CodeMirror.
           Tip: [solarized], [seti-mks] and [zenburn] are worth a look.
+
+-- Tweak to eliminate PHP 7 Warning and Deprecated errors.
 
 
 Additions for AstLinux 1.3.6:

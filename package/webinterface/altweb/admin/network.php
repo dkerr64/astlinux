@@ -1509,7 +1509,7 @@ require_once '../common/header.php';
   <strong>External Interface:</strong>
   <select name="ext_eth">
 <?php
-  if (($n = count($eth)) > 0) {
+  if (($n = arrayCount($eth)) > 0) {
     for ($i = 0; $i < $n; $i++) {
       if (getVARdef($db, 'EXTIF', $cur_db) === 'ppp0') {
         $sel = (getVARdef($db, 'PPPOEIF', $cur_db) === $eth[$i]) ? ' selected="selected"' : '';
@@ -1654,7 +1654,7 @@ require_once '../common/header.php';
   putHtml('<select name="ext2_eth">');
   putHtml('<option value="">none</option>');
   $varif = getVARdef($db, 'EXT2IF', $cur_db);
-  if (($n = count($eth)) > 0) {
+  if (($n = arrayCount($eth)) > 0) {
     for ($i = 0; $i < $n; $i++) {
       $sel = ($varif === $eth[$i]) ? ' selected="selected"' : '';
       putHtml('<option value="'.$eth[$i].'"'.$sel.'>'.$eth[$i].'</option>');
@@ -1682,7 +1682,7 @@ require_once '../common/header.php';
   putHtml('<select name="int_eth">');
   putHtml('<option value="">none</option>');
   $varif = getVARdef($db, 'INTIF', $cur_db);
-  if (($n = count($eth)) > 0) {
+  if (($n = arrayCount($eth)) > 0) {
     for ($i = 0; $i < $n; $i++) {
       $sel = ($varif === $eth[$i]) ? ' selected="selected"' : '';
       putHtml('<option value="'.$eth[$i].'"'.$sel.'>'.$eth[$i].'</option>');
@@ -1713,7 +1713,7 @@ require_once '../common/header.php';
   putHtml('<select name="int2_eth">');
   putHtml('<option value="">none</option>');
   $varif = getVARdef($db, 'INT2IF', $cur_db);
-  if (($n = count($eth)) > 0) {
+  if (($n = arrayCount($eth)) > 0) {
     for ($i = 0; $i < $n; $i++) {
       $sel = ($varif === $eth[$i]) ? ' selected="selected"' : '';
       putHtml('<option value="'.$eth[$i].'"'.$sel.'>'.$eth[$i].'</option>');
@@ -1744,7 +1744,7 @@ require_once '../common/header.php';
   putHtml('<select name="int3_eth">');
   putHtml('<option value="">none</option>');
   $varif = getVARdef($db, 'INT3IF', $cur_db);
-  if (($n = count($eth)) > 0) {
+  if (($n = arrayCount($eth)) > 0) {
     for ($i = 0; $i < $n; $i++) {
       $sel = ($varif === $eth[$i]) ? ' selected="selected"' : '';
       putHtml('<option value="'.$eth[$i].'"'.$sel.'>'.$eth[$i].'</option>');
@@ -1775,7 +1775,7 @@ require_once '../common/header.php';
   putHtml('<select name="int4_eth">');
   putHtml('<option value="">none</option>');
   $varif = getVARdef($db, 'INT4IF', $cur_db);
-  if (($n = count($eth)) > 0) {
+  if (($n = arrayCount($eth)) > 0) {
     for ($i = 0; $i < $n; $i++) {
       $sel = ($varif === $eth[$i]) ? ' selected="selected"' : '';
       putHtml('<option value="'.$eth[$i].'"'.$sel.'>'.$eth[$i].'</option>');
@@ -1806,7 +1806,7 @@ require_once '../common/header.php';
   putHtml('<select name="dmz_eth">');
   putHtml('<option value="">none</option>');
   $varif = getVARdef($db, 'DMZIF', $cur_db);
-  if (($n = count($eth)) > 0) {
+  if (($n = arrayCount($eth)) > 0) {
     for ($i = 0; $i < $n; $i++) {
       $sel = ($varif === $eth[$i]) ? ' selected="selected"' : '';
       putHtml('<option value="'.$eth[$i].'"'.$sel.'>'.$eth[$i].'</option>');
