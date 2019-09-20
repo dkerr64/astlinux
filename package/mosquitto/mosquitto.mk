@@ -4,7 +4,7 @@
 #
 ################################################################################
 
-MOSQUITTO_VERSION = 1.6.4
+MOSQUITTO_VERSION = 1.6.6
 MOSQUITTO_SITE = https://mosquitto.org/files/source
 MOSQUITTO_INSTALL_STAGING = YES
 MOSQUITTO_DEPENDENCIES = host-pkg-config
