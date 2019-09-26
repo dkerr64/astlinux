@@ -12,15 +12,13 @@ Released @TBD@
 
 ** System
 
--- Linux Kernel 3.16.69 (no change)
-
--- linux, add kernel patch to fix PTRACE_TRACEME security, taken from 3.16.71
-
--- linux, add kernel patch to fix TCP regression, taken from 3.16.70
+-- Linux Kernel 3.16.74 (version bump), security and bug fixes
 
 -- igb, version bump to 5.3.5.36, Intel Gigabit Ethernet Network Driver
 
 -- e1000e version bump to 3.5.1 Intel PCI-Express PRO/1000 Ethernet Linux driver
+
+-- genx86_64-vm board type, version bump VMware Tools to open-vm-tools 10.3.10
 
 -- expat, version bump to 2.2.8, security fix: CVE-2019-15903
 
