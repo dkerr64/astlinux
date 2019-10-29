@@ -14,6 +14,8 @@ Released @TBD@
 
 -- Linux Kernel 3.16.74 (version bump), security and bug fixes
 
+-- RUNNIX, version bump to runnix-0.5.10, with Linux Kernel 3.16.74, e2fsprogs 1.45.4
+
 -- igb, version bump to 5.3.5.39, Intel Gigabit Ethernet Network Driver
 
 -- e1000e version bump to 3.6.0 Intel PCI-Express PRO/1000 Ethernet Linux driver
@@ -22,7 +24,12 @@ Released @TBD@
 
 -- expat, version bump to 2.2.9, security fix: CVE-2019-15903
 
+-- libpcap, version bump to 1.9.1, security fixes: CVE-2019-15161, CVE-2019-15162, CVE-2019-15163,
+                                                   CVE-2019-15164, CVE-2019-15165, CVE-2018-16301
+
 -- libsrtp, version bump to 2.2.0, adds OpenSSL 1.1 compatibility
+
+-- libyaml, version bump to 0.2.2
 
 -- php, major version bump to 7.2.23, adds OpenSSL 1.1 compatibility
 
@@ -56,9 +63,11 @@ Released @TBD@
 
 -- screen, version bump to 4.7.0
 
+-- sudo, version bump to 1.8.28p1, security fix: CVE-2019-14287
+
 -- zabbix, version bump to 3.0.28
 
--- ca-certificates, update trusted root certificates 2019-08-28
+-- ca-certificates, update trusted root certificates 2019-10-16
 
 -- Time Zone Database update, tzdata2019c and php-timezonedb-2019.3
 
@@ -70,9 +79,9 @@ Released @TBD@
 
 -- OpenSSL, major version bump to 1.1.1d, security fixes: CVE-2019-1549, CVE-2019-1563, CVE-2019-1547
 
--- OpenSSH, version 8.0p1, adds OpenSSL 1.1 compatibility
+-- OpenSSH, version 8.1p1, adds OpenSSL 1.1 compatibility
 
--- WireGuard VPN, version bump to 0.0.20190913
+-- WireGuard VPN, version bump to 0.0.20191012
 
 -- libcurl (curl) version bump to 7.66.0, security fixes: CVE-2019-5481, CVE-2019-5482
 
@@ -84,7 +93,7 @@ Released @TBD@
 
 -- keepalived, version bump to 2.0.18
 
--- luasec, version bump to 0.8, adds OpenSSL 1.1 compatibility
+-- luasec, version bump to 0.8.2, adds OpenSSL 1.1 compatibility
 
 -- msmtp, version bump to 1.8.6
 
@@ -96,9 +105,11 @@ Released @TBD@
 
 -- tarsnap, add /mnt/kd/acme to the default included directories
 
--- whois, version bump to 5.5.0
+-- tcpdump, version bump to 4.9.3, security fixes: 27 CVE's
 
--- unbound (host), version bump to 1.9.3
+-- whois, version bump to 5.5.2
+
+-- unbound (host), version bump to 1.9.4
 
 -- arnofw (AIF), reload-blocklist-netset cron script, add new netset types
    asterisk: Aggregate multiple Asterisk/SIP/VoIP blacklists, including blocklist_de_sip.
@@ -111,6 +122,13 @@ Released @TBD@
                           WIREGUARD_HOST_DENY_TCP, WIREGUARD_HOST_DENY_UDP
    More info: http://doc.astlinux-project.org/userdoc:tt_wireguard_vpn#wireguard_configuration_options
 
+-- WAN Failover, add optional support for a script called before any Secondary -> Primary WAN link change.
+   The exit value of the optional /mnt/kd/wan-failover-exit.script determines when the failover exits to primary.
+   More info: http://doc.astlinux-project.org/userdoc:tt_wan_failover#exit_action_script_optional
+
+-- (Custom Build Only) autossh, auto-restart ssh connections - typically reverse proxies, version 1.4g
+   Warning: No public repository for development, only private.
+
 -- (Custom Build Only) mosquitto, MQTT client, version 1.6.7
 
 ** Asterisk
@@ -120,7 +138,7 @@ Released @TBD@
    Add json-integer-overflow patches.
    Add security patches for: AST-2019-002, AST-2019-003
 
--- Asterisk 13.28.1 (version bump) and 16.5.1 (version bump)
+-- Asterisk 13.29.1 (version bump) and 16.6.1 (version bump)
    New modules: app_attended_transfer.so, app_blind_transfer.so
 
 -- DAHDI, dahdi-linux 2.10.2 (no change) and dahdi-tools 2.10.2 (no change)
