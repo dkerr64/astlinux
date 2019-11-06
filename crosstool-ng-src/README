@@ -9,16 +9,22 @@
 ## Note: If "crosstool-ng-1.20.0" is already installed, jump to "## Build i586 32-bit toolchain ##"
 ##
 ## Install crosstool-ng ##
+## If you are using SVN for AstLinux source then your path is likely to be...
+ASTLINUX_PATH="$HOME/astlinux/trunk"
+## But if you are using GitHub then your path could be...
+#ASTLINUX_PATH="$HOME/github/astlinux"
 # mkdir ~/source-control # used as example folder for these configs
 cd ~/source-control
 # run shell script "crosstool-ng-src/get-crosstool-ng.sh" located in the SVN
-sh ~/astlinux/trunk/crosstool-ng-src/get-crosstool-ng.sh
+sh $ASTLINUX_PATH/crosstool-ng-src/get-crosstool-ng.sh
 cd crosstool-ng-1.20.0
 # This patch required to point to the new download URL for multiprecision libs.
-patch -p1 < ~/astlinux/trunk/crosstool-ng-src/mpc-download-url.patch
+patch -p1 < $ASTLINUX_PATH/crosstool-ng-src/mpc-download-url.patch
 # If your system has gperf version 3.1 or later than you need to apply
 # this patch and run autoconf before the configure step.
-patch -p1 < ~/astlinux/trunk/crosstool-ng-src/gperf-function-signature.patch
+patch -p1 < $ASTLINUX_PATH/crosstool-ng-src/gperf-function-signature.patch
+# This patch updates bash version check to allow v5
+patch -p1 < $ASTLINUX_PATH/crosstool-ng-src/bash-version-check.patch
 autoconf
 # Now good to go....
 ./configure
@@ -30,18 +36,18 @@ cd ~/source-control
 mkdir ctng-1.20.0-3.16
 cd ctng-1.20.0-3.16
 # then copy the "crosstool-ng-src/ct-ng-1.20.0-3.16.config" file from the SVN to ".config" here
-cp ~/astlinux/trunk/crosstool-ng-src/ct-ng-1.20.0-3.16.config .config
+cp $ASTLINUX_PATH/crosstool-ng-src/ct-ng-1.20.0-3.16.config .config
 # leave as configured, just look, don't make any changes
 ct-ng menuconfig
 # run shell script "crosstool-ng-src/get-files.sh" located in the SVN
-sh ~/astlinux/trunk/crosstool-ng-src/get-files.sh
+sh $ASTLINUX_PATH/crosstool-ng-src/get-files.sh
 # start the toolchain build process
 ct-ng build
 # takes 50-70 min.
 ##
 ## Build x86_64 64-bit toolchain ##
 # copy the "crosstool-ng-src/ct-ng-1.20.0-3.16-x86_64.config" file from the SVN to ".config" here
-cp ~/astlinux/trunk/crosstool-ng-src/ct-ng-1.20.0-3.16-x86_64.config .config
+cp $ASTLINUX_PATH/crosstool-ng-src/ct-ng-1.20.0-3.16-x86_64.config .config
 # again, start the toolchain build process
 ct-ng build
 # takes 30-50 min.
