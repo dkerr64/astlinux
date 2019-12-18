@@ -704,7 +704,8 @@ if (is_dir('/mnt/kd/acme')) {
 }
 if ($daemon['chronyd'] > 0) {
   if (getPREFdef($global_prefs, 'status_ntp_sessions') !== 'no') {
-    $cmd = '/usr/bin/chronyc -n sources';
+    // use "chronyc -N sources" if supported
+    $cmd = 'if chronyc -N -v >/dev/null 2>&1; then chronyc -N sources; else chronyc sources; fi';
     $status_ntp_sessions = @popen($cmd, 'r');
   }
 }
