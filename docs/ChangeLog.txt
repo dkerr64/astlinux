@@ -18,19 +18,31 @@ Released @TBD@
 
 -- libedit, version bump to 20191231-3.1
 
+-- libjpeg, version bump to 9d
+
 -- libxml2, version bump to 2.9.10
+
+-- pcre, version bump to 8.44
+
+-- e2fsprogs, version bump to 1.45.5
+
+-- ethtool, version bump to 5.4
 
 -- lm-sensors, version bump to 3.6.0
 
--- php, version bump to 7.2.26
+-- pciutils, version bump to 3.6.3
 
--- sqlite, version bump to 3.30.1
+-- php, version bump to 7.2.27, security fixes: CVE-2020-7060, CVE-2020-7059
+
+-- screen, version bump to 4.8.0
+
+-- sqlite, version bump to 3.31.1
 
 -- smartctl (smartmontools), version bump to 7.1
 
--- strace, version bump to 5.4
+-- strace, version bump to 5.5
 
--- sudo, version bump to 1.8.30
+-- sudo, version bump to 1.8.31
 
 -- tiff, version bump to 4.1.0, security fixes: CVE-2018-12900, CVE-2018-17000, CVE-2019-6128,
                                                 CVE-2019-7663, CVE-2019-14973, CVE-2018-19210
@@ -39,23 +51,32 @@ Released @TBD@
 
 -- ca-certificates, update trusted root certificates 2020-01-01
 
+-- Update build system tools:
+   == squashfs, version bump to 4.4
+
 ** Networking
 
--- WireGuard VPN, module 0.0.20200105 (version bump), tools 1.0.20200102 (version bump)
+-- WireGuard VPN, module 0.0.20200215 (version bump), tools 1.0.20200206 (version bump)
 
 -- OpenVPN, version bump to 2.4.8
 
--- libcurl (curl) version bump to 7.67.0
+-- libcurl (curl) version bump to 7.68.0
 
 -- arp-scan, version bump to 1.9.7
 
+-- keepalived, version bump to 2.0.20
+
+-- luasec, version bump to 0.9
+
 -- msmtp, version bump to 1.8.7
+
+-- openldap, version bump to 2.4.49
 
 -- stunnel, version bump to 5.56
 
 -- unbound (host), version bump to 1.9.6
 
--- whois, version bump to 5.5.4
+-- whois, version bump to 5.5.6
 
 -- (Custom Build Only) mosquitto, version bump to 1.6.8.  Add support for MQTT broker with MQTT_BROKER="yes"
 
@@ -64,7 +85,7 @@ Released @TBD@
 -- Asterisk 13.23.1 ('13se' version)
    Older than latest Asterisk 13.x version but more tested, built --without-pjproject
 
--- Asterisk 13.29.2 (no change) and 16.6.2 (no change)
+-- Asterisk 13.31.0 (version bump) and 16.8.0 (version bump)
 
 -- DAHDI, dahdi-linux 2.10.2 (no change) and dahdi-tools 2.10.2 (no change)
 
@@ -101,6 +122,10 @@ Released 2019-11-25
 -- DAHDI, dahdi-linux 2.10.2 (no change) and dahdi-tools 2.10.2 (no change)
 
 -- pjsip 2.9 (no change)
+
+-- FOP2, available version bump to 2.31.27
+   Note: If you have a license, you may need to purchase an "Annual Software Maintenance" license if you upgrade.
+   More info: http://doc.astlinux-project.org/userdoc:tt_asterisk-fop2-upgrade
 
 ** Web Interface
 
