@@ -4,7 +4,7 @@
 #
 #############################################################
 
-AVAHI_VERSION = 0.6.32
+AVAHI_VERSION = 0.8
 AVAHI_SOURCE = avahi-$(AVAHI_VERSION).tar.gz
 AVAHI_SITE = https://github.com/lathiat/avahi/releases/download/v$(AVAHI_VERSION)
 AVAHI_INSTALL_STAGING = YES
@@ -64,6 +64,7 @@ AVAHI_CONF_OPT = \
 	--localstatedir=/var \
 	--disable-qt3 \
 	--disable-qt4 \
+	--disable-qt5 \
 	--disable-gtk \
 	--disable-gtk3 \
 	--disable-gdbm \
@@ -74,6 +75,7 @@ AVAHI_CONF_OPT = \
 	--disable-stack-protector \
 	--with-distro=none \
 	--disable-manpages \
+	--disable-libevent \
 	$(if $(BR2_PACKAGE_AVAHI_AUTOIPD),--enable,--disable)-autoipd \
 	--with-avahi-user=avahi \
 	--with-avahi-group=avahi \
