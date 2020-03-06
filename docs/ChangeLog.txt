@@ -15,7 +15,7 @@ Released @TBD@
 -- The PPTP VPN server has been removed.
    pfSense dropped support of PPTP VPN with version 2.3 in 2016.
    Apple dropped support of PPTP VPN with iOS 10 and macOS 10.12 in 2016.
-   PPTP VPN is insecure and you should not be using it anymore.
+   PPTP VPN (MS-CHAPv2) is insecure and is no longer supported in AstLinux.
 
 ** System
 
@@ -41,7 +41,7 @@ Released @TBD@
 
 -- pciutils, version bump to 3.6.3
 
--- php, version bump to 7.2.27, security fixes: CVE-2020-7060, CVE-2020-7059
+-- php, version bump to 7.2.28, security fixes: CVE-2020-7060, CVE-2020-7059, CVE-2020-7062
 
 -- screen, version bump to 4.8.0
 
@@ -71,6 +71,12 @@ Released @TBD@
 
 -- libcurl (curl) version bump to 7.68.0
 
+-- arnofw (AIF), simplify integration of AIF within the build system, no functional change. After which:
+   == Set the version to '2.0.2-04-astlinux'
+   == Remove 'pptpd' support in the adaptive-ban plugin
+   == Remove the pptp-vpn plugin
+   == Remove the parasitic-net plugin
+
 -- arp-scan, version bump to 1.9.7
 
 -- keepalived, version bump to 2.0.20
@@ -85,7 +91,7 @@ Released @TBD@
 
 -- stunnel, version bump to 5.56
 
--- unbound (host), version bump to 1.9.6
+-- unbound (host), version bump to 1.10.0
 
 -- whois, version bump to 5.5.6
 
