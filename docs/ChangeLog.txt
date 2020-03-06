@@ -37,9 +37,13 @@ Released @TBD@
 
 -- lm-sensors, version bump to 3.6.0
 
+-- logrotate, version bump to 3.16.0
+
 -- ncurses, version bump to 6.2
 
--- pciutils, version bump to 3.6.3
+-- ne, version bump to 3.3.0
+
+-- pciutils, version bump to 3.6.4
 
 -- php, version bump to 7.2.28, security fixes: CVE-2020-7060, CVE-2020-7059, CVE-2020-7062
 
@@ -56,12 +60,15 @@ Released @TBD@
 -- tiff, version bump to 4.1.0, security fixes: CVE-2018-12900, CVE-2018-17000, CVE-2019-6128,
                                                 CVE-2019-7663, CVE-2019-14973, CVE-2018-19210
 
--- zabbix, version bump to 3.0.29
+-- zabbix, version bump to 3.0.30
 
 -- ca-certificates, update trusted root certificates 2020-01-01
 
+-- mac2vendor, oui.txt database snapshot 2020-02-28
+
 -- Update build system tools:
    == squashfs, version bump to 4.4
+   == cmake, version bump to 3.15.5
 
 ** Networking
 
@@ -69,7 +76,7 @@ Released @TBD@
 
 -- OpenVPN, version bump to 2.4.8
 
--- libcurl (curl) version bump to 7.68.0
+-- libcurl (curl) version bump to 7.69.0
 
 -- arnofw (AIF), simplify integration of AIF within the build system, no functional change. After which:
    == Set the version to '2.0.2-04-astlinux'
@@ -78,6 +85,11 @@ Released @TBD@
    == Remove the parasitic-net plugin
 
 -- arp-scan, version bump to 1.9.7
+
+-- chrony, version bump to 2020-02-29 development snapshot
+   Adds 'maxsamples 1' and 'chronyc -N sources' support
+
+-- dnsmasq, version 2.80, security fix: CVE-2019-14834
 
 -- keepalived, version bump to 2.0.20
 
@@ -95,7 +107,7 @@ Released @TBD@
 
 -- whois, version bump to 5.5.6
 
--- (Custom Build Only) mosquitto, version bump to 1.6.8.  Add support for MQTT broker with MQTT_BROKER="yes"
+-- (Custom Build Only) mosquitto, version bump to 1.6.9.  Add support for MQTT broker with MQTT_BROKER="yes"
 
 ** Asterisk
 
