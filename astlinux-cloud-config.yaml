@@ -1,0 +1,36 @@
+#cloud-config
+
+# Install additional packages on first boot
+#
+# Package list for AstLinux build
+packages:
+ - subversion
+ - build-essential
+ - libncurses5-dev
+ - bison
+ - flex
+ - gettext
+ - intltool
+ - tofrodos
+ - tcl
+ - pkg-config
+ - dosfstools
+ - gperf
+ - texinfo
+ - autoconf
+ - nasm
+ - zlib1g-dev
+ - libssl-dev
+ - libtool
+ - rsync
+ - unzip
+ - git-core
+ - gawk
+ - lzma
+ - dos2unix
+ - bc
+ - libtool-bin
+ - python
+
+package_upgrade: true
+ 
