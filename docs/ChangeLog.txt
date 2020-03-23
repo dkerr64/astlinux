@@ -21,6 +21,8 @@ Released @TBD@
 
 -- Linux Kernel 3.16.82 (version bump), security and bug fixes
 
+-- RUNNIX, version bump to runnix-0.5.11, with Linux Kernel 3.16.82, e2fsprogs 1.45.5
+
 -- igb, version bump to 5.3.5.42, Intel Gigabit Ethernet Network Driver
 
 -- libedit, version bump to 20191231-3.1
@@ -47,7 +49,8 @@ Released @TBD@
 
 -- pciutils, version bump to 3.6.4
 
--- php, version bump to 7.2.28, security fixes: CVE-2020-7060, CVE-2020-7059, CVE-2020-7062
+-- php, version bump to 7.2.29, security fixes: CVE-2020-7060, CVE-2020-7059, CVE-2020-7062,
+                                                CVE-2020-7066, CVE-2020-7064
 
 -- screen, version bump to 4.8.0
 
@@ -57,7 +60,7 @@ Released @TBD@
 
 -- strace, version bump to 5.5
 
--- sudo, version bump to 1.8.31
+-- sudo, version bump to 1.8.31p1
 
 -- tiff, version bump to 4.1.0, security fixes: CVE-2018-12900, CVE-2018-17000, CVE-2019-6128,
                                                 CVE-2019-7663, CVE-2019-14973, CVE-2018-19210
@@ -74,11 +77,13 @@ Released @TBD@
 
 ** Networking
 
--- WireGuard VPN, module 0.0.20200215 (version bump), tools 1.0.20200206 (version bump)
+-- OpenSSL, version bump to 1.1.1e, security fix: CVE-2019-1551
+
+-- WireGuard VPN, module 0.0.20200318 (version bump), tools 1.0.20200319 (version bump)
 
 -- OpenVPN, version bump to 2.4.8
 
--- libcurl (curl) version bump to 7.69.0
+-- libcurl (curl) version bump to 7.69.1
 
 -- arnofw (AIF), simplify integration of AIF within the build system, no functional change. After which:
    == Set the version to '2.0.2-04-astlinux'
@@ -88,7 +93,7 @@ Released @TBD@
 
 -- arp-scan, version bump to 1.9.7
 
--- chrony, version bump to 2020-02-29 development snapshot
+-- chrony, version bump to 4.0-pre1
    Adds 'maxsamples 1' and 'chronyc -N sources' support
 
 -- dnsmasq, version 2.80, security fix: CVE-2019-14834
@@ -122,6 +127,11 @@ Released @TBD@
 
 -- pjsip 2.9 (no change)
 
+-- FOP2, available version bump to 2.31.27
+   Note: FOP2 HTTPS support only uses TLSv1, Firefox 74+ requires: about:config -> security.tls.version.min=1
+   Note: If you have a license, you may need to purchase an "Annual Software Maintenance" license if you upgrade.
+   More info: http://doc.astlinux-project.org/userdoc:tt_asterisk-fop2-upgrade
+
 ** Web Interface
 
 -- Status tab, NTP Time Sources: use "chronyc -N sources" if supported.
@@ -153,10 +163,6 @@ Released 2019-11-25
 -- DAHDI, dahdi-linux 2.10.2 (no change) and dahdi-tools 2.10.2 (no change)
 
 -- pjsip 2.9 (no change)
-
--- FOP2, available version bump to 2.31.27
-   Note: If you have a license, you may need to purchase an "Annual Software Maintenance" license if you upgrade.
-   More info: http://doc.astlinux-project.org/userdoc:tt_asterisk-fop2-upgrade
 
 ** Web Interface
 
