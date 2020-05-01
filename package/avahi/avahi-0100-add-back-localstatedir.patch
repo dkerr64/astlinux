@@ -1,0 +1,12 @@
+diff -Naur avahi-0.8/configure.ac avahi-0.8-new/configure.ac
+--- avahi-0.8/configure.ac	2020-02-18 02:01:15.000000000 -0500
++++ avahi-0.8-new/configure.ac	2020-05-01 17:09:58.026986121 -0400
+@@ -1004,7 +1004,7 @@
+ #
+ # Avahi runtime dir
+ #
+-avahi_runtime_dir="/run"
++avahi_runtime_dir="${localstatedir}/run"
+ avahi_socket="${avahi_runtime_dir}/avahi-daemon/socket"
+ AC_SUBST(avahi_runtime_dir)
+ AC_SUBST(avahi_socket)
