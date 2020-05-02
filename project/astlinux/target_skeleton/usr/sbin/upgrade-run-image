@@ -115,7 +115,7 @@ merge_kcmd()
 
       console=*)
         # Match the serial speed/tty of unionfs /etc/inittab if appropriate
-        if [ -f /oldroot/mnt/asturw/etc/inittab ]; then
+        if [ -f /mnt/asturw/etc/inittab ]; then
           console="$(/usr/sbin/setconsole-speed-tty show 2>/dev/null)"
           if [ $? -eq 0 ]; then
             sed -i -r "/^KCMD=/ s/ console=[^ \"]+/ console=${console}/" "$new_conf"
@@ -130,16 +130,14 @@ merge_kcmd()
 }
 
 check() {
+
+  ARCH=""
+  SERIAL=""
+
   for i in `cat /proc/cmdline`; do
     if echo $i | grep -q "astlinux="; then
       ARCH=`echo $i | sed -e 's/astlinux=//'`
-      if [ "$ARCH" = "via" -o "$ARCH" = "viac7" ]; then  # Redirect deprecated boards
-        ARCH="geni586"
-      elif [ "$ARCH" = "geni586" -a "$ARCH_BITS" = "64" ]; then
-        ARCH="genx86_64"
-      elif [ "$ARCH" = "genx86_64" -a "$ARCH_BITS" = "32" ]; then
-        ARCH="geni586"
-      elif [ "$ARCH" = "genx86_64" -a "$ARCH_BITS" = "vm" ]; then
+      if [ "$ARCH" = "genx86_64" -a "$ARCH_BITS" = "vm" ]; then
         ARCH="genx86_64-vm"
       elif [ "$ARCH" = "genx86_64-vm" -a "$ARCH_BITS" = "64" ]; then
         ARCH="genx86_64"
@@ -154,10 +152,8 @@ check() {
     exit $RED
   fi
 
-  if [ "$ARCH" = "geni586" -o "$ARCH" = "genx86_64" ]; then
-    if [ -n "$SERIAL" ]; then
-      ARCH="${ARCH}-serial"
-    fi
+  if [ -n "$SERIAL" ]; then
+    ARCH="${ARCH}-serial"
   fi
 
   URL="${SRC_URL}/${ARCH}"
@@ -236,6 +232,12 @@ upgrade() {
     if [ -n "$XVER" ]; then
       rm -f $BASE/os/$XVER.*
       rm -f $BASE/os/Xver
+      ## Cleanup old non-versioned initrd.img if not used
+      if [ -f $BASE/os/initrd.img -a -f $BASE/os/$OVER.run.conf ]; then
+        if ! grep -q '/os/initrd.img' $BASE/os/$OVER.run.conf; then
+          rm -f $BASE/os/initrd.img
+        fi
+      fi
     fi
     tar -xzf /tmp/up/$VER.tar.gz -C $BASE/tmp/
     TAR_ARCHIVE_RTN=$?

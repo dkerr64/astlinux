@@ -1,6 +1,6 @@
 <?php
 
-// Copyright (C) 2008-2019 Lonnie Abelbeck
+// Copyright (C) 2008-2020 Lonnie Abelbeck
 // This is free software, licensed under the GNU General Public License
 // version 3 as published by the Free Software Foundation; you can
 // redistribute it and/or modify it under the terms of the GNU
@@ -26,6 +26,7 @@
 // 12-01-2018, Updates to includeTOPICinfo()
 // 07-11-2019, Added gen_BackupExcludeSuffix_args()
 // 08-16-2019, Added arrayCount()
+// 04-24-2020, Added MNT_ASTURW_DIR for /mnt/asturw or /oldroot/mnt/asturw
 //
 // System location of prefs file
 $KD_PREFS_LOCATION = '/mnt/kd/webgui-prefs.txt';
@@ -41,6 +42,9 @@ function console_log( $data ) {
   echo 'console.log('. json_encode( $data ) .')';
   echo '</script>';
 }
+
+// System location of R/W overlay filesystem
+$MNT_ASTURW_DIR = is_dir('/mnt/asturw') ? '/mnt/asturw' : '/oldroot/mnt/asturw';
 
 // Function: putHtml
 // Put html string, with new-line
@@ -235,9 +239,6 @@ function systemREBOOT($myself, $result, $setup = FALSE) {
   }
 
   $arch = system_image_arch();
-  if ($arch === 'net4801' || $arch === 'wrap') {
-    $count_down_secs += 20;
-  }
 
   $cmd = '/sbin/kernel-reboot';
   if (! is_executable($cmd)
@@ -250,7 +251,7 @@ function systemREBOOT($myself, $result, $setup = FALSE) {
   shell($cmd.' -d4 >/dev/null 2>/dev/null &', $status);
   if ($status == 0) {
     if ($setup) {
-      $count_down_secs += 50;
+      $count_down_secs += 10;
       $opts = '&setup';
     } else {
       $opts = '';

@@ -1,55 +1,27 @@
 #########################################################################
-## Crosstool-NG 1.20.0
-## http://crosstool-ng.org
+## Crosstool-NG 1.24.0
+## https://crosstool-ng.github.io/
 ##
-## Building the eglibc toolchain for AstLinux 1.x using Buildroot
-## The resulting toolchain is output to $HOME/astlinux/x-tools-1.20.0-3.16
+## Building the glibc toolchain for AstLinux 1.x using Buildroot
+## The resulting toolchain is output to $HOME/astlinux/x-tools-1.24.0-3.16-2.27
 ## Make sure you have a $HOME/astlinux/ directory.
 ##
-## Note: If "crosstool-ng-1.20.0" is already installed, jump to "## Build i586 32-bit toolchain ##"
-##
 ## Install crosstool-ng ##
-## If you are using SVN for AstLinux source then your path is likely to be...
-#ASTLINUX_PATH="$HOME/astlinux/trunk"
-## But if you are using GitHub then your path could be...
-ASTLINUX_PATH="$HOME/github/astlinux"
 mkdir -p ~/source-control # used as example folder for these configs
 cd ~/source-control
-# run shell script "crosstool-ng-src/get-crosstool-ng.sh" located in the SVN
-sh $ASTLINUX_PATH/crosstool-ng-src/get-crosstool-ng.sh
-cd crosstool-ng-1.20.0
-# This patch required to point to the new download URL for multiprecision libs.
-patch -p1 < $ASTLINUX_PATH/crosstool-ng-src/mpc-download-url.patch
-# If your system has gperf version 3.1 or later than you need to apply
-# this patch and run autoconf before the configure step.
-patch -p1 < $ASTLINUX_PATH/crosstool-ng-src/gperf-function-signature.patch
-# This patch updates bash version check to allow v5
-patch -p1 < $ASTLINUX_PATH/crosstool-ng-src/bash-version-check.patch
-autoconf
-# Now good to go....
-./configure
+# run shell script "crosstool-ng-src/get-crosstool-ng.sh" located in the Github repo
+sh ~/astlinux/trunk/crosstool-ng-src/get-crosstool-ng.sh
+cd crosstool-ng-1.24.0
+./configure --enable-local
 make
-sudo make install
 ##
-## Build i586 64-bit toolchain ##
-cd ~/source-control
-mkdir ctng-1.20.0-3.16
-cd ctng-1.20.0-3.16
-# copy the "crosstool-ng-src/ct-ng-1.20.0-3.16-x86_64.config" file from the SVN to ".config" here
-cp $ASTLINUX_PATH/crosstool-ng-src/ct-ng-1.20.0-3.16-x86_64.config .config
+## Build x86_64 64-bit toolchain ##
+# copy the "crosstool-ng-src/ct-ng-1.24.0-3.16-2.27-x86_64.config" file from the Github repo to ".config" here
+cp ~/astlinux/trunk/crosstool-ng-src/ct-ng-1.24.0-3.16-2.27-x86_64.config .config
+# Important: you must use "./ct-ng"
 # leave as configured, just look, don't make any changes
-ct-ng menuconfig
-# run shell script "crosstool-ng-src/get-files.sh" located in the SVN
-sh $ASTLINUX_PATH/crosstool-ng-src/get-files.sh
+./ct-ng menuconfig
 # start the toolchain build process
-ct-ng build
+./ct-ng build
 # takes 50-70 min.
-##
-exit
-## Build x86_64 32-bit toolchain ##
-# then copy the "crosstool-ng-src/ct-ng-1.20.0-3.16.config" file from the SVN to ".config" here
-cp $ASTLINUX_PATH/crosstool-ng-src/ct-ng-1.20.0-3.16.config .config
-# again, start the toolchain build process
-ct-ng build
-# takes 30-50 min.
 #########################################################################

@@ -41,7 +41,7 @@ make_release()
     sed -i 's/ astlive / astlive noram /' ${ASTVER}/${ASTVER}.run.conf
   fi
 
-  cp initrd.img ${ASTVER}/initrd.img
+  cp initrd.img ${ASTVER}/${ASTVER}.initrd.img
   tar -cvzf ${ASTVER}.tar.gz ${ASTVER}
   sha1sum ${ASTVER}.tar.gz > ${ASTVER}.tar.gz.sha1
 }
@@ -56,9 +56,9 @@ make_runfs()
   if [ -f "${RUNNIX_DIR}/configs/${board}.cfg" ]; then
     cp -p ${RUNNIX_DIR}/configs/${board}.cfg ${RUNFS_DIR}/syslinux.cfg
   elif [ -n "${RUNNIX_KCMD_CONSOLE}" ]; then
-    cp -p ${RUNNIX_DIR}/configs/default-serial.cfg ${RUNFS_DIR}/syslinux.cfg
+    cp -p ${RUNNIX_DIR}/configs/default6-serial.cfg ${RUNFS_DIR}/syslinux.cfg
   else
-    cp -p ${RUNNIX_DIR}/configs/default.cfg ${RUNFS_DIR}/syslinux.cfg
+    cp -p ${RUNNIX_DIR}/configs/default6.cfg ${RUNFS_DIR}/syslinux.cfg
   fi
 
   rm -f ${RUNFS_DIR}/os/astlinux-*
@@ -87,13 +87,17 @@ if [ -n "$1" ]; then
 fi
 
 if [ ! -f "astlinux.board" ]; then
-  echo "geni586" > "astlinux.board"
+  echo "genx86_64" > "astlinux.board"
 fi
 
 board="$(cat "astlinux.board")"
 
 if [ -z "$board" ] || [ ! -d "project/astlinux/board/$board" ]; then
   exit_error "Unknown Board type."
+fi
+
+if [ "$(uname -m)" != "x86_64" ]; then
+  exit_error "Build system must be x86_64."
 fi
 
 x_tools_dir="$(awk -F'"' '/^BR2_TOOLCHAIN_EXTERNAL_PATH=/ { print $2; nextfile }' .config | sed 's:^[^/]*::')"

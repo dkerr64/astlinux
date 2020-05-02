@@ -7,10 +7,10 @@ ORANGE=2
 GREEN=0
 #
 # locale repository
-SRC_URL="https://mirror.astlinux-project.org/locale"
+SRC_URL="https://mirror.astlinux-project.org/locale2"
 #
 # base locale directory
-BASE="/usr/lib/locale"
+BASE="/stat/var/lib/locale"
 #
 
 get_locale()
@@ -118,8 +118,8 @@ if [ -d /tmp/get-locale ]; then
   exit $ORANGE
 fi
 
-if mount | grep -q "/oldroot/mnt/asturw"; then
-  ASTURW="/oldroot/mnt/asturw"
+if mount | grep -q "/mnt/asturw"; then
+  ASTURW="/mnt/asturw"
 else
   echo "Unable to find ASTURW partition."
   exit $RED

@@ -20,6 +20,19 @@ add_system_default_users()
   done
 }
 
+add_system_default_groups()
+{
+  local base="$1" group IFS
+
+  unset IFS
+  for group in input kvm render; do
+    if ! grep -q "^${group}:" "/etc/group"; then
+      grep "^${group}:" "${base}/etc/group" >> "/etc/group"
+      echo "FIRSTRUN: Added system default '${group}' group to '/etc/group'"
+    fi
+  done
+}
+
 update_system_default_users()
 {
   local base="$1" user file current IFS
@@ -34,6 +47,20 @@ update_system_default_users()
       fi
     done
   done
+}
+
+move_old_locale_files()
+{
+  local base="$1" to_dir
+
+  to_dir="/stat/var/lib/locale"
+
+  if [ -f "$base/locale-archive" ]; then
+    mkdir -p "$to_dir"
+    cp "$base/locale-archive" "$to_dir/"
+    cp "$base/.locale" "$to_dir/"
+    rm -rf "$base"
+  fi
 }
 
 delete_removed_package_config_files()
@@ -72,13 +99,14 @@ init () {
     fi
 
     # Update system default user/group files to ASTURW files
-    if [ -d /oldroot/mnt/asturo ]; then
-      add_system_default_users /oldroot/mnt/asturo
-      update_system_default_users /oldroot/mnt/asturo
-    elif [ -d /oldroot/image ]; then
-      add_system_default_users /oldroot/image
-      update_system_default_users /oldroot/image
+    if [ -d /mnt/unionfs/asturo/etc ]; then
+      add_system_default_users /mnt/unionfs/asturo
+      add_system_default_groups /mnt/unionfs/asturo
+      update_system_default_users /mnt/unionfs/asturo
     fi
+
+    # Move old locale files from /usr/lib/locale
+    move_old_locale_files /mnt/asturw/usr/lib/locale
 
     # Delete config files for removed packages
     delete_removed_package_config_files

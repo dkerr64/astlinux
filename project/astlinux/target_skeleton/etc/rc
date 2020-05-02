@@ -47,6 +47,33 @@ ast_checkfs () {
   esac
 }
 
+set_asturw () {
+
+  case $ASTURW in
+
+  # valid device name -- should we test for the device being present?
+  /dev/[sv]d[a-h][0-9])
+    ;;
+
+  # not set
+  '')
+    ;;
+
+  auto)
+    if [ -x /sbin/findfs ]; then
+      ASTURW=`/sbin/findfs LABEL=ASTURW 2>/dev/null`
+    else
+      ASTURW=""
+    fi
+    ;;
+
+  *)
+    echo "Invalid asturw name: $ASTURW" >&2
+    exec /bin/sh
+    ;;
+  esac
+}
+
 set_kddev () {
 
   case $KDDEV in
@@ -63,16 +90,37 @@ set_kddev () {
     if [ -x /sbin/findfs ]; then
       KDDEV=`/sbin/findfs LABEL=ASTKD 2>/dev/null`
     else
-      echo "Keydisk set to 'auto' but no matching disk label found." >&2
+      KDDEV=""
     fi
     ;;
 
-  # gibberish...
   *)
-    echo "Invalid keydisk name: $KDDEV" >&2
+    echo "Invalid astkd name: $KDDEV" >&2
     exec /bin/sh
     ;;
   esac
+}
+
+unionfs_for_dir()
+{
+  local dir="$1" upath asturw asturo union fuse_opt union_opt
+
+  upath="/mnt/unionfs"
+  asturw="/mnt/asturw/$dir"
+  asturo="$upath/asturo/$dir"
+  union="$upath/union/$dir"
+
+  fuse_opt="-o allow_other,use_ino,nonempty,suid"
+  union_opt="-o cow,max_files=16384"
+
+  if [ ! -d "$asturw" ]; then
+    mkdir -p "$asturw"
+  fi
+  mkdir -p "$asturo"
+  mkdir -p "$union"
+  mount --bind "/$dir" "$asturo"
+  unionfs $fuse_opt $union_opt "${asturw}=RW:${asturo}=RO" "$union"
+  mount --bind "$union" "/$dir"
 }
 
 init() {
@@ -99,10 +147,6 @@ init() {
 
     astkd=*)
       KDDEV=`echo $i | sed -e 's/astkd=//'`
-      ;;
-
-    astopt=*)
-      OPTDEV=`echo $i | sed -e 's/astopt=//'`
       ;;
 
     astimg=*)
@@ -140,6 +184,9 @@ init() {
     fi
   fi
 
+  set_asturw
+  set_kddev
+
   mount -t tmpfs -o size=10000k none /tmp
   fstab_tmp="none    /tmp            tmpfs   size=10000k     0       0"
 
@@ -159,9 +206,12 @@ init() {
   echo '## Auto-generated file, do not edit!!' >/tmp/etc/modprobe.d/alias.conf
 
   if [ -n "$ASTURW" ]; then
-    fstab_base="# UNIONFS"
-  else
+    mount -t tmpfs -o size=512k none /mnt/unionfs
+    fstab_base="none    /mnt/unionfs    tmpfs   size=512k       0       0"
+  elif [ -z "$ASTIMG" ]; then
     fstab_base="$ROOTDEV /             ext2    ro              0       0"
+  else
+    fstab_base="##"
   fi
 
   echo "$fstab_base
@@ -172,37 +222,32 @@ $fstab_var
 $fstab_shm
 " > /tmp/etc/fstab
 
-  set_kddev
-
   mkdir /var/spool /var/lib
   mkdir /var/empty /var/lock /var/db /var/run /var/racoon
   touch /var/run/utmp
   mkdir /var/run/screen /var/state /tmp/bin
   mkdir -m 1777 /var/tmp
 
+  ## Check and mount unionfs
+  if [ -n "$ASTURW" ]; then
+    echo "$ASTURW /mnt/asturw ext2 noauto,noatime 0 0" >> /tmp/etc/fstab
+
+    ast_checkfs $ASTURW
+
+    mount /mnt/asturw >/dev/null
+
+    unionfs_for_dir etc
+    unionfs_for_dir stat
+    if [ -z "$KDDEV" ]; then
+      unionfs_for_dir mnt/kd
+    fi
+  fi
+
   /sbin/udevd --daemon
   # Trigger udev USB subsystem in case USB events occured before udev was started.
   /sbin/udevadm trigger --action=add --subsystem-match=usb
 
   case $ASTLINUX in
-
-  net5501)
-    modprobe cs5535_mfd
-    modprobe gpio_cs5535
-    modprobe leds_gpio
-    sleep 1
-    echo 1 >/sys/class/leds/net5501:1/brightness
-    ;;
-
-  alix)
-    modprobe cs5535_mfd
-    modprobe gpio_cs5535
-    modprobe leds_gpio
-    modprobe ledtrig-heartbeat
-    sleep 1
-    echo 1 >/sys/class/leds/alix:1/brightness
-    echo 1 >/sys/class/leds/alix:2/brightness
-    ;;
 
   genx86_64-vm)
     # Xen
@@ -217,18 +262,6 @@ $fstab_shm
     ;;
 
   esac
-
-  if echo $CMDLINE | grep -q depmod; then
-    echo "Running depmod as requested..."
-    if [ -z "$ASTURW" ]; then
-      echo "remounting as rw"
-      mount -o rw,remount /
-      depmod -a >/tmp/depmod.run 2>&1
-      mount -o ro,remount /
-    else
-      depmod -a >/tmp/depmod.run 2>&1
-    fi
-  fi
 
   if [ -r /etc/rc.modules ]; then
     grep -v "#" /etc/rc.modules | \
@@ -270,10 +303,6 @@ $fstab_shm
     ast_checkfs $ROOTDEV
   fi
 
-  if [ -n "$OPTDEV" ]; then
-    echo "ASTOPT IS NO LONGER SUPPORTED - $OPTDEV WILL NOT BE MOUNTED"
-  fi
-
   if [ -n "$KDDEV" ]; then
     echo "$KDDEV /mnt/kd ext2 noauto,noatime 0 0" >> /tmp/etc/fstab
 
@@ -287,15 +316,6 @@ $fstab_shm
     ln -s /mnt/kd/root /tmp/root
   else
     mkdir /tmp/root
-  fi
-
-  if [ -n "$ASTIMG" -a -z "$ASTURW" ]; then
-    if echo $CMDLINE | grep -q noram; then
-      mount -o ro,remount /
-    else
-      umount /oldroot
-      mount -o ro,remount /
-    fi
   fi
 
   # Re-mount Runnix partition
@@ -426,8 +446,11 @@ shutdown() {
     hwclock -wu --rtc /dev/rtc0 2>/dev/null
   fi
 
-  umount -a -r 2>/dev/null
+  echo "Stopping udevd..."
+  udevadm control --timeout=121 --exit
+  killall udevd 2>/dev/null
 
+  umount -a -r 2>/dev/null
 }
 
 # can't read cmdline here, because /proc isn't yet mounted

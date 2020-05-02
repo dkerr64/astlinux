@@ -4,7 +4,7 @@
 #
 #############################################################
 
-E1000E_VERSION = 3.6.0
+E1000E_VERSION = 3.8.4
 E1000E_SOURCE = e1000e-$(E1000E_VERSION).tar.gz
 E1000E_SITE = http://downloads.sourceforge.net/project/e1000/e1000e%20stable/$(E1000E_VERSION)
 E1000E_DEPENDENCIES = linux
@@ -27,12 +27,12 @@ endef
 
 define E1000E_INSTALL_TARGET_CMDS
 	$(INSTALL) -m 644 -D $(@D)/src/e1000e.ko $(TARGET_DIR)/lib/modules/$(LINUX_VERSION_PROBED)/kernel/drivers/net/ethernet/intel/e1000e/e1000e.ko
-	$(HOST_DIR)/usr/sbin/depmod -ae -F $(LINUX_DIR)/System.map -b $(TARGET_DIR) -r $(LINUX_VERSION_PROBED)
+	$(HOST_DIR)/usr/sbin/depmod -ae -F $(LINUX_DIR)/System.map -b $(TARGET_DIR) $(LINUX_VERSION_PROBED)
 endef
 
 define E1000E_UNINSTALL_TARGET_CMDS
 	rm -rf $(TARGET_DIR)/lib/modules/$(LINUX_VERSION_PROBED)/kernel/drivers/net/ethernet/intel/e1000e/e1000e.ko
-	$(HOST_DIR)/usr/sbin/depmod -ae -F $(LINUX_DIR)/System.map -b $(TARGET_DIR) -r $(LINUX_VERSION_PROBED)
+	$(HOST_DIR)/usr/sbin/depmod -ae -F $(LINUX_DIR)/System.map -b $(TARGET_DIR) $(LINUX_VERSION_PROBED)
 endef
 
 $(eval $(call AUTOTARGETS,package,e1000e))

@@ -225,8 +225,8 @@ finish() {
 
 # main
 
-if mount | grep -q "/oldroot/mnt/asturw"; then
-  ASTURW="/oldroot/mnt/asturw"
+if mount | grep -q "/mnt/asturw"; then
+  ASTURW="/mnt/asturw"
 else
   echo "Unable to find ASTURW partition."
   exit $RED
@@ -248,7 +248,7 @@ fop2)
   if ! RAM_needed_MB 475; then
     finish $RED "Not enough RAM installed. Minimum: 512 MB, Recommended: 1024+ MB"
   fi
-  SRC_URL="https://files.astlinux-project.org/fop2-2.31.27-debian-$(uname -m | sed -e 's/i.86/i386/').tgz"
+  SRC_URL="https://files.astlinux-project.org/fop2-2.31.27-debian-x86_64.tgz"
   ;;
 
 show)
