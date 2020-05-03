@@ -7,17 +7,21 @@
 ## Make sure you have a $HOME/astlinux/ directory.
 ##
 ## Install crosstool-ng ##
+## If you are using SVN for AstLinux source then your path is likely to be...
+#ASTLINUX_PATH="$HOME/astlinux/trunk"
+## But if you are using GitHub then your path could be...
+ASTLINUX_PATH="$HOME/github/astlinux"
 mkdir -p ~/source-control # used as example folder for these configs
 cd ~/source-control
 # run shell script "crosstool-ng-src/get-crosstool-ng.sh" located in the Github repo
-sh ~/astlinux/trunk/crosstool-ng-src/get-crosstool-ng.sh
+sh $ASTLINUX_PATH/crosstool-ng-src/get-crosstool-ng.sh
 cd crosstool-ng-1.24.0
 ./configure --enable-local
 make
 ##
 ## Build x86_64 64-bit toolchain ##
 # copy the "crosstool-ng-src/ct-ng-1.24.0-3.16-2.27-x86_64.config" file from the Github repo to ".config" here
-cp ~/astlinux/trunk/crosstool-ng-src/ct-ng-1.24.0-3.16-2.27-x86_64.config .config
+cp $ASTLINUX_PATH/crosstool-ng-src/ct-ng-1.24.0-3.16-2.27-x86_64.config .config
 # Important: you must use "./ct-ng"
 # leave as configured, just look, don't make any changes
 ./ct-ng menuconfig
