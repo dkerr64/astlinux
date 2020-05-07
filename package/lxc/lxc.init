@@ -1,0 +1,93 @@
+#!/bin/sh
+
+. /etc/rc.conf
+
+STATEFILE="/var/run/lxc/lxc.state"
+
+set_sys_entry()
+{
+  local value="$1" path="$2"
+
+  if [ ! -e "$path" ]; then
+    return 1
+  fi
+
+  if [ "$(cat "$path")" = "$value" ]; then
+    return 0
+  fi
+
+  echo "$value" > "$path"
+}
+
+init ()
+{
+  if [ "$LXC_ENABLE" != "yes" ]; then
+    exit
+  fi
+
+  if [ ! -d /mnt/kd/lxc ]; then
+    mkdir /mnt/kd/lxc
+    mkdir /mnt/kd/lxc/container
+    mkdir /mnt/kd/lxc/cache
+  fi
+
+  ln -snf /mnt/kd/lxc/container /var/lib/lxc
+
+  mkdir -p "${STATEFILE%/*}"
+}
+
+start ()
+{
+  if [ "$LXC_ENABLE" = "yes" ] && [ ! -f $STATEFILE ]; then
+    echo "Starting LXC container..."
+
+    /usr/bin/cgroupfs-mount
+
+    set_sys_entry 1 /sys/fs/cgroup/memory/memory.use_hierarchy
+
+    lxc-autostart
+
+    : > $STATEFILE
+  fi
+}
+
+stop ()
+{
+  if [ -f $STATEFILE ]; then
+    echo "Stopping LXC container..."
+
+    lxc-autostart --shutdown -a -A -t ${LXC_STOP_TIMEOUT:-5}
+
+    /usr/bin/cgroupfs-umount
+
+    rm -f $STATEFILE
+  fi
+}
+
+case $1 in
+
+init)
+  init
+  start
+  ;;
+
+start)
+  start
+  ;;
+
+stop)
+  stop
+  ;;
+
+restart)
+  stop
+  sleep 2
+  start
+  ;;
+
+*)
+  echo "Usage: start|stop|restart" >&2
+  exit 1
+  ;;
+
+esac
