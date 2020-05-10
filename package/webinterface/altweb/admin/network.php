@@ -53,6 +53,7 @@
 // 04-11-2019, Changed Outbound SMTP defaults
 // 06-13-2019, Added Reload WireGuard VPN
 // 02-21-2020, Remove PPTP VPN support
+// 05-08-2020, Dynamically add VLAN and BRIDGE entries to interface list
 //
 // System location of rc.conf file
 $CONFFILE = '/etc/rc.conf';
@@ -987,6 +988,38 @@ function getDHCPV6_value($selection) {
   return(trim($rtn));
 }
 
+// Function: get_new_ETHinterfaces
+//
+function get_new_ETHinterfaces(&$eth, $vlans_str) {
+  global $USERCONFFILE;
+
+  $vars = explode(' ', $vlans_str);
+
+  if (is_file($USERCONFFILE)) {
+    $user_vars = parseRCconf($USERCONFFILE);
+    $br_values = array("BRIDGE0" => "br0", "BRIDGE1" => "br1", "BRIDGE2" => "br2", "LXC_BRIDGE0" => "lxcbr0");
+    foreach ($br_values as $br_value => $value) {
+      if (getVARdef($user_vars, $br_value) !== '') {
+        $vars[] = $value;
+      }
+    }
+  }
+
+  foreach ($vars as $var) {
+    if (($new = $var) !== '') {
+      foreach ($eth as $active_eth) {
+        if ($active_eth === $var) {
+          $new = '';
+          break;
+        }
+      }
+      if ($new !== '') {
+        $eth[] = $new;
+      }
+    }
+  }
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $result = 1;
   if (! $global_admin) {
@@ -1272,8 +1305,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $ACCESS_RIGHTS = 'admin';
 require_once '../common/header.php';
 
-  $eth = getETHinterfaces();
-
   if (is_file($NETCONFFILE)) {
     $db = parseRCconf($NETCONFFILE);
     $cur_db = parseRCconf($CONFFILE);
@@ -1287,6 +1318,9 @@ require_once '../common/header.php';
   } else {
     $reboot_restart = 'system';
   }
+
+  $eth = getETHinterfaces();
+  get_new_ETHinterfaces($eth, getVARdef($db, 'VLANS', $cur_db));
 
   putHtml("<center>");
   if (isset($_GET['result'])) {
