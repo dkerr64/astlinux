@@ -189,6 +189,7 @@ get_dhcpv6_subnet()
     mv -f "$SUBNETCONFFILE.new" "$SUBNETCONFFILE"
   fi
 
+  logger -s -t network -p user.info "get_dhcpv6_subnet(): Assigning subnet ID ${IF_SUBNET_IDS[$if]%%/*} for interface $if"
   echo "${IF_SUBNET_IDS[$if]%%/*}"
 }
 
@@ -234,6 +235,7 @@ get_ipv6_site_ula_prefix()
 
   if [ -z "$if" ]; then
     # No interface passed as parameter. Return the /48 ULA
+    logger -s -t network -p user.info "get_ipv6_site_ula_prefix(): Site ULA Prefix: $IPV6_SITE_ULA_PREFIX"
     echo "$IPV6_SITE_ULA_PREFIX"
   else
     # Interface provided... create a /64 and return that.
@@ -248,6 +250,7 @@ get_ipv6_site_ula_prefix()
         subnetbase="$((0x${DHCPV6_ULA_SUBNET_BASE%%/*} / $subnetmax * $subnetmax ))"
         subnetnew="$(printf '%x' $((0x$subnetnew + $subnetbase)))"
       fi
+      logger -s -t network -p user.info "get_ipv6_site_ula_prefix(): ULA Prefix for $if: ${IPV6_SITE_ULA_PREFIX%%:/*}$subnetnew::1/64"
       echo "${IPV6_SITE_ULA_PREFIX%%:/*}$subnetnew::1/64"
     fi
   fi
@@ -289,6 +292,7 @@ cleanup_dhcpv6_subnet_list()
   if [ "$changes" -ne "0" ]; then
     # something changed in our list of subnets.  Need to write out new
     # values to the subnet file.
+    logger -s -t network -p user.info "cleanup_dhcpv6_subnet_list(): IPv6 subnets changed, new config saved to $SUBNETCONFFILE"
     rm -f "$SUBNETCONFFILE.new"
     for if in "${!IF_SUBNET_IDS[@]}"; do
       echo "$if=${IF_SUBNET_IDS[$if]}" >> "$SUBNETCONFFILE.new"
