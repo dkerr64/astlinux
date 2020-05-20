@@ -214,6 +214,9 @@ ASTERISK_CONFIGURE_ARGS+= \
                         --without-libxslt
 endif
 
+ASTERISK_CONFIGURE_ARGS+= \
+                        --without-inotify
+
 $(DL_DIR)/$(ASTERISK_SOURCE):
 	$(WGET) -P $(DL_DIR) $(ASTERISK_SITE)/$(ASTERISK_SOURCE)
 
