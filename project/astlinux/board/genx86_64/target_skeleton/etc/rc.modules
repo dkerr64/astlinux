@@ -3,8 +3,6 @@
 ## Comment out any modules you don't need.
 ##
 ## Ethernet support
-igb
-virtio_net
 #8139cp
 8139too
 #via-rhine
@@ -13,6 +11,7 @@ vmxnet3
 pcnet32
 e1000
 e1000e
+igb
 r8168
 r8169
 tg3
