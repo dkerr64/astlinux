@@ -23,7 +23,6 @@
 // 08-24-2019, Added Apply user.conf variables
 // 02-21-2020, Remove PPTP VPN support
 // 05-10-2020, Added Linux Containers (LXC)
-// 05-20-2020, Added Files in /mnt/kd/user-scripts
 //
 
 $myself = $_SERVER['PHP_SELF'];
@@ -415,7 +414,6 @@ require_once '../common/header.php';
       $dir === '/etc/asterisk' ||
       $dir === '/etc/asterisk/includes' ||
       $dir_up === '/mnt/kd/lxc/container' ||
-      $dir === '/mnt/kd/user-scripts' ||
       $openfile === '/etc/rc.modules' ||
       $openfile === '/etc/modprobe.d/options.conf' ||
       $openfile === '/etc/udev/rules.d/70-persistent-net.rules' ||
@@ -791,16 +789,6 @@ require_once '../common/header.php';
     putHtml('<option value="'.$file.'"'.$sel.'>'.basename($file).' - WAN Failover Exit Shell Script</option>');
   }
   putHtml('</optgroup>');
-  if (is_dir('/mnt/kd/user-scripts') && arrayCount($globfiles = glob('/mnt/kd/user-scripts/*')) > 0) {
-    putHtml('<optgroup label="&mdash;&mdash;&mdash;&mdash; User script files &mdash;&mdash;&mdash;&mdash;">');
-    foreach ($globfiles as $globfile) {
-      if (is_file($globfile) && is_writable($globfile)) {
-        $sel = ($globfile === $openfile) ? ' selected="selected"' : '';
-        putHtml('<option value="'.$globfile.'"'.$sel.'>'.basename($globfile).' - User file</option>');
-      }
-    }
-    putHtml('</optgroup>');
-  }
   if (is_dir('/mnt/kd/lxc/container') && arrayCount($globfiles = glob('/mnt/kd/lxc/container/*/config')) > 0) {
     putHtml('<optgroup label="&mdash;&mdash;&mdash;&mdash; Linux Containers Configs &mdash;&mdash;&mdash;&mdash;">');
     foreach ($globfiles as $globfile) {
