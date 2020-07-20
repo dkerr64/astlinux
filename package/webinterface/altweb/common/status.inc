@@ -1042,13 +1042,13 @@ if (isset($status_disk_usage)) {
   }
 }
 
-if (is_file('/var/run/wan-failover.pid') && is_file('/var/log/wan-failover-status.log')) {
+if (is_file('/var/run/wan-failover.pid')) {
   if (getPREFdef($global_prefs, 'status_show_wan_failover') !== 'no') {
     putHtml("<h2>WAN Failover Status:</h2>");
     putHtml("<pre>");
 
     $output = array();
-    @exec('cat /var/log/wan-failover-status.log', $output);
+    @exec('service failover status', $output);
     foreach ($output as $line) {
       putText(rtrim($line));
     }

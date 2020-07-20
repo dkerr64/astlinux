@@ -5,6 +5,8 @@
 WAN_LOCKFILE="/var/lock/wan-failover.lock"
 WAN_PIDFILE="/var/run/wan-failover.pid"
 WAN_STARTFILE="/var/run/wan-failover.start"
+WAN_STATUSFILE="/var/log/wan-failover-status.log"
+WAN_SCRIPTFILE="/mnt/kd/wan-failover.script"
 
 init()
 {
@@ -44,6 +46,16 @@ stop()
   fi
 }
 
+status()
+{
+  if [ -f "$WAN_PIDFILE" ] && [ -s "$WAN_STATUSFILE" ]; then
+    cat "$WAN_STATUSFILE"
+    if [ -x $WAN_SCRIPTFILE ]; then
+      $WAN_SCRIPTFILE "STATUS"
+    fi
+  fi
+}
+
 dotest()
 {
   if [ -f "$WAN_PIDFILE" ]; then
@@ -72,12 +84,16 @@ restart)
   start
   ;;
 
+status)
+  status
+  ;;
+
 test)
   dotest
   ;;
 
 *)
-  echo "Usage: start|stop|restart|test"
+  echo "Usage: start|stop|restart|status|test"
   ;;
 
 esac
