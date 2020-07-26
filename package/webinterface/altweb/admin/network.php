@@ -452,6 +452,8 @@ function saveNETWORKsettings($conf_dir, $conf_file) {
   fwrite($fp, "### IPv6 Stateless DHCP\n".$value."\n");
   $value = 'IPV6_AUTOCONF_DHCP="'.getDHCPV6_value('stateful').'"';
   fwrite($fp, "### IPv6 Stateful DHCP\n".$value."\n");
+  $value = 'IPV6_AUTOCONF_DHCP_ONLY="'.getDHCPV6_value('dhcponly').'"';
+  fwrite($fp, "### IPv6 Stateful DHCP only\n".$value."\n");
 
   $value = 'FWVERS="'.$_POST['firewall'].'"';
   fwrite($fp, "### Firewall Type\n".$value."\n");
@@ -926,6 +928,7 @@ function putDNS_DHCPV6_Html($db, $cur_db, $varif, $name) {
   $sel_raonly = '';
   $sel_stateless = '';
   $sel_stateful = '';
+  $sel_dhcponly = '';
 
   if ($varif !== '') {
     if (($value = getVARdef($db, 'IPV6_AUTOCONF_DHCP', $cur_db)) !== '') {
@@ -957,13 +960,24 @@ function putDNS_DHCPV6_Html($db, $cur_db, $varif, $name) {
         }
       }
     }
+    if ($sel_stateful === '' && $sel_stateless === '' && $sel_raonly === '' &&
+    ($value = getVARdef($db, 'IPV6_AUTOCONF_DHCP_ONLY', $cur_db)) !== '') {
+      $tokens = explode(' ', $value);
+      foreach ($tokens as $token) {
+        if ($token === $varif) {
+          $sel_dhcponly = ' selected="selected"';
+          break;
+        }
+      }
+    }
   }
   putHtml('&ndash;');
   putHtml('<select name="'.$name.'">');
   putHtml('<option value="">No Router Advertisements</option>');
   putHtml('<option value="raonly"'.$sel_raonly.'>RA Only</option>');
   putHtml('<option value="stateless"'.$sel_stateless.'>RA &amp; Stateless DHCP</option>');
-  putHtml('<option value="stateful"'.$sel_stateful.'>Stateful DHCP &amp; RA</option>');
+  putHtml('<option value="stateful"'.$sel_stateful.'>Stateful DHCP with SLAAC &amp; RA</option>');
+  putHtml('<option value="dhcponly"'.$sel_dhcponly.'>Stateful DHCP only</option>');
   putHtml('</select>');
 }
 

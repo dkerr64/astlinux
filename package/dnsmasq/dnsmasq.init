@@ -186,7 +186,7 @@ addIPV6net()
   if [[ "$IPV6_PREFIX_DELEGATION" =~ $regex && "$DHCPV6_CLIENT_REQUEST_PREFIX" != "no" ]] ||
      [[ "$IPV6_PREFIX_ULA" =~ $regex ]] || [ -n "$manualIPv6" ]; then
     # an IPv6 is assigned to this interface.  Proceed.
-    if [[ "$IPV6_AUTOCONF_DHCP" =~ $regex ]]; then
+    if [[ "$IPV6_AUTOCONF_DHCP" =~ $regex ]] || [[ "$IPV6_AUTOCONF_DHCP_ONLY" =~ $regex ]]; then
       # find list of DNS servers from e.g. INTDNS
       eval dnsAddrs='$'${iname/%IF/DNS}
       # now extract only IPv6 addresses and format them as required by dnsmasq
@@ -206,9 +206,14 @@ addIPV6net()
       if [ -z "$DHCPV6RANGE" ]; then
         DHCPV6RANGE="::1000,::ffff"
       fi
+      if [[ "$IPV6_AUTOCONF_DHCP" =~ $regex ]; then
+        SLAAC=",slaac"
+      else
+        SLAAC=""
+      fi
       echo ""
-      echo "# Enable IPv6 Stateful DHCP and Router Advertisements on $interface"
-      echo "dhcp-range=$tag,$DHCPV6RANGE,constructor:$interface,ra-names,slaac,${DHCP_LEASETIME:-24}h"
+      echo "# Enable IPv6 Stateful DHCP and RA Names on $interface, optionally with SLAAC"
+      echo "dhcp-range=$tag,$DHCPV6RANGE,constructor:$interface,ra-names${SLAAC},${DHCP_LEASETIME:-24}h"
       echo "dhcp-option=$tag,option6:dns-server,$dnsList"
       echo "dhcp-option=$tag,option6:domain-search,$DOMAIN"
       return 0
@@ -423,7 +428,7 @@ is_DHCP_active()
 
 is_IPV6RA_active()
 {
-  if [ -n "IPV6_AUTOCONF_DHCP" -o -n "IPV6_AUTOCONF" -o -n "IPV6_AUTOCONF_STATELESS_DHCP" ]; then
+  if [ -n "IPV6_AUTOCONF_DHCP_ONLY" -o -n "IPV6_AUTOCONF_DHCP" -o -n "IPV6_AUTOCONF" -o -n "IPV6_AUTOCONF_STATELESS_DHCP" ]; then
     return 1
   fi
 
