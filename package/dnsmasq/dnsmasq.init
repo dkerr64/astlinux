@@ -206,14 +206,14 @@ addIPV6net()
       if [ -z "$DHCPV6RANGE" ]; then
         DHCPV6RANGE="::1000,::ffff"
       fi
-      if [[ "$IPV6_AUTOCONF_DHCP" =~ $regex ]; then
+      if [[ "$IPV6_AUTOCONF_DHCP" =~ $regex ]]; then
         SLAAC=",slaac"
       else
         SLAAC=""
       fi
       echo ""
       echo "# Enable IPv6 Stateful DHCP and RA Names on $interface, optionally with SLAAC"
-      echo "dhcp-range=$tag,$DHCPV6RANGE,constructor:$interface,ra-names${SLAAC},${DHCP_LEASETIME:-24}h"
+      echo "dhcp-range=$tag,$DHCPV6RANGE,constructor:$interface,ra-names$SLAAC,${DHCP_LEASETIME:-24}h"
       echo "dhcp-option=$tag,option6:dns-server,$dnsList"
       echo "dhcp-option=$tag,option6:domain-search,$DOMAIN"
       return 0
