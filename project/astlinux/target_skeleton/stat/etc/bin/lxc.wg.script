@@ -1,0 +1,256 @@
+#!/bin/bash
+#
+# lxc.wg.script
+#
+# Copyright (c) 2020 David Kerr
+#
+# Portions sourced from wg-quick wfrom wireguard-tools...
+# Copyright (C) 2015-2020 Jason A. Donenfeld <Jason@zx2c4.com>. All Rights Reserved.
+#
+################################################################################
+#
+# Usage...
+# set the following in your LXC container config file...
+# lxc.hook.version = 1
+# lxc.net.1.type = phys
+# lxc.net.1.link = wg1
+# lxc.net.1.script.up = /mnt/kd/bin/lxc.wg.script
+# lxc.net.1.script.down = /mnt/kd/bin/lxc.wg.script
+# lxc.hook.pre-start = /mnt/kd/bin/lxc.wg.script
+# lxc.hook.start-host = /mnt/kd/bin/lxc.wg.script
+#
+# Expected environment variables...
+# LXC_CONFIG_FILE   = /var/lib/lxc/<name>/config
+# LXC_LOG_LEVEL     = ERROR  ## Note that stdout is logged at DEBUG log level
+# LXC_ROOTFS_MOUNT  = /usr/lib/lxc/rootfs
+# LXC_NAME          = <name> / whatever you call it.
+# LXC_HOOK_TYPE     = up / down / pre-start / start-host / see LXC manual.
+# LXC_ROOTFS_PATH   = /var/lib/lxc/<name>/rootfs
+# LXC_PID           = <n>
+# LXC_NET_TYPE      = phys
+# LXC_HOOK_VERSION  = 1
+# LXC_NET_PARENT    = wg<n>
+# LXC_HOOK_SECTION  = net / lxc / see LXC manual.
+#
+################################################################################
+
+
+# Redirect stderr to stdout so that it will log when LXC_LOG_LEVEL = DEBUG
+exec 2>&1
+# Extended pattern matching
+shopt -s extglob
+
+################################################################################
+## This section inspired by, and some code sourced from, wg-quick from the
+## wireguard-tools project (c) Jason Donenfeld.
+################################################################################
+WG_CONFIG=""
+INTERFACE=""
+ADDRESSES=( )
+MTU=""
+DNS=( )
+DNS_SEARCH=( )
+CONFIG_DIR="/mnt/kd/wireguard"
+CONFIG_FILE=""
+PROGRAM="${0##*/}"
+
+die() {
+  logger -s -t "$PROGRAM" -p user.err "LXC $LXC_NAME ($LXC_PID): $*"
+  exit 1
+}
+
+log_err() {
+  logger -s -t "$PROGRAM" -p user.err "LXC $LXC_NAME ($LXC_PID): $*"
+}
+
+log_warn() {
+  logger -s -t "$PROGRAM" -p user.warn "LXC $LXC_NAME ($LXC_PID): $*"
+}
+
+log_info() {
+  logger -s -t "$PROGRAM" -p user.info "LXC $LXC_NAME ($LXC_PID): $*"
+}
+
+cmd() {
+  # Modified from wg-quick to execute command in context of the LXC network namespace
+  # echo to stdout so we can trace where we're at in DEBUG
+  [[ "$LXC_LOG_LEVEL" == "DEBUG" ]] && echo "[#] ip netns exec $LXC_PID $*"
+  ip netns exec $LXC_PID "$@"
+}
+
+parse_options() {
+  # Modified from wg-quick to remove hooks / saving / routing table as these
+  # are not required in context of adding wireguard interface to a LXC container
+  local interface_section=0 line key value stripped v
+  CONFIG_FILE="$1"
+  [[ $CONFIG_FILE =~ ^[a-zA-Z0-9_=+.-]{1,15}$ ]] && CONFIG_FILE="$CONFIG_DIR/$CONFIG_FILE.conf"
+  [[ -e $CONFIG_FILE ]] || die "\`$CONFIG_FILE' does not exist"
+  [[ $CONFIG_FILE =~ (^|/)([a-zA-Z0-9_=+.-]{1,15})\.conf$ ]] || die "The config file must be a valid interface name, followed by .conf"
+  CONFIG_FILE="$(readlink -f "$CONFIG_FILE")"
+  ((($(stat -c '0%#a' "$CONFIG_FILE") & $(stat -c '0%#a' "${CONFIG_FILE%/*}") & 0007) == 0)) || log_warn "Warning: \`$CONFIG_FILE' is world accessible"
+  INTERFACE="${BASH_REMATCH[2]}"
+  shopt -s nocasematch
+  while read -r line || [[ -n $line ]]; do
+    stripped="${line%%\#*}"
+    key="${stripped%%=*}"; key="${key##*([[:space:]])}"; key="${key%%*([[:space:]])}"
+    value="${stripped#*=}"; value="${value##*([[:space:]])}"; value="${value%%*([[:space:]])}"
+    [[ $key == "["* ]] && interface_section=0
+    [[ $key == "[Interface]" ]] && interface_section=1
+    if [[ $interface_section -eq 1 ]]; then
+      case "$key" in
+      Address) ADDRESSES+=( ${value//,/ } ); continue ;;
+      MTU) MTU="$value"; continue ;;
+      DNS) for v in ${value//,/ }; do
+            [[ $v =~ (^[0-9.]+$)|(^.*:.*$) ]] && DNS+=( $v ) || DNS_SEARCH+=( $v )
+           done; continue ;;
+      esac
+    fi
+    WG_CONFIG+="$line"$'\n'
+  done < "$CONFIG_FILE"
+  shopt -u nocasematch
+}
+
+add_addr() {
+  local proto=-4
+  [[ $1 == *:* ]] && proto=-6
+  cmd ip $proto address add "$1" dev "$INTERFACE"
+}
+
+set_mtu_up() {
+  # Modified from wg-quick to execute commands in context of LXC network namespace
+  local mtu=0 endpoint output
+  if [[ -n $MTU ]]; then
+    cmd ip link set mtu "$MTU" up dev "$INTERFACE"
+    return
+  fi
+  while read -r _ endpoint; do
+    [[ $endpoint =~ ^\[?([a-z0-9:.]+)\]?:[0-9]+$ ]] || continue
+    output="$(cmd ip route get "${BASH_REMATCH[1]}" || true)"
+    [[ ( $output =~ mtu\ ([0-9]+) || ( $output =~ dev\ ([^ ]+) && $(cmd ip link show dev "${BASH_REMATCH[1]}") =~ mtu\ ([0-9]+) ) ) && ${BASH_REMATCH[1]} -gt $mtu ]] && mtu="${BASH_REMATCH[1]}"
+  done < <(cmd wg show "$INTERFACE" endpoints); wait $!
+  if [[ $mtu -eq 0 ]]; then
+    read -r output < <(cmd ip route show default) || true
+    [[ ( $output =~ mtu\ ([0-9]+) || ( $output =~ dev\ ([^ ]+) && $(cmd ip link show dev "${BASH_REMATCH[1]}") =~ mtu\ ([0-9]+) ) ) && ${BASH_REMATCH[1]} -gt $mtu ]] && mtu="${BASH_REMATCH[1]}"
+  fi
+  [[ $mtu -gt 0 ]] || mtu=1500
+  cmd ip link set mtu $(( mtu - 80 )) up dev "$INTERFACE"
+}
+
+resolvconf_iface_prefix() {
+  # Modified from wg-quick to prepend path to container rootfs as this runs
+  # in context of the host namespace.
+  [[ -f $LXC_ROOTFS_PATH/etc/resolvconf/interface-order ]] || return 0
+  local iface
+  while read -r iface; do
+    [[ $iface =~ ^([A-Za-z0-9-]+)\*$ ]] || continue
+    echo "${BASH_REMATCH[1]}." && return 0
+  done < $LXC_ROOTFS_PATH/etc/resolvconf/interface-order
+}
+
+set_dns() {
+  # Modified from wg-quick to prepend path to container rootfs as this runs
+  # in context of the host namespace.  But resolver needs to run in the container
+  [[ ${#DNS[@]} -gt 0 ]] || return 0
+  if [[ "$(readlink $LXC_ROOTFS_PATH/etc/resolv.conf)" =~ "resolvconf" ]]; then
+    # Container has resolvconf installed so use that to setup DNS for the interface
+    { printf 'nameserver %s\n' "${DNS[@]}"
+      [[ ${#DNS_SEARCH[@]} -eq 0 ]] || printf 'search %s\n' "${DNS_SEARCH[*]}"
+      # we pipe this into resolveconf which must be run inside the container.  But container is not quite
+      # up and running yet... lxc-attach is blocked while we are still inside start-host hook.  So run it
+      # in background and use 'nohup' to make sure it is not terminated when this script ends.
+    } | nohup lxc-attach -n $LXC_NAME -- resolvconf -a "$(resolvconf_iface_prefix)$INTERFACE" -m 0 -x &>/dev/null &
+    log_info "container DNS set using resolvconf"
+# systemd method does not work because this hook is called before system init,
+# so the systemd environment is not running yet.
+#  elif [[ "$(readlink $LXC_ROOTFS_PATH/etc/resolv.conf)" =~ "systemd" ]]; then
+#    # Container has systemd-resolve installed so use that to setup DNS for the interface
+#    ARGS=($(printf ' -i %s' $INTERFACE && printf ' --set-dns %s' "${DNS[@]}" && [[ ${#DNS_SEARCH[@]} -gt 0 ]] && printf ' --set-domain %s' "${DNS_SEARCH[@]}"))
+#    nohup lxc-attach -n $LXC_NAME -- systemd-resolve ${ARGS[@]} &>/mnt/kd/test.txt &
+#    log_info "set container DNS using systemd-resolve ${ARGS[@]}"
+  else
+    log_warn "resolvconf is required in container, DNS not setup"
+  fi
+}
+
+add_route() {
+  # Modified from wg-quick to remove special handling for default route and tables
+  local proto=-4
+  [[ $1 == *:* ]] && proto=-6
+  [[ -n $(cmd ip $proto route show dev "$INTERFACE" match "$1" 2>/dev/null) ]] || cmd ip $proto route add "$1" dev "$INTERFACE"
+}
+
+add_routes() {
+  for i in $({ while read -r _ i; do for i in $i; do [[ $i =~ ^[0-9a-z:.]+/[0-9]+$ ]] && echo "$i"; done; done < <(cmd wg show "$INTERFACE" allowed-ips); wait $!; } | sort -nr -k 2 -t /); do
+    add_route "$i"
+  done
+}
+
+################################################################################
+## The LXC container is about to start up and may be requesting a wireguard
+## network interface (must be named wg<n> where n is numeric.  We have to
+## create the wireguard interface during pre-start becuase LXC startup will
+## fail before we get to network "up" hook if it doesn't exist.
+################################################################################
+if [ "$LXC_HOOK_SECTION" = "lxc" -a "$LXC_HOOK_TYPE" = "pre-start" ]; then
+  ## Find the wireguard interface name... remove comment lines, search for "wg[0-9]+"
+  ## Assumes only one wireguard (wg) interface exists in the config file
+  INTERFACE=$(grep -v '^\s*$\|^\s*\#'  $LXC_CONFIG_FILE | grep 'lxc\.net\.[0-9]\+\.link' | grep -o -e '\bwg[0-9]\+\b')
+  if ! $(ip -o link | grep -e "^[0-9]\+:\s*$INTERFACE:" >/dev/null 2>&1); then
+    ip link add name $INTERFACE type wireguard
+    log_info "pre-start - Created network interface $INTERFACE (RC=$?)"
+  else
+    die "pre-start - Network interface $INTERFACE already exists, exiting"
+  fi
+fi
+
+################################################################################
+## The LXC container has started up and is bringing up the network interface.  Our
+## physical wireguard network is still in the host namespace so we cannot set it
+## up for use in the container yet.  But we need to create a link to the container
+## network namespace so we can later act on it.
+################################################################################
+if [ "$LXC_HOOK_SECTION" = "net" -a "$LXC_NET_TYPE" = "phys"  -a "$LXC_HOOK_TYPE" = "up" ]; then
+  mkdir -p /var/run/netns
+  ln -sf /proc/$LXC_PID/ns/net /var/run/netns/$LXC_PID
+  log_info "network - created link for LXC network namespace (RC=$?)"
+fi
+
+################################################################################
+## The LXC container has started up and is initalizing.  The interface has now been
+## moved into the LXC container namespace. Apply wireguard settings so it can
+## talk to the remote site.  Need to do DNS lookup on the Endpoint here as DNS
+## is not available inside the container at this point.
+################################################################################
+if [ "$LXC_HOOK_SECTION" = "lxc" -a "$LXC_NET_TYPE" = "phys" -a "$LXC_HOOK_TYPE" = "start-host" -a -n "$LXC_NET_PARENT" ]; then
+  parse_options $LXC_NET_PARENT
+  [[ -n $WG_CONFIG ]] || die "unable to parse wireguard config file for $LXC_NET_PARENT"
+  ENDPOINTS="$(sed -n 's/^\s*Endpoint\s*=\s*\([-0-9A-Z\.]*\):.*$/\1/pi' <(printf "%s" "$WG_CONFIG"))"
+  for FQDN in $ENDPOINTS; do
+    # Skip if already a valid IP address
+    [[ -z $(netcalc -c $FQDN) ]] || continue  
+    IP="$(host -4 -t A $FQDN)"; IP="${IP##* }"
+    [[ "$IP" =~ "NXDOMAIN" ]] && die "start-host - Wireguard setup for $LXC_NET_PARENT failed on host lookup for $FQDN"
+    WG_CONFIG=${WG_CONFIG//$FQDN/$IP}
+  done
+  cmd wg setconf "$INTERFACE" <(echo "$WG_CONFIG"); wait $!
+  for i in "${ADDRESSES[@]}"; do
+    add_addr "$i"
+  done
+  set_mtu_up
+  set_dns
+  add_routes
+  log_info "start-host - Wireguard setup for $LXC_NET_PARENT (RC=$?)"
+fi
+
+################################################################################
+## LXC process is taking down the network interface and it is back in the host namespace.
+## We will delete it and the netns link.
+################################################################################
+if [ "$LXC_HOOK_SECTION" = "net" -a "$LXC_NET_TYPE" = "phys" -a "$LXC_HOOK_TYPE" = "down" -a -n "$LXC_NET_PARENT" ]; then
+  ip link delete $LXC_NET_PARENT
+  ip netns delete $LXC_PID
+  log_info "network down - Deleted interface $LXC_NET_PARENT and link to LXC network namespace (RC=$?)"
+fi 
+
+## Anything other than a zero (success) return code causes LXC startup to abort.
+exit 0

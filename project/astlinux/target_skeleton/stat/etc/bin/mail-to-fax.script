@@ -1,0 +1,111 @@
+#!/bin/bash
+#
+# email-to-fax
+#
+# Copyright (c) 2020 David Kerr
+#
+# Called by msmtpd daemon with body of email piped in as stdin to
+# include one (and only one) attached PDF file.
+# $1 is email address of sender
+# $2 is destination phone number in format <phone-number>@<fax-email-domain>
+# Remaning parameters (other destination email addresses) are ignored.
+#
+# Asterisk database must contain following in "actionlist" family
+# with keys:
+# - fax-email-enabled     : yes
+# - fax-email-domain      : fax.example.com
+# - fax-email-authorized  : space separated list of email addresses
+#
+# Returns 0 if successful
+# Else:
+# Returns SMTP error code (https://en.wikipedia.org/wiki/List_of_SMTP_server_return_codes)
+# Note... msmtpd converts all non-0 return codes into SMTP error 554
+# and as only the lower 8 bits of exit code are returned, there is no
+# way for msmtpd daemon to recognize the actual return code.  So they
+# are used here for informational purposes only.  That also implies
+# that 256 (0x100) and 512 (0x200) are equivalent to 0.
+#
+
+senderemail="${1,,}" # lowercase
+faxdomain="${2#*@}" # the part of email address after @
+faxname="${2%@*}" # the part of email address before @
+faxnumber="${faxname/#+/011}" # if starts with a + replace with international dial
+faxnumber="${faxnumber//[!0-9]/}" # numbers only
+
+logger -s -t email-to-fax -p user.info "$senderemail wants to send a fax to $faxnumber ($2)"
+
+tmpfile="$(date +%Y%m%d%H%M%S%N)" # hopefully unique (to the nanosecond should be!)
+tmpdir="/tmp/fax/$senderemail/$faxname/$tmpfile"
+calldir="/var/spool/asterisk/outgoing"
+stagingdir="/var/spool/asterisk/tmp"
+
+# make temp directory and read stdin into temp file.
+mkdir -p "$tmpdir"
+echo "$(cat)" > "$tmpdir/$tmpfile.mail" 
+
+# first validate that email-to-fax server is enabled, if not exit
+enabled="$(asterisk -x "database get actionlist fax-email-enabled")"
+enabled="${enabled#Value: }" # remove Value: from front (if exists)
+enabled="${enabled,,}" # lowercase
+if [ "$enabled" != "yes" ]; then
+  logger -s -t email-to-fax -p user.info "Email-to-fax server disabled. Turn on in Asterisk DB actionlist/fax-email-enabled=yes"
+  exit 554 # Transaction has failed
+fi
+
+# validate the requested destination.  Must be of the form <number>@<fax-email-domain>
+authdomain="$(asterisk -x "database get actionlist fax-email-domain")"
+authdomain="${authdomain#Value: }" # remove Value: from front (if exists)
+authdomain="${authdomain,,}" # lowercase
+if [ "$faxdomain" != "$authdomain" ]; then
+  logger -s -t email-to-fax -p user.error "Requested fax destination domain does not match $authdomain, rejecting request"
+  exit 551 # User not local or invalid address – relay denied
+fi
+
+# validate that the phone number is long enough to be legitimate phone number,
+# any further validation will be done in asterisk dialplan, and silently fail.
+if [ ${#faxnumber} -lt 7 ]; then
+  logger -s -t email-to-fax -p user.error "Requested fax destination number ($faxnumber) invalid, rejecting request"
+  exit 550 # Non-existent email address
+fi
+
+# validate that the sender email address is authorized to send fax
+authlist="$(asterisk -x "database get actionlist fax-email-authorized")"
+authlist="${authlist#Value: }" # remove Value: from front (if exists)
+authlist="${authlist,,}" # lowercase
+regex='(^| )'${senderemail//./\.}'($| )' # escape periods in email, match whole word
+if [[ ! $authlist =~ $regex ]]; then
+  logger -s -t email-to-fax -p user.error "$senderemail not authorized to send fax, rejecting request"
+  exit 530 # Authentication problem
+fi
+
+# extract all attached files
+result="$(lxc-attach -n fax -- munpack -f -q -C /mnt$tmpdir $tmpfile.mail)"
+# find PDF files only.  Assumes only one attached PDF file"
+pdffile="$(echo "$result" | sed -n -e 's/[ ]*(application\/pdf).*//p')"
+
+if [ -n "$pdffile" -a -s "$tmpdir/$pdffile" ]; then
+  logger -s -t email-to-fax -p user.info "PDF file to fax: $pdffile"
+  # convert PDF to TIFF file format
+  result="$(lxc-attach -n fax -- gs -q -dNOPAUSE -dBATCH -sDEVICE=tiffg4 -sPAPERSIZE=letter -sOutputFile=/mnt$tmpdir/$tmpfile.tiff /mnt$tmpdir/$pdffile)"
+  if [ -s "$tmpdir/$tmpfile.tiff" ]; then
+    # Trigger asterisk to send the file now
+    callfile="$stagingdir/$tmpfile.call"
+    echo "Channel: local/$faxnumber@DefaultDialPlan
+Application: Wait
+Data: 360
+Setvar: FAXFILE=$tmpdir/$tmpfile
+Setvar: FAXEMAIL=$senderemail" > "$callfile"
+    # Asterisk dialplan will append ".tiff" to file name
+    # 360 second wait to allow dialplan to Originate() call in new channel,
+    # with allowance for possible retry.
+    mv "$callfile" "$calldir/"
+    logger -s -t email-to-fax -p user.info "Initiated call to $faxnumber for $tmpdir/$tmpfile.tiff"
+    exit 0
+  fi
+else
+  logger -s -t email-to-fax -p user.error "PDF file not found, rejecting request"  
+  exit 501 # Syntax error in parameters or arguments, exit
+fi
+
+exit 0
+
