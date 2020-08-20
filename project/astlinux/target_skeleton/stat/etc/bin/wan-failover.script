@@ -1,0 +1,705 @@
+#!/bin/bash
+#
+# wan-failover.script
+#
+# Copyright (c) 2019-2020 David Kerr
+#
+# wan-failover action script
+#
+# Automatically called after any WAN link change
+#
+################################################################################
+
+. /etc/rc.conf
+
+state="$1"
+primary_if="$2"
+primary_gw="$3"
+secondary_if="$4"
+secondary_gw="$5"
+secondary_gw_ipv6="$6"
+# if secondary_if == $WIREGUARD_IF then failover is tunneling through a VPN
+# and secondary_gw will be $WAN_FAILOVER_SECONDARY_GW
+
+# If secondary_if is not defined then compute it.
+if [ -z "$secondary_if" ]; then
+  if [ -n "$WAN_FAILOVER_SECONDARY_GW" ]; then
+    secondary_if="$(ip -o route get $WAN_FAILOVER_SECONDARY_GW | sed -n -r -e 's/^.* dev +([^ ]+).*$/\1/p')"
+    secondary_gw="$WAN_FAILOVER_SECONDARY_GW"
+    secondary_gw_ipv6="$WAN_FAILOVER_SECONDARY_GWIPV6"
+  else
+    secondary_if="$EXT2IF"
+    secondary_gw="$EXT2GW"
+    secondary_gw_ipv6="$EXT2GWIPV6"
+  fi
+fi
+
+########################################################################
+## Constants from the /usr/sbin/wan-failover script file
+########################################################################
+WAN_STATUSFILE="/var/log/wan-failover-status.log"
+PRIMARY_STR="PRIMARY"
+SECONDARY_STR="SECONDARY"
+WAN_LINK_STR="WAN Link: "
+
+########################################################################
+## We want to count traffic on the underlying interface as that is what
+## is metered.  These are used in START / STOP
+########################################################################
+IPV4NET=$(ip -4 addr show dev $EXT2IF scope global \
+        | netcalc - 2>/dev/null \
+        | sed -n -r -e 's/^Network[^:-]*[:-] *([0-9a-fA-F\.:/]+).*$/\1/p')
+IPV6NETS=$(ip -6 addr show dev $EXT2IF scope global \
+        | netcalc - 2>/dev/null \
+        | sed -n -r -e 's/^Network[^:-]*[:-] *([0-9a-fA-F\.:/]+).*$/\1/p')
+IPV6NET=$(echo $IPV6NETS | xargs -n1 | cut -d$'\n' -f 1)
+
+BYTES_IN=0
+BYTES_OUT=0
+LOG_SECONDARY="Switch to Secondary: Traffic over"
+LOG_PRIMARY="Switch to Primary: Traffic over"
+
+########################################################################
+##
+########################################################################
+rate_limit_interface()
+{
+  local interface="$1"
+  local chain="RATE_LIMIT_${interface^^}" # uppercase interface name
+  local allownets="$(echo $WAN_FAILOVER_NO_LIMIT_NETS | tr -s ' ,' '\n')" # commas and spaces to newlines
+  local IFS=$'\n'
+  local line=''
+  local iname=''
+  local internalif=''
+
+  grep -w "^ *${interface}\b" /proc/net/dev >/dev/null
+  if [ "$?" = "0" ] && [ -n "$WAN_FAILOVER_RATE_LIMIT" ]; then
+    logger -s -t wan-failover -p daemon.info "Prepare $interface for rate limiting at $WAN_FAILOVER_RATE_LIMIT"
+
+    # Nudge all devices with a ping to load ARP cache
+    if [ -n "$allownets" ]; then
+      for line in $(iprange --min-prefix 32 <(echo "$allownets")); do
+        ping -W 1 -c 1 $line >/dev/null 2>&1 &
+      done
+      usleep 200000  # Allow a 0.2 second for replies to come in
+    fi
+
+    # Rate limit outbound traffic over $interface
+    # Delete existing, create new rate limiting queue
+    tc qdisc del dev $interface root 2>/dev/null
+    tc qdisc add dev $interface root handle 1: htb
+    tc class add dev $interface parent 1: classid 1:2 htb rate $WAN_FAILOVER_RATE_LIMIT
+    if [ "$?" != "0" ]; then
+      logger -s -t wan-failover -p daemon.error "Failed to set rate limit for $interface to $WAN_FAILOVER_RATE_LIMIT"
+      tc qdisc del dev $interface root 2>/dev/null
+      return
+    fi
+    # Queuing strategies...
+    tc qdisc add dev $interface parent 1:1 handle 2: sfq perturb 10
+    # Anything with firewall mark 2 will get sent to class 1:2
+    # we need to handle both 2 and 6 because our kernel cannot handle masks yet (we want 0x02/0x03)
+    tc filter add dev $interface protocol ip parent 1: prio 1 handle 2 fw flowid 1:2
+    tc filter add dev $interface protocol ip parent 1: prio 1 handle 6 fw flowid 1:2
+
+    # Rate limit inbound traffic by puting limits on traffic sent out to internal interfaces
+    # Need to calculate which internal interfaces to setup rules for
+    local internallans="$ALLOWLANS"
+    if [ "$interface" = "$WIREGUARD_IF" ]; then internallans="$WIREGUARD_ALLOWLAN"; fi
+    for iname in $internallans; do
+      # find interface name e.g. eth1
+      eval internalif='$'$iname
+      if [ -n "$internalif" ]; then
+        logger -s -t wan-failover -p daemon.info "Prepare $internalif for rate limiting at $WAN_FAILOVER_RATE_LIMIT"
+        # Delete existing, create new rate limiting queue
+        tc qdisc del dev $internalif root 2>/dev/null
+        tc qdisc add dev $internalif root handle 1: htb
+        tc class add dev $internalif parent 1: classid 1:2 htb rate $WAN_FAILOVER_RATE_LIMIT
+        # Queuing strategies...
+        tc qdisc add dev $internalif parent 1:1 handle 2: sfq perturb 10
+        # Anything with firewall mark 2 will get sent to class 1:2
+        # we need to handle both 2 and 6 because our kernel cannot handle masks yet (we want 0x02/0x03)
+        tc filter add dev $internalif protocol ip parent 1: prio 1 handle 2 fw flowid 1:2
+        tc filter add dev $internalif protocol ip parent 1: prio 1 handle 6 fw flowid 1:2
+      fi
+    done
+
+    # Create new firewall tables or flush them empty
+    iptables -N $chain -t mangle 2>/dev/null
+    iptables -F $chain -t mangle
+    ip6tables -N $chain -t mangle 2>/dev/null
+    ip6tables -F $chain -t mangle
+
+    # Allow local traffic without rate limiting
+    local ipv4=$(ip -4 addr show $interface | grep 'inet ' | awk -F' ' '{ print $2 }')
+    local ipv6ula=$(ip -6 addr show $interface | grep 'inet6 fd' | awk -F' ' '{ print $2 }')
+    if [ -n "$ipv4" ]; then
+      iptables -t mangle -I $chain --destination "$ipv4" -j ACCEPT -m comment --comment "allow local traffic"
+    fi
+    if [ -n "$ipv6ula" ]; then
+      ip6tables -t mangle -I $chain --destination "$ipv6ula" -j ACCEPT -m comment --comment "allow local traffic"
+    fi
+
+    # Our list of devices that are permitted to break the rate limits is defined
+    # by their IPv4 address.  We will convert that to a MAC address so that we
+    # can handle both IPv4 and IPv6.
+    # Allow list of MAC addresses derived from IP addresses issued by dnsmasq.
+    local allowlist=$(cut -d'~' -f2 /var/db/dnsmasq-lease.db \
+                    | iprange --min-prefix 32 <(echo "$allownets") --intersect - \
+                    | xargs -n1 -r \
+                    | grep -f - -w -F /var/db/dnsmasq-lease.db )
+
+    for line in $allowlist; do
+      local macaddr="$(echo "$line" | cut -d'~' -f1)"
+      local ipaddr="($(echo "$line" | cut -d'~' -f2))"
+      local devname="$(echo "$line" | cut -d'~' -f6)"
+      if [ -z "$devname" ]; then devname="$(echo "$line" | cut -d~ -f8)"; fi # Client name
+      if [ -z "$devname" ]; then devname="$ipaddr";
+                            else devname="$devname $ipaddr"; fi
+      logger -s -t wan-failover -p daemon.info "No rate limiting for ${devname} ${macaddr} over interface $interface"
+      # We don't really need to add to the IPv4 chain as we allowed them by IP address. But this way we get
+      # individual devices listed with a device name in comments.
+      iptables -A $chain -t mangle -m mac --mac-source ${macaddr} -j ACCEPT -m comment --comment "$devname"
+      ip6tables -A $chain -t mangle -m mac --mac-source ${macaddr} -j ACCEPT -m comment --comment "$devname"
+    done
+
+    # Now look for MAC addresses in ARP cache that we have not found in dnsmasq lease file
+    allowlist=$(echo "$allowlist" \
+              | cut -d~ -f2 \
+              | iprange --min-prefix 32 <(echo "$allownets") --complement - \
+              | xargs -n1 -r \
+              | grep -f - -w -F  <(arp -a) )
+    for line in $allowlist; do
+      local macaddr="$(echo "$line" | cut -d' ' -f4)"
+      if [ "$macaddr" = "<incomplete>" ]; then continue; fi
+      local ipaddr="$(echo "$line" | cut -d' ' -f2)"
+      local devname="$(echo "$line" | cut -d' ' -f1)" # DNS name
+      if [ "$devname" = "?" ]; then devname="$ipaddr";
+                               else devname="$devname $ipaddr"; fi
+      logger -s -t wan-failover -p daemon.info "No rate limiting for ${devname} ${macaddr} over interface $interface"
+      # We don't really need to add to the IPv4 chain as we allowed them by IP address. But this way we get
+      # individual devices listed with a device name in comments.
+      iptables -A $chain -t mangle -m mac --mac-source ${macaddr} -j ACCEPT -m comment --comment "$devname"
+      ip6tables -A $chain -t mangle -m mac --mac-source ${macaddr} -j ACCEPT -m comment --comment "$devname"
+    done
+
+    # Now add each of the IPv4 address ranges/networks in allownets list in case MAC address was not found
+    for line in $allownets; do
+      iptables -t mangle -A $chain --source "$line" -j ACCEPT
+    done
+    
+    logger -s -t wan-failover -p daemon.info "Everything else rate limited on $interface"
+    iptables -A $chain -t mangle -j MARK --set-xmark 0x02/0x03 -m comment --comment "Everything else rate limited"
+    iptables -A $chain -t mangle -j CONNMARK --save-mark
+    iptables -A $chain -t mangle -j ACCEPT
+    ip6tables -A $chain -t mangle -j MARK --set-xmark 0x02/0x03 -m comment --comment "Everything else rate limited"
+    ip6tables -A $chain -t mangle -j CONNMARK --save-mark
+    ip6tables -A $chain -t mangle -j ACCEPT
+
+    # Now make new table active, check if exist and if not create rule
+    iptables -C FORWARD -t mangle -o $interface -j $chain >/dev/null 2>&1 ||
+    iptables -A FORWARD -t mangle -o $interface -j $chain
+    ip6tables -C FORWARD -t mangle -o $interface -j $chain >/dev/null 2>&1 ||
+    ip6tables -A FORWARD -t mangle -o $interface -j $chain
+    
+    # Log error message if missing firewall rules (which will impact inbound rate limiting)
+    if ! iptables -t mangle -C OUTPUT -j CONNMARK --restore-mark 2>/dev/null ||
+       ! iptables -t mangle -C PREROUTING -j CONNMARK --restore-mark 2>/dev/null ||
+       ! ip6tables -t mangle -C OUTPUT -j CONNMARK --restore-mark 2>/dev/null ||
+       ! ip6tables -t mangle -C PREROUTING -j CONNMARK --restore-mark 2>/dev/null; then
+      logger -s -t wan-failover -p daemon.error "WAN Failover: Required iptables CONNMARK firewall rules not set"
+    fi
+    
+  fi
+}
+
+########################################################################
+##
+########################################################################
+delete_rate_limit()
+{
+  local interface="$1"
+  local chain="RATE_LIMIT_${interface^^}" # uppercase interface name
+  local iname=''
+  local internalif=''
+
+  logger -s -t wan-failover -p daemon.info "Remove rate limiting over interface $interface"
+
+  while iptables -D FORWARD -t mangle -o $interface -j $chain >/dev/null 2>&1; do continue; done
+  iptables -F $chain -t mangle >/dev/null 2>&1
+  iptables -X $chain -t mangle >/dev/null 2>&1
+  while ip6tables -D FORWARD -t mangle -o $interface -j $chain >/dev/null 2>&1; do continue; done
+  ip6tables -F $chain -t mangle >/dev/null 2>&1
+  ip6tables -X $chain -t mangle >/dev/null 2>&1
+  
+  tc qdisc del dev $interface root 2>/dev/null
+  local internallans="$ALLOWLANS"
+  if [ "$interface" = "$WIREGUARD_IF" ]; then internallans="$WIREGUARD_ALLOWLAN"; fi
+  for iname in $internallans; do
+    # find interface name e.g. eth1
+    eval internalif='$'$iname
+    if [ -n "$internalif" ]; then
+      # Delete existing, create new rate limiting queue
+      tc qdisc del dev $internalif root 2>/dev/null
+    fi
+  done
+}
+
+########################################################################
+## 
+########################################################################
+block_interface()
+{
+  local interface="$1"
+  local chain="BLOCK_${interface^^}" # uppercase interface name
+  local ports="$(echo $WAN_FAILOVER_BLOCK_PORTS | tr -s ' ' ',')" # spaces to commas
+  local blocknets="$(echo $WAN_FAILOVER_BLOCK_NETS | tr -s ' ,' '\n')" # commas and spaces to newlines
+  local IFS=$'\n'
+  local line=''
+
+  grep -w "^ *${interface}\b" /proc/net/dev >/dev/null
+  if [ "$?" = "0" ]; then
+    logger -s -t wan-failover -p daemon.info "Prepare ${interface} for port blocking"
+
+    # Nudge all devices with a ping to load ARP cache
+    if [ -n "$blocknets" ]; then
+      for line in $(iprange --min-prefix 32 <(echo "$blocknets")); do
+        ping -W 1 -c 1 $line >/dev/null 2>&1 &
+      done
+      usleep 200000  # Allow a 0.2 second for replies to come in
+    fi
+
+    # Create new firewall tables or flush them empty
+    iptables -N $chain 2>/dev/null
+    iptables -F $chain
+    ip6tables -N $chain 2>/dev/null
+    ip6tables -F $chain
+
+    # Allow local traffic for any device
+    local ipv4=$(ip -4 addr show $interface | grep 'inet ' | awk -F' ' '{ print $2 }')
+    local ipv6ula=$(ip -6 addr show $interface | grep 'inet6 fd' | awk -F' ' '{ print $2 }')
+    if [ -n "$ipv4" ]; then
+      iptables -I $chain --destination "$ipv4" -j ACCEPT -m comment --comment "allow local traffic"
+    fi
+    if [ -n "$ipv6ula" ]; then
+      ip6tables -I $chain --destination "$ipv6ula" -j ACCEPT -m comment --comment "allow local traffic"
+    fi
+
+    # Start by adding each of the IPv4 address ranges/networks in blocknets list.
+    for line in $blocknets; do
+      iptables -A $chain --source "$line" -j DROP
+    done
+
+    # Allow list of MAC addresses derived from IP addresses issued by dnsmasq.
+    local blocklist=$(cut -d'~' -f2 /var/db/dnsmasq-lease.db \
+                    | iprange --min-prefix 32 <(echo "$blocknets") --intersect - \
+                    | xargs -n1 -r \
+                    | grep -f - -w -F /var/db/dnsmasq-lease.db )
+
+    for line in $blocklist; do
+      local macaddr="$(echo "$line" | cut -d'~' -f1)"
+      local ipaddr="($(echo "$line" | cut -d'~' -f2))"
+      local devname="$(echo "$line" | cut -d'~' -f6)"
+      if [ -z "$devname" ]; then devname="$(echo "$line" | cut -d~ -f8)"; fi # Client name
+      if [ -z "$devname" ]; then devname="$ipaddr";
+                            else devname="$devname $ipaddr"; fi
+      logger -s -t wan-failover -p daemon.info "Block traffic for ${devname} ${macaddr} over interface $interface"
+      # We don't really need to add to the IPv4 chain as we allowed them by IP address. But this way we get
+      # individual devices listed with a device name in comments.
+      iptables -A $chain -m mac --mac-source $macaddr -j DROP -m comment --comment "$devname"
+      ip6tables -A $chain -m mac --mac-source $macaddr -j DROP -m comment --comment "$devname"
+    done
+
+    # Now look for MAC addresses in ARP cache
+    blocklist=$(echo "$blocklist" \
+              | cut -d~ -f2 \
+              | iprange --min-prefix 32 <(echo "$blocknets") --complement - \
+              | xargs -n1 -r \
+              | grep -f - -w -F  <(arp -a) )
+    for line in $blocklist; do
+      local macaddr="$(echo "$line" | cut -d' ' -f4)"
+      if [ "$macaddr" = "<incomplete>" ]; then continue; fi
+      local ipaddr="$(echo "$line" | cut -d' ' -f2)"
+      local devname="$(echo "$line" | cut -d' ' -f1)" # DNS name
+      if [ "$devname" = "?" ]; then devname="$ipaddr";
+                               else devname="$devname $ipaddr"; fi
+      logger -s -t wan-failover -p daemon.info "Block traffic for ${devname} ${macaddr} over interface $interface"
+      # We don't really need to add to the IPv4 chain as we allowed them by IP address. But this way we get
+      # individual devices listed with a device name in comments.
+      iptables -A $chain -m mac --mac-source $macaddr -j DROP -m comment --comment "$devname"
+      ip6tables -A $chain -m mac --mac-source $macaddr -j DROP -m comment --comment "$devname"
+    done
+
+    if [ -n "$ports" ]; then
+      # Now block ports
+      logger -s -t wan-failover -p daemon.info "Block ports $ports on interface $interface"
+      iptables -A $chain -p tcp -m multiport --dports $ports -j DROP
+      iptables -A $chain -p tcp -m multiport --sports $ports -j DROP
+      iptables -A $chain -p udp -m multiport --dports $ports -j DROP
+      iptables -A $chain -p udp -m multiport --sports $ports -j DROP
+      ip6tables -A $chain -p tcp -m multiport --dports $ports -j DROP
+      ip6tables -A $chain -p tcp -m multiport --sports $ports -j DROP
+      ip6tables -A $chain -p udp -m multiport --dports $ports -j DROP
+      ip6tables -A $chain -p udp -m multiport --sports $ports -j DROP
+    fi
+
+    logger -s -t wan-failover -p daemon.info "Everything else permitted (but maybe rate limited) on $interface"
+    iptables -A $chain -j ACCEPT -m comment --comment "everything else permitted"
+    ip6tables -A $chain -j ACCEPT -m comment --comment "everything else permitted"
+
+    # Now make new table active, check if exist and if not create rule
+    iptables -C FORWARD_CHAIN -o $interface -j $chain >/dev/null 2>&1 ||
+    iptables -A FORWARD_CHAIN -o $interface -j $chain
+    ip6tables -C FORWARD_CHAIN -o $interface -j $chain >/dev/null 2>&1 ||
+    ip6tables -A FORWARD_CHAIN -o $interface -j $chain
+  fi
+}
+
+########################################################################
+## 
+########################################################################
+delete_blocks()
+{
+  local interface="$1"
+  local chain="BLOCK_${interface^^}" # uppercase interface name
+  
+  logger -s -t wan-failover -p daemon.info "Remove blocks over interface $interface"
+
+  while iptables -D FORWARD_CHAIN -o $interface -j $chain >/dev/null 2>&1; do continue; done
+  iptables -F $chain >/dev/null 2>&1
+  iptables -X $chain >/dev/null 2>&1
+  while ip6tables -D FORWARD_CHAIN -o $interface -j $chain >/dev/null 2>&1; do continue; done
+  ip6tables -F $chain >/dev/null 2>&1
+  ip6tables -X $chain >/dev/null 2>&1
+}
+
+########################################################################
+## Date math... convert "MMM DD HH:MM:SS" from syslog to epoch.
+########################################################################
+get_epoch()
+{
+  local timestamp=$(echo $1)
+  timestamp=$(date -d "$timestamp" -D "%b%d%T" +'%s')
+  local now=$(date +'%s')
+  if [ $timestamp -gt $now ]; then
+    ## Log file doesn't have year and date assumes current year
+    ## so timestamp might be in the future which is clearly wrong!
+    ## Note... does not work for Feb 29.
+    local thisyear=$(date -d $timestamp -D '%s' +'%Y')
+    local lastyear=$((thisyear-1))
+    local longdate=$(date -d "$timestamp" -D "%s" +'%m-%d %H:%M:%S')
+    timestamp=$(date -d "$lastyear-$longdate" +'%s')
+  fi
+  echo $timestamp
+}
+
+seconds2time ()
+{
+  local T=$1
+  local D=$((T/60/60/24))
+  local H=$((T/60/60%24))
+  local M=$((T/60%60))
+  local S=$((T%60))
+
+  if [[ ${D} != 0 ]]; then printf '%d days ' $D; fi
+  printf '%02d:%02d:%02d hours\n' $H $M $S
+}
+
+log_time ()
+{
+  echo $(ls /var/log/messages* \
+       | sort -r \
+       | xargs grep -h "$1" \
+       | sed -n -e 's/\([0-3]\?[0-9]\? [0-2][0-9]:[0-5][0-9]:[0-5][0-9]\).*in: \([0-9]\+\).*out: \([0-9]\+\).*/\1-\2-\3/p' \
+       | tail -n 1)
+}
+
+########################################################################
+## Number rounding and formatting
+########################################################################
+round()
+{
+  echo $(printf %.$2f $(echo "scale=$2;(((10^$2)*$1)+0.5)/(10^$2)" | bc))
+};
+
+convert_num ()
+{
+  local num=$(sed ':a;s/\B[0-9]\{3\}\>/,&/;ta' <<<"$1")
+  local cnt=$(echo $num | tr -cd , | wc -c)
+  case $cnt in
+  0)
+    echo $1 Bytes
+    ;;
+  1)
+    echo $(round $1/1000 2) KBytes
+    ;;
+  2)
+    echo $(round $1/1000/1000 2) MBytes
+    ;;
+  3)
+    echo $(round $1/1000/1000/1000 2) GBytes
+    ;;
+  4)
+    echo $(round $1/1000/1000/1000/1000 2) TBytes
+    ;;
+  esac
+}
+
+########################################################################
+## Switch to SECONDARY
+########################################################################
+switch_to_secondary ()
+{
+  if [ -z "$EXT2GW" ]; then
+    EXT2GW="$(sed -n 's/^GW=\([^ ]*\).*/\1/p' /tmp/udhcpc-$EXT2IF.conf)"
+  fi
+  if [ -n "$EXT2GW" ]; then
+    # Find traffic counter in iptables.  The actual rules to do this
+    # must have first been set in firewall rules.
+    BYTES_IN=$(iptables -t mangle -nvx -L PREROUTING | awk -v IF="$EXT2IF" -v NET="$IPV4NET" '($6==IF) && ($8==sprintf("!%s",NET)) {print $2}' 2>/dev/null)
+    BYTES_OUT=$(iptables -t mangle -nvx -L POSTROUTING | awk -v IF="$EXT2IF" -v NET="$IPV4NET" '($7==IF) && ($9==sprintf("!%s",NET)) {print $2}' 2>/dev/null)
+
+    block_interface $secondary_if
+    rate_limit_interface $secondary_if
+
+    if [ "$secondary_if" == "$WIREGUARD_IF" ]; then
+      logger -s -t wan-failover -p daemon.info "Adding default ip route for $EXT2IF via $EXT2GW into table $WIREGUARD_LISTEN_PORT"
+      ip route flush table $WIREGUARD_LISTEN_PORT
+      ip route add table $WIREGUARD_LISTEN_PORT default dev $EXT2IF via $EXT2GW
+      if [ -n "$WG0_TUNNEL_ROUTE_TABLE" ]; then
+        ip route flush table $WG0_TUNNEL_ROUTE_TABLE
+        ip -6 route flush table $WG0_TUNNEL_ROUTE_TABLE
+      fi
+    fi
+    return 0
+  else
+    return 1
+  fi
+}
+
+########################################################################
+## Switch to PRIMARY
+########################################################################
+switch_to_primary ()
+{
+  if [ "$secondary_if" == "$WIREGUARD_IF" ]; then
+    if [ -z "$WAN_FAILOVER_ALL_LOCAL" ]; then
+      ip route flush table $WIREGUARD_LISTEN_PORT
+    fi
+    if [ -n "$WAN_FAILOVER_SECONDARY_GW" -a -n "$WG0_TUNNEL_ROUTE_TABLE" ]; then
+      ip route flush table $WG0_TUNNEL_ROUTE_TABLE
+      ip route add table $WG0_TUNNEL_ROUTE_TABLE default dev $secondary_if via $WAN_FAILOVER_SECONDARY_GW
+    fi
+    if [ -n "$WAN_FAILOVER_SECONDARY_GWIPV6" -a -n "$WG0_TUNNEL_ROUTE_TABLE" ]; then
+      ip -6 route flush table $WG0_TUNNEL_ROUTE_TABLE
+      ip -6 route add table $WG0_TUNNEL_ROUTE_TABLE default dev $secondary_if via $WAN_FAILOVER_SECONDARY_GWIPV6
+    fi
+  fi
+
+  delete_rate_limit $secondary_if
+  delete_blocks $secondary_if
+
+  # Find and reset traffic counter in iptables.  The actual rules to do this
+  # must have first been set in firewall rules.
+  BYTES_IN=$(iptables -t mangle -nvx -L -Z PREROUTING | awk -v IF="$EXT2IF" -v NET="$IPV4NET" '($6==IF) && ($8==sprintf("!%s",NET)) {print $2}' 2>/dev/null)
+  BYTES_OUT=$(iptables -t mangle -nvx -L -Z POSTROUTING | awk -v IF="$EXT2IF" -v NET="$IPV4NET" '($7==IF) && ($9==sprintf("!%s",NET)) {print $2}' 2>/dev/null)
+  return 0
+}
+
+
+########################################################################
+## Start here...
+########################################################################
+
+case $state in
+
+########################################################################
+## WAN Failover service is has starting / initialized
+## I also call this when firewall is restarted.
+########################################################################
+START | FIREWALL)
+  ## WAN Failover daemon started
+  logger -s -t wan-failover -p daemon.info "WAN Failover service $state"
+
+  # Rules so I can count traffic through wan-failover interface.
+  # Check if already exist and create if not.
+  iptables -t mangle -C PREROUTING -i $EXT2IF --source 0.0.0.0/32 -j ACCEPT >/dev/null 2>&1 ||
+  iptables -t mangle -A PREROUTING -i $EXT2IF --source 0.0.0.0/32 -j ACCEPT
+  iptables -t mangle -C PREROUTING -i $EXT2IF ! --source $IPV4NET -j ACCEPT >/dev/null 2>&1 ||
+  iptables -t mangle -A PREROUTING -i $EXT2IF ! --source $IPV4NET -j ACCEPT
+  iptables -t mangle -C POSTROUTING -o $EXT2IF ! --destination $IPV4NET -j ACCEPT >/dev/null 2>&1 ||
+  iptables -t mangle -A POSTROUTING -o $EXT2IF ! --destination $IPV4NET -j ACCEPT
+  # To fool mobile providers that this is not a hotspot???
+  iptables -t mangle -C POSTROUTING -o $EXT2IF -j TTL --ttl-set 65 >/dev/null 2>&1 ||
+  iptables -t mangle -I POSTROUTING -o $EXT2IF -j TTL --ttl-set 65
+
+  if [ -n "$IPV6NET" ]; then
+    # And set the same on IPv6 tables as well...
+    if [ "$IPV6NET" != "$IPV6NETS" ]; then
+      logger -s -t wan-failover -p daemon.warning "WARNING: Multiple IPv6 addresses on $EXT2IF.  Using $IPV6NET"
+    fi
+    ip6tables -t mangle -C PREROUTING -i $EXT2IF ! --source $IPV6NET -j ACCEPT >/dev/null 2>&1 ||
+    ip6tables -t mangle -A PREROUTING -i $EXT2IF ! --source $IPV6NET -j ACCEPT
+    ip6tables -t mangle -C POSTROUTING -o $EXT2IF ! --destination $IPV6NET -j ACCEPT >/dev/null 2>&1 ||
+    ip6tables -t mangle -A POSTROUTING -o $EXT2IF ! --destination $IPV6NET -j ACCEPT
+    ip6tables -t mangle -C POSTROUTING -o $EXT2IF -p ipv6-icmp -j ACCEPT >/dev/null 2>&1 ||
+    ip6tables -t mangle -A POSTROUTING -o $EXT2IF -p ipv6-icmp -j ACCEPT
+    # To fool mobile providers that this is not a hotspot???
+    ip6tables -t mangle -C POSTROUTING -o $EXT2IF -j HL --hl-set 65 ACCEPT >/dev/null 2>&1 ||
+    ip6tables -t mangle -I POSTROUTING -o $EXT2IF -j HL --hl-set 65
+  fi
+
+  if [ "$state" == "FIREWALL" ] && grep -q "^${WAN_LINK_STR}${SECONDARY_STR}" "$WAN_STATUSFILE"; then
+    logger -s -t wan-failover -p daemon.info "WAN Failover service reload while on SECONDARY"
+    if ! switch_to_secondary; then
+      logger -s -t wan-failover -p daemon.info "WAN Failover reload error. No WAN failover gateway found."
+    fi
+  fi
+  ;;
+
+########################################################################
+## WAN Failover service is about to stop
+########################################################################
+STOP)
+  ## WAN Failover daemon stopping
+  logger -s -t wan-failover -p daemon.info "WAN Failover service STOP"
+  
+  # WAN Failover can frequently STOP and START during a failover event wven
+  # though not switching from SECONDARY to PRIMARY.
+  if false; then
+    # "false" block, so none of this executes
+    # For stability we will not change these firewall rules
+    iptables -t mangle -D PREROUTING -i $EXT2IF --source 0.0.0.0/32 -j ACCEPT >/dev/null 2>&1
+    iptables -t mangle -D PREROUTING -i $EXT2IF ! --source $IPV4NET -j ACCEPT >/dev/null 2>&1
+    iptables -t mangle -D POSTROUTING -o $EXT2IF ! --destination $IPV4NET -j ACCEPT >/dev/null 2>&1
+    iptables -t mangle -D POSTROUTING -o $EXT2IF -j TTL --ttl-set 65 >/dev/null 2>&1
+
+    ip6tables -t mangle -D PREROUTING -i $EXT2IF ! --source $IPV6NET -j ACCEPT >/dev/null 2>&1
+    ip6tables -t mangle -D POSTROUTING -o $EXT2IF -p ipv6-icmp -j ACCEPT >/dev/null 2>&1
+    ip6tables -t mangle -D POSTROUTING -o $EXT2IF ! --destination $IPV6NET -j ACCEPT >/dev/null 2>&1
+    ip6tables -t mangle -D POSTROUTING -o $EXT2IF -j HL --hl-set 65 >/dev/null 2>&1
+
+    # Similarly we should not delete rate limits or blocks.
+    delete_rate_limit $secondary_if
+    delete_blocks $secondary_if
+  fi
+  ;;
+
+########################################################################
+## WAN Failover service has switched to secondary
+########################################################################
+SECONDARY)
+  ## Switched to Failover using secondary WAN link
+  logger -s -t wan-failover -p daemon.info "Switch to secondary over $EXT2IF interface using $secondary_if $secondary_gw $secondary_gw_ipv6"
+  if [ -n "$EXT2IF" ]; then
+    if switch_to_secondary; then
+      echo "-- Traffic report for IPv4 over $EXT2IF --
+Bytes in: $BYTES_IN
+Bytes out: $BYTES_OUT" >&3
+      echo "--" >&3
+      logger -s -t wan-failover -p daemon.info "$LOG_SECONDARY $EXT2IF: Starting bytes in: $BYTES_IN out: $BYTES_OUT"
+    else
+      logger -s -t wan-failover -p daemon.error "Switch to secondary error. No WAN failover gateway found."
+    fi
+  fi
+  ;;
+
+########################################################################
+## WAN Failover service has switched back to primary
+########################################################################
+PRIMARY)
+  ## Switched back to normal using primary WAN link
+  logger -s -t wan-failover -p daemon.info "Switch to primary over $EXTIF interface from $secondary_if $secondary_gw $secondary_gw_ipv6"
+  if switch_to_primary; then
+    echo "-- Traffic report for IPv4 over $EXT2IF --
+Bytes in: $BYTES_IN
+Bytes out: $BYTES_OUT" >&3
+    echo "--" >&3
+    logger -s -t wan-failover -p daemon.info "$LOG_PRIMARY $EXT2IF: Ending bytes in: $BYTES_IN out: $BYTES_OUT, Counters reset."
+  else
+    logger -s -t wan-failover -p daemon.error "Switch to Primary error. No WAN failover gateway found."
+  fi
+  ;;
+
+########################################################################
+## WAN Failover service requesting status (echo to stdout)
+########################################################################
+STATUS)
+  ## If WAN_STATUSFILE exists then failover service is running and we
+  ## can find and provide status based on whether on SECONDARY or
+  ## PRIMARY link.
+  if [ -f "$WAN_STATUSFILE" ]; then
+    echo
+    if grep -q "^${WAN_LINK_STR}${SECONDARY_STR}" "$WAN_STATUSFILE"; then
+      ## We are on SECONDARY link so we can obtain information by looking
+      ## at the system traffic control (rc) and netfilter (iptables)
+      tcstatus=$(tc -s class show dev $secondary_if 2>/dev/null)
+      if [ -n "$tcstatus" ]; then
+        echo "Outbound rate limiting status for ${secondary_if}:"
+        echo "${tcstatus}"
+      fi
+      echo
+      internallans="$ALLOWLANS"
+      if [ "$interface" = "$WIREGUARD_IF" ]; then internallans="$WIREGUARD_ALLOWLAN"; fi
+      for iname in $internallans; do
+        # find interface name e.g. eth1
+        eval internalif='$'$iname
+        tcstatus=$(tc -s class show dev $internalif 2>/dev/null)
+        if [ -n "$tcstatus" ]; then
+          echo "Inbound rate limiting status for ${internalif}:"
+          echo "${tcstatus}"
+        fi
+      done
+      echo
+      echo "Devices exempt from rate limiting:"
+      echo "Exempt devices:   - $(echo $WAN_FAILOVER_NO_LIMIT_NETS | tr -s ',' ' ')"
+      chain="RATE_LIMIT_${secondary_if^^}" # uppercase interface name
+      iptables -t mangle -S $chain | sed -n -e 's/^.*mac-source *\([a-fA-F0-9:]*\).*"\([^"]*\)".*$/\1 - \2/p' | sort -k 4,4
+      echo
+      echo "Devices blocked from accessing ${secondary_if}:"
+      echo "Blocked devices:  - $(echo $WAN_FAILOVER_BLOCK_NETS | tr -s ',' ' ')"
+      chain="BLOCK_${secondary_if^^}" # uppercase interface name
+      iptables -S $chain | sed -n -e 's/^.*mac-source *\([a-fA-F0-9:]*\).*"\([^"]*\)".*$/\1 - \2/p' | sort -k 4,4
+      echo
+      echo "Ports blocked from accessing ${secondary_if}:"
+      echo "$(echo $WAN_FAILOVER_BLOCK_PORTS | tr -s ',' ' ')"
+      laststart="$(log_time "wan-failover: $LOG_SECONDARY")"
+      starttime=$(get_epoch "${laststart%%-*}")
+      now=$(date +'%s')
+      echo
+      echo "Failover start:    $(date -d $starttime -D'%s' +'%Y-%m-%d %H:%M:%S') ($(seconds2time $((now-starttime))))"
+    else
+      ## We are on PRIMARY link so obtain information by looking at defined
+      ## constants and the syslog file.
+      echo "When on secondary link ${secondary_if}: (Both IPv4 and IPv6)"
+      echo "Rate limited to:   $WAN_FAILOVER_RATE_LIMIT"
+      echo "Exempt devices:    $(echo $WAN_FAILOVER_NO_LIMIT_NETS | tr -s ',' ' ')"
+      echo "Blocked devices:   $(echo $WAN_FAILOVER_BLOCK_NETS | tr -s ',' ' ')"
+      echo "Blocked ports:     $(echo $WAN_FAILOVER_BLOCK_PORTS | tr -s ',' ' ')"
+      
+      laststart="$(log_time "wan-failover: $LOG_SECONDARY")"
+      lastend="$(log_time "wan-failover: $LOG_PRIMARY")"
+      starttime=$(get_epoch "${laststart%%-*}")
+      endtime=$(get_epoch "${lastend%%-*}")
+      if [ $starttime -gt $endtime ]; then
+        logger -s -t wan-failover -p daemon.warning "Last syslog was switch to secondary, so must be on failover now"
+      else
+        echo
+        echo "Last failover:    " \
+             "$(date -d $starttime -D'%s' +'%Y-%m-%d %H:%M:%S') to $(date -d $endtime -D'%s' +'%Y-%m-%d %H:%M:%S') ($(seconds2time $((endtime-starttime))))"
+        BYTES_IN=$(echo "${lastend#*-}" | cut -d- -f1)
+        BYTES_OUT=${lastend##*-}
+        echo "Downloaded ($EXT2IF): $(convert_num $BYTES_IN)"
+        echo "Uploaded ($EXT2IF):   $(convert_num $BYTES_OUT)"
+        echo "Traffic since last failover or reboot:"
+      fi
+    fi
+    BYTES_IN=$(iptables -t mangle -nvx -L PREROUTING | awk -v IF="$EXT2IF" -v NET="$IPV4NET" '($6==IF) && ($8==sprintf("!%s",NET)) {print $2}' 2>/dev/null)
+    BYTES_OUT=$(iptables -t mangle -nvx -L POSTROUTING | awk -v IF="$EXT2IF" -v NET="$IPV4NET" '($7==IF) && ($9==sprintf("!%s",NET)) {print $2}' 2>/dev/null)
+    echo "Downloaded ($EXT2IF): $(convert_num $BYTES_IN)"
+    echo "Uploaded ($EXT2IF):   $(convert_num $BYTES_OUT)"
+  fi
+  ;;
+
+esac
+
+exit 0
