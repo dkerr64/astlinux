@@ -2,11 +2,25 @@
 #
 # wan-failover.script
 #
-# Copyright (c) 2019-2020 David Kerr
+# Copyright (c) 2018-2020 David Kerr
 #
 # wan-failover action script
 #
 # Automatically called after any WAN link change
+#
+# We use the following from rc.conf (set in Astlinux user.conf file or in GUI)...
+#
+# WAN_FAILOVER_ALL_LOCAL
+# WG0_TUNNEL_ROUTE_TABLE="300"
+# WAN_FAILOVER_SECONDARY_GW
+# WAN_FAILOVER_SECONDARY_GWIPv6
+# WAN_FAILOVER_RATE_LIMIT="256Kbit"
+# WAN_FAILOVER_NO_LIMIT_NETS="192.168.17.5 192.168.17.224/27"
+# WAN_FAILOVER_BLOCK_PORTS="4242 4282 4285 4287 4500"
+# WAN_FAILOVER_BLOCK_NETS="192.168.17.3 192.168.17.6 192.168.17.7"
+#
+# while above allow/block list have IPv4 addresses, we obtain the Mac address
+# of the device and use that in the firewall so as to cover IPv6 as well.
 #
 ################################################################################
 

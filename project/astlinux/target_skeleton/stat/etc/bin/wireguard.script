@@ -1,0 +1,190 @@
+#!/bin/bash
+#
+# wireguard.script
+#
+# Copyright (c) 2018-2020 David Kerr
+#
+# We use the following from rc.conf (set in Astlinux user.conf file or in GUI)...
+#
+# WAN_FAILOVER_VPN_HOST=<IP Address> 
+# WAN_FAILOVER_ALL_LOCAL="yes"
+#                           yes means that all traffic to the failover server
+#                           from the local host (Astlinux) including the wireguard
+#                           tunnel will ALWAYS be routed over the failover interface
+#                           Blank means that traffic to failover server will be routed
+#                           over failover interface only when there is a failover.
+# WG0_TUNNEL_ROUTE_TABLE="300"
+# WIREGUARD_LISTEN_PORT
+# WAN_FAILOVER_SECONDARY_GW
+# WAN_FAILOVER_SECONDARY_GWIPv6
+#
+################################################################################
+
+. /etc/rc.conf
+. /etc/init.d/functions.d/network
+
+## Action: PRE_UP POST_UP PRE_DOWN POST_DOWN
+action="$1"
+## WireGuard Interface: (ex. wg0)
+interface="$2"
+
+allInternalNets()
+{
+  local ilist="INTIF INT2IF INT3IF INT4IF DMZIF EXT2IF"
+  local iname interface nets
+
+  # Loop through all our internal interfaces
+  for iname in $ilist; do
+    # find interface name e.g. eth1
+    eval interface='$'$iname
+    if [ -n "$interface" ]; then
+      if [ "$1" == "6" ]; then
+        nets=$(ip -o addr show dev $interface scope global | awk '$3 == "inet6" { split($4, field, " "); print field[1]; next; }')
+      else
+        nets=$(ip -o addr show dev $interface scope global | awk '$3 == "inet" { split($4, field, " "); print field[1]; next; }')
+      fi
+      if [ -n "$nets" ]; then
+        echo "$nets"
+      fi
+    fi
+  done
+}
+
+if [ "$action" = "PRE_UP" ]; then
+  # Add policy based routing
+  if [ -n "$EXT2IF" ]; then
+    remote_ip="$WAN_FAILOVER_VPN_HOST"
+    get_numeric_ip_version "$remote_ip"
+    remote_ip_ver=$?
+    if [ $remote_ip_ver -ne 4 ]; then
+      remote_ip="$(host -4 -t A $WAN_FAILOVER_VPN_HOST | cut -d ' ' -f 4)"
+      get_numeric_ip_version "$remote_ip"
+      remote_ip_ver=$?
+    fi
+    if [ $remote_ip_ver -ne 4 ]; then
+      logger -s -t wireguard -p daemon.error "$action: WAN Failover: Failed to add route rules for $remote_ip as not a valid IPv4 address"
+    else
+      ip route flush table $WIREGUARD_LISTEN_PORT
+      if [ "$WAN_FAILOVER_ALL_LOCAL" = "yes" ]; then
+        logger -s -t wireguard -p daemon.info "$action: WAN Failover: Add policy based routing for $EXT2IF & $interface to $remote_ip all the time"
+        if [ -z "$EXT2GW" ]; then
+          EXT2GW="$(sed -n 's/^GW=\([^ ]*\).*/\1/p' /tmp/udhcpc-$EXT2IF.conf)"
+        fi
+        ip route add table $WIREGUARD_LISTEN_PORT default via $EXT2GW dev $EXT2IF
+        ip rule delete priority 1001 2>/dev/null
+        ip rule add to "$remote_ip/32" iif lo table $WIREGUARD_LISTEN_PORT priority 1001
+      else
+        logger -s -t wireguard -p daemon.info "$action: WAN Failover: Add policy based routing for $EXTIF & $interface to $remote_ip only during failover"
+        ip rule delete priority 1001 2>/dev/null
+        ip rule add to "$remote_ip/32" table $WIREGUARD_LISTEN_PORT priority 1001
+      fi
+    fi
+  fi
+
+elif [ "$action" = "POST_UP" ]; then
+  # Setup routing table for traffic originating on $interface so that
+  # we can set rules to route replies to that traffic back over $interface
+  chain="PREROUTING_${interface^^}" # uppercase interface name
+  if [ -n "$WAN_FAILOVER_SECONDARY_GW" -a -n "$WG0_TUNNEL_ROUTE_TABLE" ]; then
+    logger -s -t wireguard -p daemon.info "$action: WAN Failover: set iptables and ip route table $WG0_TUNNEL_ROUTE_TABLE for $interface to reply to inbound traffic via $WAN_FAILOVER_SECONDARY_GW"
+    if ! iptables -t mangle -C OUTPUT -j CONNMARK --restore-mark 2>/dev/null ||
+       ! iptables -t mangle -C PREROUTING -j CONNMARK --restore-mark 2>/dev/null; then
+      logger -s -t wireguard -p daemon.error "$action: WAN Failover: Required iptables CONNMARK firewall rules not set"
+    fi
+    # clean out all existing rules to make sure only one rule.   
+    while iptables -t mangle -D PREROUTING -i $interface -j $chain 2>/dev/null; do continue; done
+    iptables -t mangle -N $chain 2>/dev/null
+    iptables -t mangle -F $chain     
+    iptables -t mangle -A $chain -m state --state NEW -j MARK --set-xmark 0x4/0x4
+    iptables -t mangle -A $chain -m state --state NEW -j CONNMARK --save-mark
+    iptables -t mangle -A PREROUTING -i $interface -j $chain
+    ip route flush table $WG0_TUNNEL_ROUTE_TABLE
+    ip route add table $WG0_TUNNEL_ROUTE_TABLE default dev $interface via $WAN_FAILOVER_SECONDARY_GW
+    INTNETS=$(allInternalNets)
+    for net in $INTNETS; do
+      # clean out all existing rules to make sure only one rule.
+      while ip rule delete from $net fwmark 0x4/0x4 table $WG0_TUNNEL_ROUTE_TABLE priority 1000 2>/dev/null; do continue; done
+      ip rule add from $net fwmark 0x4/0x4 table $WG0_TUNNEL_ROUTE_TABLE priority 1000 2>/dev/null
+    done
+  fi
+
+  if [ -n "$WAN_FAILOVER_SECONDARY_GWIPV6" -a -n "$WG0_TUNNEL_ROUTE_TABLE" ]; then
+    logger -s -t wireguard -p daemon.info "$action: WAN Failover: set iptables and ip route table $WG0_TUNNEL_ROUTE_TABLE for $interface to reply to inbound traffic via $WAN_FAILOVER_SECONDARY_GWIPV6"
+    if ! ip6tables -t mangle -C OUTPUT -j CONNMARK --restore-mark 2>/dev/null ||
+       ! ip6tables -t mangle -C PREROUTING -j CONNMARK --restore-mark 2>/dev/null; then
+      logger -s -t wireguard -p daemon.error "$action: WAN Failover: Required ip6tables CONNMARK firewall rules not set"
+    fi
+    # clean out all existing rules to make sure only one rule.
+    while ip6tables -t mangle -D PREROUTING -i $interface -j $chain 2>/dev/null; do continue; done
+    ip6tables -t mangle -N $chain 2>/dev/null
+    ip6tables -t mangle -F $chain
+    ip6tables -t mangle -A $chain -m state --state NEW -j MARK --set-xmark 0x4/0x4
+    ip6tables -t mangle -A $chain -m state --state NEW -j CONNMARK --save-mark
+    ip6tables -t mangle -A PREROUTING -i $interface -j $chain
+    ip -6 route flush table $WG0_TUNNEL_ROUTE_TABLE
+    ip -6 route add table $WG0_TUNNEL_ROUTE_TABLE default dev $interface via $WAN_FAILOVER_SECONDARY_GWIPV6
+    INTNETS=$(allInternalNets 6)
+    for net in $INTNETS; do
+      # clean out all existing rules to make sure only one rule.
+      while ip -6 rule delete from $net fwmark 0x4/0x4 table $WG0_TUNNEL_ROUTE_TABLE priority 1000 2>/dev/null; do continue; done
+      ip -6 rule add from $net fwmark 0x4/0x4 table $WG0_TUNNEL_ROUTE_TABLE priority 1000 2>/dev/null
+    done
+  fi
+
+  if [ "$IPV6" = "yes" ]; then
+    # if system has IPV6 enabled then block IPv6 neighbor discovery packets.
+    while ip6tables -t mangle -D POSTROUTING -o $interface -p ipv6-icmp -m icmp6 --icmpv6-type 135 -j DROP >/dev/null 2>&1; do continue; done
+    while ip6tables -t mangle -D POSTROUTING -o $interface -p ipv6-icmp -m icmp6 --icmpv6-type 136 -j DROP >/dev/null 2>&1; do continue; done
+    ip6tables -t mangle -A POSTROUTING -o $interface -p ipv6-icmp -m icmp6 --icmpv6-type 135 -j DROP
+    ip6tables -t mangle -A POSTROUTING -o $interface -p ipv6-icmp -m icmp6 --icmpv6-type 136 -j DROP                                                                                                                  
+  fi
+
+elif [ "$action" = "PRE_DOWN" ]; then
+  logger -s -t wireguard -p daemon.info "$action: VPN is stopping '$interface' interface."
+
+elif [ "$action" = "POST_DOWN" ]; then
+  if [ -n "$EXT2IF" ]; then
+
+    logger -s -t wireguard -p daemon.info "$action: WAN Failover: Remove policy based routing for $EXT2IF & $interface"
+
+    ip rule delete priority 1001 2>/dev/null
+    ip route flush table $WIREGUARD_LISTEN_PORT
+
+    chain="PREROUTING_${interface^^}" # uppercase interface name
+    if [ -n "$WAN_FAILOVER_SECONDARY_GW"  -a -n "$WG0_TUNNEL_ROUTE_TABLE" ]; then
+      logger -s -t wireguard -p daemon.info "$action: WAN Failover: Remove iptables and ip route table $WG0_TUNNEL_ROUTE_TABLE for $interface to reply to inbound traffic via $WAN_FAILOVER_SECONDARY_GW"
+      # clean out all existing rules in case multiple
+      while iptables -t mangle -D PREROUTING -i $interface -j $chain 2>/dev/null; do continue; done
+      iptables -t mangle -F $chain 2>/dev/null
+      iptables -t mangle -X $chain 2>/dev/null
+      ip route flush table $WG0_TUNNEL_ROUTE_TABLE
+      INTNETS=$(allInternalNets)
+      for net in $INTNETS; do
+        # clean out all existing rules in case multiple
+        while ip rule delete from $net fwmark 0x4/0x4 table $WG0_TUNNEL_ROUTE_TABLE priority 1000 2>/dev/null; do continue; done
+      done
+    fi
+
+    if [ -n "$WAN_FAILOVER_SECONDARY_GWIPV6"  -a -n "$WG0_TUNNEL_ROUTE_TABLE" ]; then
+      logger -s -t wireguard -p daemon.info "$action: WAN Failover: Remove iptables and ip route table $WG0_TUNNEL_ROUTE_TABLE for $interface to reply to inbound traffic via $WAN_FAILOVER_SECONDARY_GWIPV6"
+      # clean out all existing rules in case multiple
+      while ip6tables -t mangle -D PREROUTING -i $interface -j $chain 2>/dev/null; do continue; done
+      ip6tables -t mangle -F $chain 2>/dev/null
+      ip6tables -t mangle -X $chain 2>/dev/null
+      ip -6 route flush table $WG0_TUNNEL_ROUTE_TABLE
+      INTNETS=$(allInternalNets 6)
+      for net in $INTNETS; do
+        # clean out all existing rules in case multiple
+        while ip -6 rule delete from $net fwmark 0x4/0x4 table $WG0_TUNNEL_ROUTE_TABLE priority 1000 2>/dev/null; do continue; done
+      done
+    fi
+
+    if [ "$IPV6" = "yes" ]; then
+     # clean out all existing rules in case multiple
+      while ip6tables -t mangle -D POSTROUTING -o $interface -p ipv6-icmp -m icmp6 --icmpv6-type 135 -j DROP >/dev/null 2>&1; do continue; done
+      while ip6tables -t mangle -D POSTROUTING -o $interface -p ipv6-icmp -m icmp6 --icmpv6-type 136 -j DROP >/dev/null 2>&1; do continue; done
+    fi
+  fi
+fi
+
+exit 0
