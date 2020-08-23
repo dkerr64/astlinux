@@ -1,17 +1,20 @@
-#############################################################
+################################################################################
 #
 # libglib2
 #
-#############################################################
-LIBGLIB2_VERSION_MAJOR = 2.46
-LIBGLIB2_VERSION = $(LIBGLIB2_VERSION_MAJOR).2
+################################################################################
+
+LIBGLIB2_VERSION_MAJOR = 2.56
+LIBGLIB2_VERSION = $(LIBGLIB2_VERSION_MAJOR).4
 LIBGLIB2_SOURCE = glib-$(LIBGLIB2_VERSION).tar.xz
 LIBGLIB2_SITE = http://ftp.gnome.org/pub/gnome/sources/glib/$(LIBGLIB2_VERSION_MAJOR)
+LIBGLIB2_LICENSE = LGPL-2.1+
+LIBGLIB2_LICENSE_FILES = COPYING
 # 0002-disable-tests.patch
 LIBGLIB2_AUTORECONF = YES
 
 LIBGLIB2_INSTALL_STAGING = YES
-LIBGLIB2_INSTALL_STAGING_OPT = DESTDIR=$(STAGING_DIR) LDFLAGS=-L$(STAGING_DIR)/usr/lib install
+LIBGLIB2_INSTALL_STAGING_OPTS = DESTDIR=$(STAGING_DIR) LDFLAGS=-L$(STAGING_DIR)/usr/lib install
 
 LIBGLIB2_CONF_ENV = \
 	ac_cv_func_posix_getpwuid_r=yes \
@@ -39,8 +42,6 @@ LIBGLIB2_CONF_ENV = \
 	jm_cv_func_nanosleep_works=yes \
 	gl_cv_func_working_utimes=yes \
 	ac_cv_func_utime_null=yes \
-	ac_cv_have_decl_strerror_r=yes \
-	ac_cv_func_strerror_r_char_p=no \
 	jm_cv_func_svid_putenv=yes \
 	ac_cv_func_getcwd_null=yes \
 	ac_cv_func_getdelim=yes \
@@ -77,55 +78,110 @@ LIBGLIB2_CONF_ENV = \
 	ac_cv_func_strtoull_l=no \
 	gt_cv_c_wchar_t=$(if $(BR2_USE_WCHAR),yes,no)
 
-LIBGLIB2_CONF_OPT = \
-	--disable-compile-warnings
+# old uClibc versions don't provide qsort_r
+ifeq ($(BR2_TOOLCHAIN_EXTERNAL_UCLIBC),y)
+LIBGLIB2_CONF_ENV += glib_cv_have_qsort_r=no
+else
+LIBGLIB2_CONF_ENV += glib_cv_have_qsort_r=yes
+endif
 
-HOST_LIBGLIB2_CONF_OPT = \
-	--disable-compile-warnings \
+# glib/valgrind.h contains inline asm not compatible with thumb1
+ifeq ($(BR2_ARM_INSTRUCTIONS_THUMB),y)
+LIBGLIB2_CONF_ENV += CFLAGS="$(TARGET_CFLAGS) -marm"
+endif
+
+HOST_LIBGLIB2_CONF_OPTS = \
 	--disable-coverage \
 	--disable-dtrace \
 	--disable-fam \
 	--disable-libelf \
 	--disable-selinux \
 	--disable-systemtap \
-	--disable-xattr
+	--disable-xattr \
+	--with-pcre=system
 
-LIBGLIB2_DEPENDENCIES = host-pkg-config host-libglib2 libffi zlib $(if $(BR2_NEEDS_GETTEXT),gettext libintl)
+LIBGLIB2_DEPENDENCIES = \
+	host-pkg-config host-libglib2 \
+	libffi pcre util-linux zlib $(TARGET_NLS_DEPENDENCIES)
 
-HOST_LIBGLIB2_DEPENDENCIES = host-pkg-config host-libffi host-zlib
+HOST_LIBGLIB2_DEPENDENCIES = \
+	$(if $(BR2_NEEDS_GETTEXT),gettext) \
+	host-libffi \
+	host-pcre \
+	host-pkg-config \
+	host-util-linux \
+	host-zlib
+
+# We explicitly specify a giomodule-dir to avoid having a value
+# containing ${libdir} in gio-2.0.pc. Indeed, a value depending on
+# ${libdir} would be prefixed by the sysroot by pkg-config, causing a
+# bogus installation path once combined with $(DESTDIR).
+LIBGLIB2_CONF_OPTS = \
+	--with-pcre=system \
+	--disable-compile-warnings \
+	--with-gio-module-dir=/usr/lib/gio/modules
 
 ifneq ($(BR2_ENABLE_LOCALE),y)
 LIBGLIB2_DEPENDENCIES += libiconv
 endif
 
-LIBGLIB2_CONF_OPT += --disable-libelf
+ifeq ($(BR2_PACKAGE_ELFUTILS),y)
+LIBGLIB2_CONF_OPTS += --enable-libelf
+LIBGLIB2_DEPENDENCIES += elfutils
+else
+LIBGLIB2_CONF_OPTS += --disable-libelf
+endif
 
 ifeq ($(BR2_PACKAGE_LIBICONV),y)
-LIBGLIB2_CONF_OPT += --with-libiconv=gnu
+LIBGLIB2_CONF_OPTS += --with-libiconv=gnu
 LIBGLIB2_DEPENDENCIES += libiconv
 endif
 
-LIBGLIB2_CONF_OPT += --with-pcre=internal
+ifeq ($(BR2_PACKAGE_LIBSELINUX),y)
+LIBGLIB2_CONF_OPTS += --enable-selinux
+LIBGLIB2_DEPENDENCIES += libselinux
+else
+LIBGLIB2_CONF_OPTS += --disable-selinux
+endif
 
+# Purge gdb-related files
+ifneq ($(BR2_PACKAGE_GDB),y)
+define LIBGLIB2_REMOVE_GDB_FILES
+	rm -rf $(TARGET_DIR)/usr/share/glib-2.0/gdb
+endef
+endif
+
+# Purge useless binaries from target
 define LIBGLIB2_REMOVE_DEV_FILES
 	rm -rf $(TARGET_DIR)/usr/lib/glib-2.0
-	rm -rf $(TARGET_DIR)/usr/share/glib-2.0/gettext
-	rmdir --ignore-fail-on-non-empty $(TARGET_DIR)/usr/share/glib-2.0
-	rm -f $(addprefix $(TARGET_DIR)/usr/bin/,glib-genmarshal glib-gettextize glib-mkenums gobject-query gtester gtester-report)
+	rm -rf $(addprefix $(TARGET_DIR)/usr/share/glib-2.0/,codegen gettext)
+	rm -f $(addprefix $(TARGET_DIR)/usr/bin/,gdbus-codegen glib-compile-schemas glib-compile-resources glib-genmarshal glib-gettextize glib-mkenums gobject-query gtester gtester-report)
+	$(LIBGLIB2_REMOVE_GDB_FILES)
 endef
 
 LIBGLIB2_POST_INSTALL_TARGET_HOOKS += LIBGLIB2_REMOVE_DEV_FILES
 
-define LIBGLIB2_REMOVE_GDB_FILES
-	rm -rf $(TARGET_DIR)/usr/share/glib-2.0/gdb
-	rmdir --ignore-fail-on-non-empty $(TARGET_DIR)/usr/share/glib-2.0
+# Remove schema sources/DTDs, we use staging ones to compile them.
+# Do so at target finalization since other packages install additional
+# ones and we want to deal with it in a single place.
+define LIBGLIB2_REMOVE_TARGET_SCHEMAS
+	rm -f $(TARGET_DIR)/usr/share/glib-2.0/schemas/*.xml \
+		$(TARGET_DIR)/usr/share/glib-2.0/schemas/*.dtd
 endef
 
-ifneq ($(BR2_PACKAGE_GDB),y)
-LIBGLIB2_POST_INSTALL_TARGET_HOOKS += LIBGLIB2_REMOVE_GDB_FILES
-endif
+# Compile schemas at target finalization since other packages install
+# them as well, and better do it in a central place.
+# It's used at run time so it doesn't matter defering it.
+define LIBGLIB2_COMPILE_SCHEMAS
+	$(HOST_DIR)/usr/bin/glib-compile-schemas \
+		$(STAGING_DIR)/usr/share/glib-2.0/schemas \
+		--targetdir=$(TARGET_DIR)/usr/share/glib-2.0/schemas
+endef
+
+LIBGLIB2_TARGET_FINALIZE_HOOKS += LIBGLIB2_REMOVE_TARGET_SCHEMAS
+LIBGLIB2_TARGET_FINALIZE_HOOKS += LIBGLIB2_COMPILE_SCHEMAS
 
 $(eval $(call AUTOTARGETS,package,libglib2))
 $(eval $(call AUTOTARGETS,package,libglib2,host))
 
-LIBGLIB2_HOST_BINARY:=$(HOST_DIR)/usr/bin/glib-genmarshal
+LIBGLIB2_HOST_BINARY = $(HOST_DIR)/usr/bin/glib-genmarshal
