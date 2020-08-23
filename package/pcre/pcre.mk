@@ -9,6 +9,9 @@ PCRE_SITE = https://downloads.sourceforge.net/project/pcre/pcre/$(PCRE_VERSION)
 PCRE_SOURCE = pcre-$(PCRE_VERSION).tar.bz2
 PCRE_INSTALL_STAGING = YES
 
+# They're required for host-libglib2
+HOST_PCRE_CONF_OPT = --enable-unicode-properties
+
 ifneq ($(BR2_INSTALL_LIBSTDCPP),y)
 # pcre will use the host g++ if a cross version isn't available
 PCRE_CONF_OPT = --disable-cpp
@@ -33,3 +36,4 @@ endef
 PCRE_POST_INSTALL_TARGET_HOOKS += PCRE_TARGET_REMOVE_PCRE_CONFIG
 
 $(eval $(call AUTOTARGETS,package,pcre))
+$(eval $(call AUTOTARGETS,package,pcre,host))
