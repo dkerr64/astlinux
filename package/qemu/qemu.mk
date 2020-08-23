@@ -4,7 +4,7 @@
 #
 ################################################################################
 
-QEMU_VERSION = 4.0.0
+QEMU_VERSION = 5.1.0
 QEMU_SOURCE = qemu-$(QEMU_VERSION).tar.xz
 QEMU_SITE = https://download.qemu.org
 
@@ -95,7 +95,6 @@ define QEMU_CONFIGURE_CMDS
 			--disable-brlapi \
 			--disable-curses \
 			--disable-curl \
-			--disable-bluez \
 			--disable-vde \
 			--disable-linux-aio \
 			--disable-cap-ng \
