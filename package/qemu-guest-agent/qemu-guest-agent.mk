@@ -3,10 +3,18 @@
 # qemu-guest-agent
 #
 ################################################################################
-
 QEMU_GUEST_AGENT_VERSION = 3.1.0
 QEMU_GUEST_AGENT_SOURCE = qemu-$(QEMU_GUEST_AGENT_VERSION).tar.xz
 QEMU_GUEST_AGENT_SITE = https://download.qemu.org
+
+ifeq ($(strip $(BR2_PACKAGE_QEMU)),y)
+# If QEMU package is configured then it builds and installs qemu-ga (in /usr/bin)
+# so no need to build it again.  We will depend on that package and then just install
+# the init scripts.  QEMU package may be at a different version than specified above.
+# Note that this makefile will still download, extract and patch, but it is not used.
+QEMU_GUEST_AGENT_DEPENDENCIES = qemu
+
+else
 
 QEMU_GUEST_AGENT_DEPENDENCIES = host-pkg-config libglib2 zlib util-linux
 
@@ -66,15 +74,27 @@ define QEMU_GUEST_AGENT_BUILD_CMDS
 	$(TARGET_MAKE_ENV) $(MAKE) -C $(@D) qemu-ga
 endef
 
+define QEMU_GUEST_AGENT_INSTALL_CP
+	$(INSTALL) -m 0755 -D $(@D)/qemu-ga $(TARGET_DIR)/usr/bin/qemu-ga
+endef
+
+define QEMU_GUEST_AGENT_UNINSTALL_RM
+	rm -f $(TARGET_DIR)/usr/bin/qemu-ga
+endef
+
+endif
+
+# This part is common whether we are using qemu-ga from the qemu package or one built
+# by this makefile.
 define QEMU_GUEST_AGENT_INSTALL_TARGET_CMDS
-	$(INSTALL) -m 0755 -D $(@D)/qemu-ga $(TARGET_DIR)/usr/sbin/qemu-ga
+	$(QEMU_GUEST_AGENT_INSTALL_CP)
 	$(INSTALL) -D -m 0755 package/qemu-guest-agent/qemu-guest-agent.init $(TARGET_DIR)/etc/init.d/qemu-guest-agent
 	ln -sf ../../init.d/qemu-guest-agent $(TARGET_DIR)/etc/runlevels/default/S01qemu-guest-agent
 	ln -sf ../../init.d/qemu-guest-agent $(TARGET_DIR)/etc/runlevels/default/K94qemu-guest-agent
 endef
 
 define QEMU_GUEST_AGENT_UNINSTALL_TARGET_CMDS
-	rm -f $(TARGET_DIR)/usr/sbin/qemu-ga
+	$(QEMU_GUEST_AGENT_UNINSTALL_RM)
 	rm -f $(TARGET_DIR)/etc/init.d/qemu-guest-agent
 	rm -f $(TARGET_DIR)/etc/runlevels/default/S01qemu-guest-agent
 	rm -f $(TARGET_DIR)/etc/runlevels/default/K94qemu-guest-agent
