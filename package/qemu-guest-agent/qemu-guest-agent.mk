@@ -3,7 +3,7 @@
 # qemu-guest-agent
 #
 ################################################################################
-QEMU_GUEST_AGENT_VERSION = 3.1.0
+QEMU_GUEST_AGENT_VERSION = 5.1.0
 QEMU_GUEST_AGENT_SOURCE = qemu-$(QEMU_GUEST_AGENT_VERSION).tar.xz
 QEMU_GUEST_AGENT_SITE = https://download.qemu.org
 
@@ -16,7 +16,7 @@ QEMU_GUEST_AGENT_DEPENDENCIES = qemu
 
 else
 
-QEMU_GUEST_AGENT_DEPENDENCIES = host-pkg-config libglib2 zlib util-linux
+QEMU_GUEST_AGENT_DEPENDENCIES = host-pkg-config libglib2 zlib util-linux pixman
 
 # Need the LIBS variable because librt and libm are
 # not automatically pulled. :-(
@@ -48,7 +48,6 @@ define QEMU_GUEST_AGENT_CONFIGURE_CMDS
 			--disable-brlapi \
 			--disable-curses \
 			--disable-curl \
-			--disable-bluez \
 			--disable-vde \
 			--disable-linux-aio \
 			--disable-cap-ng \
@@ -60,13 +59,14 @@ define QEMU_GUEST_AGENT_CONFIGURE_CMDS
 			--disable-strip \
 			--disable-seccomp \
 			--disable-sparse \
-			--disable-system \
+			--enable-system \
 			--disable-linux-user \
+			--target-list="x86_64-softmmu" \
+			--disable-sdl \
 			--disable-fdt \
 			--disable-tools \
 			--disable-vnc \
 			--disable-gnutls \
-			--disable-libssh2 \
 	)
 endef
 

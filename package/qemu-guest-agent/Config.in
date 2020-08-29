@@ -4,6 +4,7 @@ config BR2_PACKAGE_QEMU_GUEST_AGENT
 	depends on BR2_USE_WCHAR # gettext, libglib2
 	depends on BR2_USE_MMU # fork(), libglib2
 	select BR2_PACKAGE_LIBGLIB2
+    select BR2_PACKAGE_PIXMAN
 	select BR2_PACKAGE_ZLIB
 	select BR2_PACKAGE_UTIL_LINUX
 	select BR2_PACKAGE_UTIL_LINUX_LIBUUID
