@@ -10,6 +10,12 @@ Additions for AstLinux 1.4.0:
 
 Released @TBD@
 
+** IMPORTANT NOTICE
+
+-- DAHDI is now version 3.1.0 to support the new kernel, as such:
+   == Most old PCI cards are no longer supported (see notes below for exceptions)
+   == Previous add-on DAHDI_HFCS and RHINO drivers are no longer supported
+
 ** System
 
 -- Linux Kernel 4.19.140 (major bump)
@@ -36,7 +42,7 @@ Released @TBD@
 
 ** Networking
 
--- WireGuard VPN, module 1.0.20200729 (version bump), tools 1.0.20200820 (version bump)
+-- WireGuard VPN, module 1.0.20200729 (version bump), tools 1.0.20200827 (version bump)
 
 -- libcurl (curl) version bump to 7.72.0, security fix: CVE-2020-8231
 
@@ -50,7 +56,7 @@ Released @TBD@
 
 -- iptables, version bump to 1.8.4
 
--- openldap, version bump to 2.4.51
+-- openldap, version bump to 2.4.52
 
 -- unbound (host), version bump to 1.11.0
 
@@ -64,6 +70,9 @@ Released @TBD@
 -- Asterisk 13.34.0 (no change) and 16.11.1 (no change)
 
 -- DAHDI, dahdi-linux 3.1.0 (version bump) and dahdi-tools 3.1.0 (version bump)
+   Note: Added patch to return support for (wctdm24xxp) TDM800P/AEX800 and TDM410P/AEX410 PCI cards.
+   Note: Added patch to return support for (wctdm) TDM400P PCI cards.
+   Note: Added patch to return support for (wcfxo) X100P PCI cards.
 
 -- pjsip 2.9 (no change)
 
