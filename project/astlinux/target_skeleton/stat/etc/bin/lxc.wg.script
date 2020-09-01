@@ -140,8 +140,8 @@ set_dns() {
   # Modified from wg-quick...
   [[ ${#DNS[@]} -gt 0 ]] || return 0
   if [[ "$(readlink $LXC_ROOTFS_PATH/etc/resolv.conf)" =~ "systemd" ]] ||
-     [[ "$(readlink $LXC_ROOTFS_PATH/etc/resolv.conf)" =~ "resolvconf" ]] &&
-     [[ "$(readlink $LXC_ROOTFS_PATH/etc/resolvconf/resolv.conf.d/original)" =~ "systemd" ]]; then
+     ( [[ "$(readlink $LXC_ROOTFS_PATH/etc/resolv.conf)" =~ "resolvconf" ]] &&
+       [[ "$(readlink $LXC_ROOTFS_PATH/etc/resolvconf/resolv.conf.d/original)" =~ "systemd" ]] ); then
     # Container has systemd-resolved installed so we will create a .conf file inside
     # /etc/systemd/resolved.conf.d and put DNS and Domain values in that.
     mkdir -p $LXC_ROOTFS_PATH/etc/systemd/resolved.conf.d
