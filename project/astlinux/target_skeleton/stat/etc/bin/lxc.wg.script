@@ -146,7 +146,7 @@ set_dns() {
     # /etc/systemd/resolved.conf.d and put DNS and Domain values in that.
     mkdir -p $LXC_ROOTFS_PATH/etc/systemd/resolved.conf.d
     ARGS=$(printf '[Resolve]\n' && printf 'DNS=%s\n' "${DNS[@]}" && [[ ${#DNS_SEARCH[@]} -gt 0 ]] && printf 'Domains=%s\n' "${DNS_SEARCH[*]}")
-    echo "$ARGS" > $LXC_ROOTFS_PATH/etc/systemd/resolved.conf.d/20-lxc-$INTERFACE.conf
+    echo "$ARGS" > $LXC_ROOTFS_PATH/etc/systemd/resolved.conf.d/20-lxc-$LXC_NET_PARENT.conf
     log_info "set container DNS using systemd-resolve $ARGS"
   elif [[ "$(readlink $LXC_ROOTFS_PATH/etc/resolv.conf)" =~ "resolvconf" ]]; then
     # Container has resolvconf installed but it is not backed by systemd.  We can put nameserver
@@ -245,6 +245,7 @@ fi
 if [ "$LXC_HOOK_SECTION" = "net" -a "$LXC_NET_TYPE" = "phys" -a "$LXC_HOOK_TYPE" = "down" -a -n "$LXC_NET_PARENT" ]; then
   ip link delete $LXC_NET_PARENT
   ip netns delete $LXC_PID
+  rm -f $LXC_ROOTFS_PATH/etc/systemd/resolved.conf.d/20-lxc-$LXC_NET_PARENT.conf
   log_info "network down - Deleted interface $LXC_NET_PARENT and link to LXC network namespace (RC=$?)"
 fi 
 
