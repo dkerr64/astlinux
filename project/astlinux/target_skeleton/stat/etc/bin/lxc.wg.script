@@ -136,17 +136,6 @@ set_mtu_up() {
   cmd ip link set mtu $(( mtu - 80 )) up dev "$INTERFACE"
 }
 
-resolvconf_iface_prefix() {
-  # Modified from wg-quick to prepend path to container rootfs as this runs
-  # in context of the host namespace.
-  [[ -f $LXC_ROOTFS_PATH/etc/resolvconf/interface-order ]] || return 0
-  local iface
-  while read -r iface; do
-    [[ $iface =~ ^([A-Za-z0-9-]+)\*$ ]] || continue
-    echo "${BASH_REMATCH[1]}." && return 0
-  done < $LXC_ROOTFS_PATH/etc/resolvconf/interface-order
-}
-
 set_dns() {
   # Modified from wg-quick...
   [[ ${#DNS[@]} -gt 0 ]] || return 0
