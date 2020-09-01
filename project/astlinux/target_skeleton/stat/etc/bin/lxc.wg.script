@@ -148,27 +148,34 @@ resolvconf_iface_prefix() {
 }
 
 set_dns() {
-  # Modified from wg-quick to prepend path to container rootfs as this runs
-  # in context of the host namespace.  But resolver needs to run in the container
+  # Modified from wg-quick...
   [[ ${#DNS[@]} -gt 0 ]] || return 0
-  if [[ "$(readlink $LXC_ROOTFS_PATH/etc/resolv.conf)" =~ "resolvconf" ]]; then
-    # Container has resolvconf installed so use that to setup DNS for the interface
-    { printf 'nameserver %s\n' "${DNS[@]}"
-      [[ ${#DNS_SEARCH[@]} -eq 0 ]] || printf 'search %s\n' "${DNS_SEARCH[*]}"
-      # we pipe this into resolveconf which must be run inside the container.  But container is not quite
-      # up and running yet... lxc-attach is blocked while we are still inside start-host hook.  So run it
-      # in background and use 'nohup' to make sure it is not terminated when this script ends.
-    } | nohup lxc-attach -n $LXC_NAME -- resolvconf -a "$(resolvconf_iface_prefix)$INTERFACE" -m 0 -x &>/dev/null &
-    log_info "container DNS set using resolvconf"
-# systemd method does not work because this hook is called before system init,
-# so the systemd environment is not running yet.
-#  elif [[ "$(readlink $LXC_ROOTFS_PATH/etc/resolv.conf)" =~ "systemd" ]]; then
-#    # Container has systemd-resolve installed so use that to setup DNS for the interface
-#    ARGS=($(printf ' -i %s' $INTERFACE && printf ' --set-dns %s' "${DNS[@]}" && [[ ${#DNS_SEARCH[@]} -gt 0 ]] && printf ' --set-domain %s' "${DNS_SEARCH[@]}"))
-#    nohup lxc-attach -n $LXC_NAME -- systemd-resolve ${ARGS[@]} &>/mnt/kd/test.txt &
-#    log_info "set container DNS using systemd-resolve ${ARGS[@]}"
+  if [[ "$(readlink $LXC_ROOTFS_PATH/etc/resolv.conf)" =~ "systemd" ]] ||
+     [[ "$(readlink $LXC_ROOTFS_PATH/etc/resolv.conf)" =~ "resolvconf" ]] &&
+     [[ "$(readlink $LXC_ROOTFS_PATH/etc/resolvconf/resolv.conf.d/original)" =~ "systemd" ]]; then
+    # Container has systemd-resolved installed so we will create a .conf file inside
+    # /etc/systemd/resolved.conf.d and put DNS and Domain values in that.
+    mkdir -p $LXC_ROOTFS_PATH/etc/systemd/resolved.conf.d
+    ARGS=$(printf '[Resolve]\n' && printf 'DNS=%s\n' "${DNS[@]}" && [[ ${#DNS_SEARCH[@]} -gt 0 ]] && printf 'Domains=%s\n' "${DNS_SEARCH[*]}")
+    echo "$ARGS" > $LXC_ROOTFS_PATH/etc/systemd/resolved.conf.d/20-lxc-$INTERFACE.conf
+    log_info "set container DNS using systemd-resolve $ARGS"
+  elif [[ "$(readlink $LXC_ROOTFS_PATH/etc/resolv.conf)" =~ "resolvconf" ]]; then
+    # Container has resolvconf installed but it is not backed by systemd.  We can put nameserver
+    # and search values inside /etc/resolvconf/resolv.conf.d/head
+    # But first we need to remove any existing nameserver or search entries, else we keep adding to the list.
+    HEAD='';
+    while read -r line || [[ -n $line ]]; do
+      line=${line%%\nameserver[[:space:]]*}
+      line=${line%%\search[[:space:]]*}
+      [[ -n $line ]] && HEAD+="$line"$'\n'
+    done < "$LXC_ROOTFS_PATH/etc/resolvconf/resolv.conf.d/head"
+    ARGS=$(printf 'nameserver %s\n' "${DNS[@]}" && [[ ${#DNS_SEARCH[@]} -gt 0 ]] && printf 'search %s\n' "${DNS_SEARCH[*]}")
+    echo "$HEAD$ARGS" > $LXC_ROOTFS_PATH/etc/resolvconf/resolv.conf.d/head
+    log_info "container DNS set using resolvconf $ARGS"
   else
-    log_warn "resolvconf is required in container, DNS not setup"
+    # TODO... if /etc/resolv.conf is not a softlink, then we can add values
+    # directly to this file.
+    log_warn "systemd or resolvconf is required in container, DNS not setup"
   fi
 }
 
