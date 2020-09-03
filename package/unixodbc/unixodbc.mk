@@ -3,7 +3,8 @@
 # unixodbc
 #
 #############################################################
-UNIXODBC_VERSION = 2.3.7
+
+UNIXODBC_VERSION = 2.3.8
 UNIXODBC_SOURCE = unixODBC-$(UNIXODBC_VERSION).tar.gz
 UNIXODBC_SITE = http://www.unixodbc.org
 UNIXODBC_DEPENDENCIES = host-bison host-flex libtool $(if $(BR2_PACKAGE_FLEX),flex)
@@ -14,6 +15,7 @@ UNIXODBC_CONF_OPT = \
 	--disable-static \
 	--disable-gui \
 	--disable-readline \
+	--disable-editline \
 	--with-pic \
 	--disable-drivers
 
@@ -38,5 +40,10 @@ define UNIXODBC_UNINSTALL_TARGET_CMDS
         rm -f $(TARGET_DIR)/etc/ODBCDataSources
         rm -f $(TARGET_DIR)/etc/runlevels/default/S01unixodbc
 endef
+
+define UNIXODBC_STAGING_UNIXODBC_CONF_FIXUP
+	$(SED) "s,^#define UNIXODBC_SOURCE.*,/* #undef UNIXODBC_SOURCE */," $(STAGING_DIR)/usr/include/unixodbc_conf.h
+endef
+UNIXODBC_POST_INSTALL_STAGING_HOOKS += UNIXODBC_STAGING_UNIXODBC_CONF_FIXUP
 
 $(eval $(call AUTOTARGETS,package,unixodbc))
