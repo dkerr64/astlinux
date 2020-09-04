@@ -4,7 +4,7 @@
 #
 ################################################################################
 
-ACME_VERSION = 2.8.6
+ACME_VERSION = 2.8.7
 ACME_SOURCE = acme.sh-$(ACME_VERSION).tar.gz
 ACME_SITE = https://github.com/acmesh-official/acme.sh/archive/$(ACME_VERSION)
 
@@ -18,11 +18,13 @@ define ACME_INSTALL_TARGET_CMDS
 	$(INSTALL) -D -m 0755 package/acme/acme-client.sh $(TARGET_DIR)/usr/sbin/acme-client
 	$(INSTALL) -D -m 0755 $(@D)/acme.sh $(TARGET_DIR)/stat/etc/acme/acme.sh
 	cp -a $(@D)/dnsapi $(TARGET_DIR)/stat/etc/acme/
+	cp -a $(@D)/notify $(TARGET_DIR)/stat/etc/acme/
 	ln -sf /mnt/kd/acme $(TARGET_DIR)/etc/acme
 	# Remove non-required dnsapi files
 	rm -f $(addprefix $(TARGET_DIR)/stat/etc/acme/dnsapi/, $(ACME_REMOVE_TARGET_DNSAPI))
-	# Make the dnsapi scripts non-executable, they are sourced by acme.sh
+	# Make the scripts non-executable, they are sourced by acme.sh
 	find $(TARGET_DIR)/stat/etc/acme/dnsapi/ -name '*.sh' -print0 | xargs -0 chmod 644
+	find $(TARGET_DIR)/stat/etc/acme/notify/ -name '*.sh' -print0 | xargs -0 chmod 644
 endef
 
 define ACME_UNINSTALL_TARGET_CMDS
