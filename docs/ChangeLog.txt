@@ -20,11 +20,15 @@ Released @TBD@
 
 -- Linux Kernel 4.19.142 (major bump)
 
+-- RUNNIX, version bump to runnix-0.6.2-rc1, with Linux Kernel 4.19.142, e2fsprogs 1.45.6, util-linux 2.33.2
+
 -- igb, version bump to 5.3.6, Intel Gigabit Ethernet Network Driver
 
 -- Remove r8168 RealTek NIC driver, use kernel built-in r8169 NIC driver instead
 
 -- linux-firmware, new package, provide binary blobs for r8169 and tg3 NIC drivers
+
+-- acme-client, version 2.8.7, add email notify support.
 
 -- ethtool, version bump to 5.8
 
@@ -46,15 +50,17 @@ Released @TBD@
 
 -- util-linux, version bump to 2.33.2, add 'nsenter' command
 
--- unixodbc, version bump to 2.3.8
+-- unixodbc, version bump to 2.3.9
+
+-- zabbix, version bump to 4.0.24
 
 ** Networking
 
--- WireGuard VPN, module 1.0.20200729 (version bump), tools 1.0.20200827 (version bump)
+-- WireGuard VPN, module 1.0.20200908 (version bump), tools 1.0.20200827 (version bump)
 
 -- libcurl (curl) version bump to 7.72.0, security fix: CVE-2020-8231
 
--- chrony, version bump to 4.0-pre3
+-- chrony, version bump to 4.0-pre4
 
 -- iperf3, version bump to 3.9
 
@@ -64,7 +70,7 @@ Released @TBD@
 
 -- iptables, version bump to 1.8.4
 
--- openldap, version bump to 2.4.52
+-- openldap, version bump to 2.4.53
 
 -- unbound (host), version bump to 1.11.0
 
