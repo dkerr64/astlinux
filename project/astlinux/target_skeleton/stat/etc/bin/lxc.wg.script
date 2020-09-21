@@ -203,8 +203,9 @@ if [ "$LXC_HOOK_SECTION" = "lxc" -a "$LXC_HOOK_TYPE" = "pre-start" ]; then
   awk -F'[= ]+' '{for (I=1;I<=NF;I++) if ($I == "lxc\.mount\.entry") {print $(I+1)};}' | ## find word after "lxc.mount.entry="
   tr '\n' '\0' | xargs -0 -n1 -r |              ## replace newlines with null so xargs can delimit on null and not whitespace
   while read DIR; do
+    [[ -e $DIR && -d $DIR ]] || mkdir $DIR;                     ## if host directory does not exist create it.
     if ! $(findmnt -o TARGET -u -n $DIR >/dev/null 2>&1); then  ## check whether already mounted
-      mount "$DIR" >/dev/null 2>&1              ## don't worry about errors, just dump to null.
+      mount "$DIR" >/dev/null 2>&1                              ## don't worry about errors, just dump to null.
       log_info "pre-start - Mounted remote CIFS or NFS share $DIR (RC=$?)"
     fi
   done
