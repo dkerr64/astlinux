@@ -552,7 +552,8 @@ require_once '../common/header.php';
     'mode/asterisk/asterisk.js',
     'mode/properties/properties.js',
     'mode/shell/shell.js',
-    'mode/xml/xml.js'
+    'mode/xml/xml.js',
+    'mode/perl/perl.js'
   );
   if (($cm_theme = getPREFdef($global_prefs, 'edit_text_codemirror_theme')) !== '') {
     $codemirror_files[] = "theme/$cm_theme.css";
@@ -610,6 +611,9 @@ require_once '../common/header.php';
       cm.setOption("mode", "text/x-asterisk");
     } else if (name.search('[.]xml$') >= 0) {
       cm.setOption("mode", "text/xml");
+    } else if (name.search('[.]pl$') >= 0 ||
+               name.search('[.]pm$') >= 0) {
+      cm.setOption("mode", "text/x-perl");
     } else if (name.search('^/mnt/kd/rc[.]') >= 0 ||
                name.search('[.]script$') >= 0 ||
                name.search('[.]sh$') >= 0 ||
