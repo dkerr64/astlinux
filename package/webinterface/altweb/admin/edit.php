@@ -553,7 +553,12 @@ require_once '../common/header.php';
     'mode/properties/properties.js',
     'mode/shell/shell.js',
     'mode/xml/xml.js',
-    'mode/perl/perl.js'
+    'mode/perl/perl.js',
+    'mode/css/css.js',
+    'mode/javascript/javascript.js',
+    'mode/htmlmixed/htmlmixed.js',
+    'mode/clike/clike.js',
+    'mode/php/php.js'
   );
   if (($cm_theme = getPREFdef($global_prefs, 'edit_text_codemirror_theme')) !== '') {
     $codemirror_files[] = "theme/$cm_theme.css";
@@ -614,6 +619,8 @@ require_once '../common/header.php';
     } else if (name.search('[.]pl$') >= 0 ||
                name.search('[.]pm$') >= 0) {
       cm.setOption("mode", "text/x-perl");
+    } else if (name.search('[.]php$') >= 0) {
+      cm.setOption("mode", "application/x-httpd-php");
     } else if (name.search('^/mnt/kd/rc[.]') >= 0 ||
                name.search('[.]script$') >= 0 ||
                name.search('[.]sh$') >= 0 ||
