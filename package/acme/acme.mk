@@ -37,6 +37,7 @@ endef
 define ACME_INSTALL_TARGET_CMDS
 	$(INSTALL) -D -m 0644 package/acme/deploy/astlinux.sh $(TARGET_DIR)/stat/etc/acme/deploy/astlinux.sh
 	$(INSTALL) -D -m 0644 package/acme/deploy/custom.sh $(TARGET_DIR)/stat/etc/acme/deploy/custom.sh
+	$(INSTALL) -D -m 0644 package/acme/notify/astlinux.sh $(TARGET_DIR)/stat/etc/acme/notify/astlinux.sh
 	$(INSTALL) -D -m 0644 $(@D)/deploy/ssh.sh $(TARGET_DIR)/stat/etc/acme/deploy/ssh.sh
 	$(INSTALL) -D -m 0644 $(@D)/notify/mail.sh $(TARGET_DIR)/stat/etc/acme/notify/mail.sh
 	$(INSTALL) -D -m 0755 package/acme/acme-client.sh $(TARGET_DIR)/usr/sbin/acme-client
