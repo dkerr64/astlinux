@@ -96,7 +96,7 @@ gen_upsmon_conf()
   elif [ -x /mnt/kd/ups/upsnotify ]; then
     notify="/mnt/kd/ups/upsnotify"
   else
-    notify="/stat/etc/ups/upsnotify"
+    notify="/usr/sbin/system-notify"
   fi
 
   echo "RUN_AS_USER root
@@ -128,7 +128,7 @@ FINALDELAY 5
 gen_upssched_conf()
 {
   echo "##########
-## By default the upsmon NOTIFYCMD is set to the system /stat/etc/ups/upsnotify script.
+## By default the upsmon NOTIFYCMD is set to the system /usr/sbin/system-notify script.
 ## If a custom /mnt/kd/ups/upsnotify script exists and is executable, it will be used instead.
 ## Alternatively, if the /mnt/kd/ups/upssched.conf file exists then NOTIFYCMD will call upssched instead.
 ##########
