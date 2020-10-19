@@ -1,0 +1,434 @@
+#!/bin/bash
+######################################################################
+#
+# system-notify
+#
+# Copyright 2020 (c) David A. Kerr
+# https://github.com/dkerr64
+#
+# Astlinux system notify script.  Sends push notification and/or
+# email on behalf of a service running on Astlinux.
+#
+# Command line parameters...
+#  MSG="$1"
+#  BODY="$2"         ## optional for email body text
+#
+# Supported services:
+#  bash/sh (command line)
+#  acme
+#  upsmon
+#  wanfailover
+#  tarsnapbackup
+#  safe_asterisk
+#  asterisksipmonitor
+#  fossilcommit
+#  <<TODO>> ddclient (will require patch to ddclient)
+#
+# Push notifications are sent using the Pushover.net service.  Sign
+# up for an account at https://pushover.net and set in (TODO gui) or user.conf... 
+#  PUSHOVER_USER_KEY="<value>"
+#  PUSHOVER_APP_TOKEN="<value>"
+#  PUSHOVER_PRIORITY="<value>"   ## optional
+#  PUSHOVER_DEVICE="<value>"     ## optional
+#  PUSHOVER_SOUND="<value>"      ## optional
+#  PUSHOVER_URL="<value>"        ## optional
+#  PUSHOVER_IMAGE="<value>"      ## optional
+# If you want different sounds, priorties, etc. for each notifying
+# service then handle it in a user script.
+#
+# Email is sent using SMTP server configured for Astlinux.
+#
+# User may provide script file to add additonal notification
+# services (e.g. a SMS message), optionally suppress Pushover
+# and Email notifications, and modify Pushover settings...
+SYSTEM_NOTIFY_SCRIPTFILE="/mnt/kd/system-notify.script"
+# User script file returns:
+#  Bit 1: 0x01 - 0 script executed normally, 1 error condition
+#  Bit 2: 0x02 - 1 script sent a notification
+#  Bit 3: 0x04 - 1 suppress sending of Pushover notification
+#  Bit 4: 0x08 - 1 suppress sending of email notification
+#  127 - user script not executed
+#  If bit 1 set (error condition), bits 2, 3 and 4 ignored.
+######################################################################
+
+PUSHOVER_API="https://api.pushover.net/1/messages.json"
+
+. /etc/rc.conf
+
+# Command line parameters...
+MSG="$1"
+BODY="$2"         ## optional
+
+# Myself...
+PROGRAM="${0##*/}"
+
+# And who called me...
+PARENT="$(ps pid,comm,args | perl -ne "s/^\s*$PPID\s*\w*\s*({\w*?}\s|)// && print")"
+SERVICE="${PARENT%%[[:space:]]*}"   # first word in command line
+SERVICE="${SERVICE##*/}"            # remove any path in front of command
+SERVICE="${SERVICE%.*}"             # remove anything after last period (e.g .sh, .pl, .script)
+SERVICE="${SERVICE//[^A-Za-z0-9_]}" # remove any characters not permitted in shell variable name
+PARENT="${PARENT#*[[:space:]]}"     # the rest of the command line
+if [ "$SERVICE" = "sh" -o "$SERVICE" = "bash" -a -n "$PARENT" ]; then
+  # if called from bash or sh then the actual calling service may be first argument...
+  SERVICE="${PARENT%%[[:space:]]*}"
+  SERVICE="${SERVICE##*/}"
+  SERVICE="${SERVICE%.*}"
+  SERVICE="${SERVICE//[^A-Za-z0-9_]}"
+fi
+
+# Bail out now if no message passed in...
+if [ -z "$MSG" ]; then
+  logger -s -t "$PROGRAM" -p user.err "Unable to send notification for $SERVICE: Missing text to send"
+  exit 1
+fi
+
+######################################################################
+EMAIL_TO=""
+EMAIL_FROM=""
+# Initial state is that neither push nor email are sent yet...
+PUSH_RC=1
+EMAIL_RC=1
+
+######################################################################
+# Test if variable name passed in as $1 is set to a true value
+# (yes, 1, true). If undefined use a default value in $2
+######################################################################
+test_true() {
+  local result=${!1:=$2}
+  if [ "$result" = "yes" -o "$result" = "1" -o "$result" = "true" ]; then
+    echo 1
+    return 0
+  else
+    return 1
+  fi
+}
+
+######################################################################
+# Obtain settings for whether to send PUSH or EMAIL for this SERVICE
+######################################################################
+SEND_PUSHOVER=$(test_true "NOTIFY_PUSHOVER_${SERVICE^^}" false)
+SEND_EMAIL=$(test_true "NOTIFY_EMAIL_${SERVICE^^}" true)
+
+######################################################################
+# Extract value from key in a JSON formatted string.
+# supports top-level keys only (no nested sections)
+# supports arrays of values by iterating over the array and appending
+# all values separated by a semicolon.
+# Uses Perl decode_json() function.
+######################################################################
+_json() {
+  local json="$1"
+  local key="$2"
+  local value=""
+
+  value="$(echo "$json" | 
+           perl -MJSON::PP=decode_json \
+                -e '$/=undef;
+                my $data=<>;
+                my $json = decode_json($data);
+                print $json->{'$key'};')"
+  if [[ $value =~ ^ARRAY\( ]]; then
+    local sep=""
+    local subval=""
+    local i=0
+    value=""
+    while true; do
+      subval="$(echo "$json" | 
+                perl -MJSON::PP=decode_json \
+                     -e '$/=undef;
+                     my $data=<>;
+                     my $json = decode_json($data);
+                     print $json->{'$key'}['$i'];')"
+      [[ -z "$subval" ]] && break;
+      value="${value}${sep}${subval}"
+      sep=";"
+      (( i+=1 ))
+    done
+  fi
+  echo $value
+  return 0
+}
+
+######################################################################
+# Get clean set of EMAIL_TO and EMAIL_FROM addresses
+######################################################################
+email_addrs() {
+  EMAIL_TO="${1:-$SYSTEM_NOTIFY}"         # Use provided TO address or SYSTEM_NOTIFY
+  EMAIL_FROM="${2:-$SYSTEM_NOTIFY_FROM}"  # Use provided FROM address or SYSTEM_NOTIFY_FROM
+  # Extract from possible <a@b.tld> format
+  EMAIL_FROM="${EMAIL_FROM##*<}"
+  EMAIL_FROM="${EMAIL_FROM%%>*}"
+
+  # If still no FROM address, use a "noreply" address
+  if [ -z "$EMAIL_FROM" -a -n "$SMTP_DOMAIN" ]; then
+    EMAIL_FROM="noreply@$SMTP_DOMAIN"
+  fi
+}
+
+######################################################################
+#  Send email.  Returns 0 for success, 1 if email not sent.
+######################################################################
+send_email() {
+  local prefix="$1" subject="$2" body="$3"
+
+  ##------------------------------------------------------------------
+  _email_header() {
+    local prefix="$1" to="$2" from="$3" subject="$4" body="$5"
+
+    echo "To: ${to}"
+    if [ -n "${from}" ]; then
+      echo "From: \"${prefix}-$HOSTNAME\" <${from}>"
+    fi
+    echo "Subject: $prefix on $HOSTNAME: ${subject}"
+    if [ -n "${body}" ]; then
+      echo # blank line required after header
+      echo "${body}"
+    fi
+  }
+
+  ##------------------------------------------------------------------
+  EMAIL_RC=1  # initial state is email not sent
+  if [ -n "$SEND_EMAIL" ]; then
+    local TO="" IFS
+    unset IFS
+    for TO in $EMAIL_TO; do
+      (
+        echo "$(_email_header "$prefix" "$TO" "$EMAIL_FROM" "$subject" "$body")"
+        echo # blank line required after header
+        echo "[Generated at $(date "+%H:%M:%S on %B %d, %Y")]"
+      ) | sendmail -t
+      if [[ $? -eq 0 ]]; then
+        logger -s -t "$PROGRAM" -p user.info "${SERVICE} sent ${TO} email msg: ${subject}"
+        EMAIL_RC=0
+      else
+        logger -s -t "$PROGRAM" -p user.err "${SERVICE} failed to send ${TO} email msg: ${subject}, sendmail return code: ${$?}"
+      fi
+    done
+  fi
+  unset -f _email_header
+  return $EMAIL_RC
+}
+
+######################################################################
+# Send a push notification using the Pushover service (https://pushover.net)
+# Calls a user SYSTEM_NOTIFY_SCRIPTFILE if it exists and is executable.
+#
+# Returns 0 for success, 1 if push not sent.
+######################################################################
+send_pushover() {
+  local PUSHOVER_MSG="$1"
+  local CURL_RC=0
+  local HTTP_RC=""
+  local JSON_REPLY=""
+  local SCRIPT_RC=127  # initial state, script not run
+  PUSH_RC=1  # initial state is notification not sent
+
+  # Set defaults to whatever is set in rc.conf for SERVICE
+  local var svc_var IFS
+  unset IFS
+  for var in "PRIORITY" "URL" "IMAGE" "SOUND" "DEVICE"; do
+    svc_var="PUSHOVER_${var}_${SERVICE^^}"
+    [[ -n "${!svc_var}" ]] && eval PUSHOVER_${var}="${!svc_var}";
+  done
+
+  ##------------------------------------------------------------------
+  _OPTS() {
+    echo "PUSHOVER_APP_TOKEN=\"${PUSHOVER_APP_TOKEN}\" \
+          PUSHOVER_USER_KEY=\"${PUSHOVER_USER_KEY}\" \
+          PUSHOVER_MSG=\"${PUSHOVER_MSG}\" \
+          PUSHOVER_PRIORITY=\"${PUSHOVER_PRIORITY}\" \
+          PUSHOVER_URL=\"${PUSHOVER_URL}\" \
+          PUSHOVER_IMAGE=\"${PUSHOVER_IMAGE}\" \
+          PUSHOVER_DEVICE=\"${PUSHOVER_DEVICE}\" \
+          PUSHOVER_SOUND=\"${PUSHOVER_SOUND}\" "
+  }
+
+  _USER_SCRIPT() {
+    local STATE=$1
+    local OPTS=""
+    SCRIPT_RC=127  # initial state, script not run
+    if [ -x $SYSTEM_NOTIFY_SCRIPTFILE ]; then
+      OPTS="$($SYSTEM_NOTIFY_SCRIPTFILE "$SERVICE" "$STATE" "$(_OPTS)" "$EMAIL_TO" "$EMAIL_FROM" "$BODY" "$CURL_RC" "$HTTP_RC" "$JSON_REPLY")"
+      SCRIPT_RC=$?
+      if (( $SCRIPT_RC & 0x01 )); then
+        logger -s -t "$PROGRAM" -p user.err "Script file ${SYSTEM_NOTIFY_SCRIPTFILE} failed for ${STATE} / ${SERVICE}: Return code: $SCRIPT_RC"
+        SCRIPT_RC=1  # bit 1 set, error condition, ignore other RC values
+      else
+        eval "$OPTS"
+      fi
+    fi
+    return $SCRIPT_RC
+  }
+
+  ##------------------------------------------------------------------
+  if [ -z "$SEND_PUSHOVER" ]; then
+    _USER_SCRIPT "PUSH_DISABLED"
+  else
+    # Push notification enabled for this SERVICE,
+    if [ -z "$PUSHOVER_USER_KEY" -o -z "$PUSHOVER_APP_TOKEN" ]; then
+      logger -s -t "$PROGRAM" -p user.err "Unable to send Pushover notification for ${SERVICE}: Missing Pushover user key or app token"
+      _USER_SCRIPT "PUSH_MISSING_PARAMS"
+    else
+      _USER_SCRIPT "PUSH_SENDING"
+      if [[ $SCRIPT_RC -ne 127 ]] && (( $SCRIPT_RC & 0x04 )); then
+        # User script wants to suppress sending further notifications
+        logger -s -t "$PROGRAM" -p user.warn "Script file ${SYSTEM_NOTIFY_SCRIPTFILE} suppressed sending Pushover notification for ${SERVICE}: Return code: $SCRIPT_RC"
+      else
+        JSON_REPLY="$(curl --silent \
+                    --write-out "\n\n%{http_code}"\
+                    --form-string "token=${PUSHOVER_APP_TOKEN}"\
+                    --form-string "user=${PUSHOVER_USER_KEY}"\
+                    --form-string "message=${PUSHOVER_MSG}"\
+                    ${PUSHOVER_PRIORITY:+--form-string "priority=${PUSHOVER_PRIORITY}"}\
+                    ${PUSHOVER_URL:+--form-string "url=${PUSHOVER_URL}"}\
+                    ${PUSHOVER_IMAGE:+--form "attachment=@${PUSHOVER_IMAGE}"}\
+                    ${PUSHOVER_DEVICE:+--form-string "device=${PUSHOVER_DEVICE}"}\
+                    ${PUSHOVER_SOUND:+--form-string "sound=${PUSHOVER_SOUND}"}\
+                    ${PUSHOVER_API})"
+        CURL_RC=$?
+        [[ $JSON_REPLY =~ ($'\n\n'[0-9]+)$ ]]          # Match the HTTP return code at end of reply
+        HTTP_RC="${BASH_REMATCH[0]#$'\n\n'}"           # Remove the two newlines
+        JSON_REPLY="${JSON_REPLY%${BASH_REMATCH[0]}}"  # Strip HTTP code from end of text body
+
+        if [ $CURL_RC -ne 0 ]; then
+          # Curl failed log error
+          logger -s -t "$PROGRAM" -p user.err "Unable to send Pushover notification for ${SERVICE}: CURL return code: $CURL_RC"
+        else
+          # Curl succeeded but need to check reply to see if it worked
+          if [ "$HTTP_RC" = "200" -a $(_json "$JSON_REPLY" "status") = 1 ]; then
+            logger -s -t "$PROGRAM" -p user.info "${SERVICE} sent pushover msg: ${PUSHOVER_MSG}"
+            PUSH_RC=0
+          else
+            logger -s -t "$PROGRAM" -p user.err "${SERVICE} failed to send pushover msg: ${PUSHOVER_MSG}, HTTP return code: ${HTTP_RC}, Pushover status: $(_json "$JSON_REPLY" "status"), Reason: $(_json "$JSON_REPLY" "errors")"
+          fi
+        fi
+        # After senting push, inform user script of status 
+        if [ $PUSH_RC -eq 0 ]; then
+          _USER_SCRIPT "PUSH_SUCCESS"
+        else
+          _USER_SCRIPT "PUSH_FAILED"
+        fi
+      fi
+    fi 
+  fi
+  if [ $SCRIPT_RC -ne 127 -a $SCRIPT_RC -ne 1 ]; then
+    # User script file executed without error, check return codes
+    if (( $SCRIPT_RC & 0x02 )); then
+      # Bit 2 set, user script successfully sent a notification
+      logger -s -t "$PROGRAM" -p user.info "Script file ${SYSTEM_NOTIFY_SCRIPTFILE} sent msg for ${SERVICE}: ${PUSHOVER_MSG}"
+      PUSH_RC=0
+    fi
+    # Bit 3 test (( $SCRIPT_RC & 0x04 )) checked before sending pushover
+    if (( $SCRIPT_RC & 0x08 )); then
+      # Bit 4 set, user script wants to suppress sending email
+      logger -s -t "$PROGRAM" -p user.warn "Script file ${SYSTEM_NOTIFY_SCRIPTFILE} suppressed sending email notification for ${SERVICE}: Return code: $SCRIPT_RC"
+      SEND_MAIL=0
+    fi
+  fi
+  unset -f _OPTS _USER_SCRIPT
+  return $PUSH_RC
+}
+
+######################################################################
+#
+# The main body of the script...
+#
+######################################################################
+if [ "$SERVICE" = "acme" ]; then
+  ##------------------------------------------------------------------
+  # SERVICE=acme
+  # passes in message in $1 ($MSG)
+  # and body for email in $2 ($BODY)
+  ##------------------------------------------------------------------
+  email_addrs "$ACME_ACCOUNT_EMAIL"
+  send_pushover "$MSG"
+  send_email "Acme" "$MSG" "$BODY"
+
+elif [ "$SERVICE" = "upsmon" ]; then
+  ##------------------------------------------------------------------
+  # SERVICE=upsmon
+  # passes in message in $1 ($MSG)
+  #  UPSNAME        # exported by upsmon
+  #  NOTIFYTYPE     # exported by upsmon
+  ##------------------------------------------------------------------
+  echo "$(date "+%Y-%m-%d %H:%M:%S") - $NOTIFYTYPE: $MSG" >>/var/log/ups-status.log
+  BODY=$(
+        echo "UPS on '$HOSTNAME': $MSG"
+        echo
+        echo "Event: $NOTIFYTYPE"
+        if [ -n "$UPSNAME" ]; then
+          echo "======== $UPSNAME ========"
+          upsc $UPSNAME 2>&1
+          echo "========"
+        fi
+       )
+  email_addrs "$UPS_NOTIFY" "$UPS_NOTIFY_FROM"
+  send_pushover "$MSG"
+  send_email "UPS" "$MSG" "$BODY"
+
+elif [ "$SERVICE" = "wanfailover" ]; then
+  ##------------------------------------------------------------------
+  # SERVICE=wanfailover
+  # passes in message in $1 ($MSG)
+  # and detail in $2 ($BODY)
+  ##------------------------------------------------------------------
+  email_addrs "$WAN_FAILOVER_NOTIFY" "$WAN_FAILOVER_NOTIFY_FROM"
+  send_pushover "$MSG" 
+  send_email "System" "$MSG" "$BODY"
+
+elif [ "$SERVICE" = "tarsnapbackup" ]; then
+  ##------------------------------------------------------------------
+  # SERVICE=tarsnapbackupsh
+  # passes in message in $1 ($MSG)
+  ##------------------------------------------------------------------
+  email_addrs "$BACKUP_NOTIFY" "$BACKUP_NOTIFY_FROM"
+  send_pushover "$MSG"
+  send_email "Backup" "$MSG" "Backup on '$HOSTNAME': $MSG."
+
+elif [ "$SERVICE" = "asterisksipmonitor" ]; then
+  ##------------------------------------------------------------------
+  # SERVICE=asterisksipmonitor
+  # passes in message in $1 ($MSG)
+  # and detail in $2 ($BODY)
+  ##------------------------------------------------------------------
+  email_addrs "$SAFE_ASTERISK_NOTIFY" "$SAFE_ASTERISK_NOTIFY_FROM"
+  send_pushover "$MSG"
+  send_email "SIP" "$MSG" "$BODY"
+
+elif [ "$SERVICE" = "safe_asterisk" ]; then
+  ##------------------------------------------------------------------
+  # SERVICE=safe_asterisk
+  # passes in message in $1 ($MSG)
+  # and detail in $2 ($BODY)
+  ##------------------------------------------------------------------
+  email_addrs "$SAFE_ASTERISK_NOTIFY" "$SAFE_ASTERISK_NOTIFY_FROM"
+  send_pushover "$MSG"
+  send_email "Asterisk" "$MSG" "$BODY"
+
+elif [ "$SERVICE" = "fossilcommit" ]; then
+  ##------------------------------------------------------------------
+  # SERVICE=fossilcommit
+  # passes in message in $1 ($MSG)
+  # and detail in $2 ($BODY)
+  ##------------------------------------------------------------------
+  email_addrs "$FOSSIL_NOTIFY" "$FOSSIL_NOTIFY_FROM"
+  send_pushover "$MSG"
+  send_email "Fossil Commit" "$MSG" "$BODY"
+
+else
+  ##------------------------------------------------------------------
+  # SERVICE= unknown or default (incl. bash, sh, etc)
+  ##------------------------------------------------------------------
+  if [ "$SERVICE" = "bash" -o "$SERVICE" = "sh" ]; then
+    # change default for PUSH notification from false to true...
+    SEND_PUSHOVER=$(test_true "NOTIFY_PUSHOVER_${SERVICE^^}" true)
+  fi
+  email_addrs # no specific SERVICE email addresses so default to SYSTEM addresses
+  send_pushover "$MSG"
+  send_email "Astlinux" "$MSG" "$BODY"
+
+fi
+
+[[ $PUSH_RC -ne 0 ]] && PUSH_RC=$EMAIL_RC # return 0 (success) if either push or email was successful
+exit $PUSH_RC
