@@ -25,16 +25,6 @@ THRESHOLD="${WAN_FAILOVER_THRESHOLD:-3}"
 SECONDARY_DELAY="${WAN_FAILOVER_SECONDARY_DELAY:-900}"
 PRIMARY_DELAY="${WAN_FAILOVER_PRIMARY_DELAY:-60}"
 VERBOSITY="${WAN_FAILOVER_VERBOSITY:-6}"
-NOTIFY="$WAN_FAILOVER_NOTIFY"                # Who to notify with email alerts, space separate
-NOTIFY_FROM="$WAN_FAILOVER_NOTIFY_FROM"      # From email header (optional)
-
-# Extract from possible <a@b.tld> format
-NOTIFY_FROM="${NOTIFY_FROM##*<}"
-NOTIFY_FROM="${NOTIFY_FROM%%>*}"
-
-if [ -z "$NOTIFY_FROM" -a -n "$SMTP_DOMAIN" ]; then
-  NOTIFY_FROM="noreply@$SMTP_DOMAIN"
-fi
 
 TARGETS_FAILED=0
 TEST_INTERVAL=$INTERVAL
@@ -78,22 +68,6 @@ log_all() {
 
   log "$@"
   echo "wan-failover: $2" >&2
-}
-
-log2mail() {
-  local TO subject="$1" body="$2" IFS
-
-  unset IFS
-  for TO in $NOTIFY; do
-    echo "To: ${TO}${NOTIFY_FROM:+
-From: \"WAN-$HOSTNAME\" <$NOTIFY_FROM>}
-Subject: $subject
-
-$body
-
-[Generated at $(date "+%H:%M:%S on %B %d, %Y")]" | \
-    sendmail -t
-  done
 }
 
 log2syslog() {
@@ -299,7 +273,7 @@ switch() {
     idle_wait 10
     MESG="Primary WAN link failed on '$HOSTNAME'. Switched to secondary link."
     BODY="$(gen_body_text) $rtn_str"
-    log2mail "$MESG" "$BODY"
+    system-notify "$MESG" "$BODY"
     log INFO "$MESG"
     log DEBUG "Failover Hysteresis started, sleeping for $SECONDARY_DELAY seconds."
     idle_wait $SECONDARY_DELAY
@@ -321,7 +295,7 @@ switch() {
     idle_wait 10
     MESG="Primary WAN link OK on '$HOSTNAME'. Switched back to primary link."
     BODY="$(gen_body_text) $rtn_str"
-    log2mail "$MESG" "$BODY"
+    system-notify "$MESG" "$BODY"
     log INFO "$MESG"
     log DEBUG "Failback Hysteresis started, sleeping for $PRIMARY_DELAY seconds."
     idle_wait $PRIMARY_DELAY
