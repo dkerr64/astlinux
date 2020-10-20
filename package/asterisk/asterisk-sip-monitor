@@ -18,19 +18,6 @@ PIDFILE="/var/run/asterisk-sip-monitor.pid"
 
 ALERT_SENT_FILE="/var/tmp/asterisk_sip_monitor_alert"
 
-# Use same email settings as with Safe Asterisk
-#
-NOTIFY="$SAFE_ASTERISK_NOTIFY"                # Who to notify with alerts, space separate
-NOTIFY_FROM="$SAFE_ASTERISK_NOTIFY_FROM"      # From email header (optional)
-
-# Extract from possible <a@b.tld> format
-NOTIFY_FROM="${NOTIFY_FROM##*<}"
-NOTIFY_FROM="${NOTIFY_FROM%%>*}"
-
-if [ -z "$NOTIFY_FROM" -a -n "$SMTP_DOMAIN" ]; then
-  NOTIFY_FROM="asterisk@$SMTP_DOMAIN"
-fi
-
 # Example: "sip show registry"
 # chiv1.voippath.com:5060       xxxx    135 Registered      Sat, 21 May 2011 10:21:11
 # inbound18.bigtel.net:5060     xxxx     45 Registered      Sat, 21 May 2011 10:22:42
@@ -100,55 +87,19 @@ idle_wait()
 }
 
 email_failure() {
-  local TO subject="$1" IFS
+  system-notify "$1" "Warning! Your PBX '$HOSTNAME' has detected that a SIP FAILURE has occurred.
 
-  unset IFS
-  for TO in $NOTIFY; do
-    echo "To: ${TO}${NOTIFY_FROM:+
-From: \"SIP-$HOSTNAME\" <$NOTIFY_FROM>}
-Subject: $subject
-
-Warning! Your PBX '$HOSTNAME' has detected that a SIP FAILURE has occurred.
-
-$ALERTS
-
-[Generated at $(date "+%H:%M:%S on %B %d, %Y")]" | \
-    sendmail -t
-  done
+$ALERTS"
 }
 
 email_status() {
-  local TO subject="$1" IFS
+  system-notify "$1" "SIP Status Change! Your PBX '$HOSTNAME' has an updated list of SIP FAILURE's.
 
-  unset IFS
-  for TO in $NOTIFY; do
-    echo "To: ${TO}${NOTIFY_FROM:+
-From: \"SIP-$HOSTNAME\" <$NOTIFY_FROM>}
-Subject: $subject
-
-SIP Status Change! Your PBX '$HOSTNAME' has an updated list of SIP FAILURE's.
-
-$ALERTS
-
-[Generated at $(date "+%H:%M:%S on %B %d, %Y")]" | \
-    sendmail -t
-  done
+$ALERTS"
 }
 
 email_ok() {
-  local TO subject="$1" IFS
-
-  unset IFS
-  for TO in $NOTIFY; do
-    echo "To: ${TO}${NOTIFY_FROM:+
-From: \"SIP-$HOSTNAME\" <$NOTIFY_FROM>}
-Subject: $subject
-
-Your PBX '$HOSTNAME' has resolved previous SIP issues.
-
-[Generated at $(date "+%H:%M:%S on %B %d, %Y")]" | \
-    sendmail -t
-  done
+  system-notify "$1" "Your PBX '$HOSTNAME' has resolved previous SIP issues."
 }
 
 monitor_sip() {

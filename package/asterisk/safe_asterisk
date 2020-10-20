@@ -5,8 +5,6 @@
 CLIARGS="$@"                                  # Grab any args passed to safe_asterisk
 TTY="${SAFE_ASTERISK_TTY:-7}"                 # TTY (or "none") for Asterisk to run on
 CONSOLE="yes"                                 # Whether or not you want a console
-NOTIFY="$SAFE_ASTERISK_NOTIFY"                # Who to notify about crashes
-NOTIFY_FROM="$SAFE_ASTERISK_NOTIFY_FROM"      # From email header (optional)
 EXEC="/mnt/kd/ast-crash"                      # Run this command if Asterisk crashes
 MACHINE="$(hostname)"                         # To specify which machine has crashed when getting the mail
 SLEEPSECS=4
@@ -18,14 +16,6 @@ ASTSBINDIR=/usr/sbin
 
 if [ "$TTY" = "none" ]; then
   TTY=""
-fi
-
-# Extract from possible <a@b.tld> format
-NOTIFY_FROM="${NOTIFY_FROM##*<}"
-NOTIFY_FROM="${NOTIFY_FROM%%>*}"
-
-if [ -z "$NOTIFY_FROM" -a -n "$SMTP_DOMAIN" ]; then
-  NOTIFY_FROM="asterisk@$SMTP_DOMAIN"
 fi
 
 # run asterisk with this priority
@@ -121,16 +111,7 @@ run_asterisk()
       if [ $LIMIT_COUNT -ge $LIMIT_MAXCOUNT ]; then
         MESG="Asterisk restarting too often, exiting."
         logger -s -t safe_asterisk -p kern.info "$MESG"
-        for TO in $NOTIFY; do
-          echo "To: ${TO}${NOTIFY_FROM:+
-From: \"Asterisk-$MACHINE\" <$NOTIFY_FROM>}
-Subject: Asterisk **Stopped** on '$MACHINE'
-
-Asterisk on '$MACHINE' stopped, restarting too often.
-
-[Generated at $(date "+%H:%M:%S on %B %d, %Y")]" | \
-          sendmail -t
-        done
+        system-notify "**Stopped** on '$MACHINE'" "Asterisk on '$MACHINE' stopped, restarting too often."
         exit 1
       fi
     else
@@ -147,16 +128,7 @@ Asterisk on '$MACHINE' stopped, restarting too often.
       EXITSIGNAL=$(($EXITSTATUS - 128))
       MESG="Asterisk exited on signal $EXITSIGNAL."
       logger -s -t safe_asterisk -p kern.info "$MESG"
-      for TO in $NOTIFY; do
-        echo "To: ${TO}${NOTIFY_FROM:+
-From: \"Asterisk-$MACHINE\" <$NOTIFY_FROM>}
-Subject: Asterisk Crashed on '$MACHINE'
-
-Asterisk on '$MACHINE' exited on signal $EXITSIGNAL.  Restarting Asterisk...
-
-[Generated at $(date "+%H:%M:%S on %B %d, %Y")]" | \
-        sendmail -t
-      done
+      system-notify "Crashed on '$MACHINE'" "Asterisk on '$MACHINE' exited on signal $EXITSIGNAL.  Restarting Asterisk..."
       if [ -x "$EXEC" ]; then
         $EXEC
       fi
