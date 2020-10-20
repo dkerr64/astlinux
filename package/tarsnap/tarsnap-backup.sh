@@ -102,7 +102,7 @@ tarsnap_keygen()
 
 error_notify()
 {
-  local MESG="$1" dry_run="$2" TO notify_from IFS
+  local MESG="$1" dry_run="$2"
 
   if [ $dry_run -eq 1 ]; then
     return 0
@@ -110,27 +110,7 @@ error_notify()
 
   logger -s -t tarsnap-backup -p kern.info "$MESG"
 
-  notify_from="$BACKUP_NOTIFY_FROM"
-
-  # Extract from possible <a@b.tld> format
-  notify_from="${notify_from##*<}"
-  notify_from="${notify_from%%>*}"
-
-  if [ -z "$notify_from" -a -n "$SMTP_DOMAIN" ]; then
-    notify_from="tarsnap-backup@$SMTP_DOMAIN"
-  fi
-
-  unset IFS
-  for TO in $BACKUP_NOTIFY; do
-    echo "To: ${TO}${notify_from:+
-From: \"Backup-$HOSTNAME\" <$notify_from>}
-Subject: Backup on '$HOSTNAME': $MESG
-
-Backup on '$HOSTNAME': $MESG.
-
-[Generated at $(date "+%H:%M:%S on %B %d, %Y")]" | \
-    sendmail -t
-  done
+  system-notify "$MESG" "Backup on '$HOSTNAME': $MESG."
 }
 
 date_to_days()
