@@ -276,6 +276,8 @@ send_pushover() {
         logger -s -t "$PROGRAM" -p user.warn "Script file ${SYSTEM_NOTIFY_SCRIPTFILE} suppressed sending Pushover notification for ${SERVICE}: Return code: $SCRIPT_RC"
       else
         JSON_REPLY="$(curl --silent \
+                    --connect-timeout 5 \
+                    --max-time 5 \
                     --write-out "\n\n%{http_code}"\
                     --form-string "token=${PUSHOVER_APP_TOKEN}"\
                     --form-string "user=${PUSHOVER_USER_KEY}"\
