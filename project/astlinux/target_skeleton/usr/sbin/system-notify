@@ -275,7 +275,13 @@ send_pushover() {
         # User script wants to suppress sending further notifications
         logger -s -t "$PROGRAM" -p user.warn "Script file ${SYSTEM_NOTIFY_SCRIPTFILE} suppressed sending Pushover notification for ${SERVICE}: Return code: $SCRIPT_RC"
       else
-        JSON_REPLY="$(curl --silent \
+        # Curl has a bug where DNS lookups could block for 20 seconds no matter what we set --max-time too.
+        # So lets check DNS lookups first, with a 1 second timeout on name resolution...
+        local DOMAIN="$(echo "${PUSHOVER_API}" | awk -F[/:] '{print $4}')"
+        local IP=""
+        if IP="$(nslookup -type=A -timeout=1 ${DOMAIN})" && IP="${IP##* }" && ! [[ $IP =~ NXDOMAIN|SERVFAIL ]]; then
+          # Found the IP address, so DNS lookup is working
+          JSON_REPLY="$(curl --silent \
                     --connect-timeout 5 \
                     --max-time 5 \
                     --write-out "\n\n%{http_code}"\
@@ -288,22 +294,26 @@ send_pushover() {
                     ${PUSHOVER_DEVICE:+--form-string "device=${PUSHOVER_DEVICE}"}\
                     ${PUSHOVER_SOUND:+--form-string "sound=${PUSHOVER_SOUND}"}\
                     ${PUSHOVER_API})"
-        CURL_RC=$?
-        [[ $JSON_REPLY =~ ($'\n\n'[0-9]+)$ ]]          # Match the HTTP return code at end of reply
-        HTTP_RC="${BASH_REMATCH[0]#$'\n\n'}"           # Remove the two newlines
-        JSON_REPLY="${JSON_REPLY%${BASH_REMATCH[0]}}"  # Strip HTTP code from end of text body
+          CURL_RC=$?
+          [[ $JSON_REPLY =~ ($'\n\n'[0-9]+)$ ]]          # Match the HTTP return code at end of reply
+          HTTP_RC="${BASH_REMATCH[0]#$'\n\n'}"           # Remove the two newlines
+          JSON_REPLY="${JSON_REPLY%${BASH_REMATCH[0]}}"  # Strip HTTP code from end of text body
 
-        if [ $CURL_RC -ne 0 ]; then
-          # Curl failed log error
-          logger -s -t "$PROGRAM" -p user.err "Unable to send Pushover notification for ${SERVICE}: CURL return code: $CURL_RC"
-        else
-          # Curl succeeded but need to check reply to see if it worked
-          if [ "$HTTP_RC" = "200" -a $(_json "$JSON_REPLY" "status") = 1 ]; then
-            logger -s -t "$PROGRAM" -p user.info "${SERVICE} sent pushover msg: ${PUSHOVER_MSG}"
-            PUSH_RC=0
+          if [ $CURL_RC -ne 0 ]; then
+            # Curl failed log error
+            logger -s -t "$PROGRAM" -p user.err "Unable to send Pushover notification for ${SERVICE}: CURL return code: $CURL_RC"
           else
-            logger -s -t "$PROGRAM" -p user.err "${SERVICE} failed to send pushover msg: ${PUSHOVER_MSG}, HTTP return code: ${HTTP_RC}, Pushover status: $(_json "$JSON_REPLY" "status"), Reason: $(_json "$JSON_REPLY" "errors")"
+            # Curl succeeded but need to check reply to see if it worked
+            if [ "$HTTP_RC" = "200" -a $(_json "$JSON_REPLY" "status") = 1 ]; then
+              logger -s -t "$PROGRAM" -p user.info "${SERVICE} sent pushover msg: ${PUSHOVER_MSG}"
+              PUSH_RC=0
+            else
+              logger -s -t "$PROGRAM" -p user.err "${SERVICE} failed to send pushover msg: ${PUSHOVER_MSG}, HTTP return code: ${HTTP_RC}, Pushover status: $(_json "$JSON_REPLY" "status"), Reason: $(_json "$JSON_REPLY" "errors")"
+            fi
           fi
+        else
+          # DNS lookup failed
+          logger -s -t "$PROGRAM" -p user.err "${SERVICE} failed to send pushover msg: ${PUSHOVER_MSG}, DNS lookup for ${DOMAIN} failed)"
         fi
         # After senting push, inform user script of status 
         if [ $PUSH_RC -eq 0 ]; then
