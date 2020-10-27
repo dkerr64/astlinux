@@ -42,6 +42,7 @@
 # services (e.g. a SMS message), optionally suppress Pushover
 # and Email notifications, and modify Pushover settings...
 SYSTEM_NOTIFY_SCRIPTFILE="/mnt/kd/system-notify.script"
+USER_SCRIPT_VARS=""
 # User script file returns:
 #  Bit 1: 0x01 - 0 script executed normally, 1 error condition
 #  Bit 2: 0x02 - 1 script sent a notification
@@ -49,6 +50,8 @@ SYSTEM_NOTIFY_SCRIPTFILE="/mnt/kd/system-notify.script"
 #  Bit 4: 0x08 - 1 suppress sending of email notification
 #  127 - user script not executed
 #  If bit 1 set (error condition), bits 2, 3 and 4 ignored.
+# USER_SCRIPT_VARS provides a way to pass values between calls
+# to the script file.
 ######################################################################
 
 PUSHOVER_API="https://api.pushover.net/1/messages.json"
@@ -241,7 +244,8 @@ send_pushover() {
           PUSHOVER_URL=\"${PUSHOVER_URL}\" \
           PUSHOVER_IMAGE=\"${PUSHOVER_IMAGE}\" \
           PUSHOVER_DEVICE=\"${PUSHOVER_DEVICE}\" \
-          PUSHOVER_SOUND=\"${PUSHOVER_SOUND}\" "
+          PUSHOVER_SOUND=\"${PUSHOVER_SOUND}\" \
+          USER_SCRIPT_VARS=\"${USER_SCRIPT_VARS}\" "
   }
 
   _USER_SCRIPT() {
