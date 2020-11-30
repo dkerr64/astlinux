@@ -12,7 +12,7 @@ Released @TBD@
 
 ** System
 
--- Linux Kernel 4.19.154 (version bump), security and bug fixes
+-- Linux Kernel 4.19.160 (version bump), security and bug fixes
 
 -- igb, version bump to 5.4.6, Intel Gigabit Ethernet Network Driver
 
@@ -49,6 +49,8 @@ Released @TBD@
 -- miniupnpd, version 2.1, add Debian security fixes: CVE-2019-12107, CVE-2019-12108
                                       CVE-2019-12109, CVE-2019-12110, CVE-2019-12111
 
+-- msmtp, version bump to 1.8.13
+
 -- mtr, version bump to 0.94
 
 -- openldap, version bump to 2.4.56
@@ -56,6 +58,8 @@ Released @TBD@
 -- sngrep, version bump to 1.4.8
 
 -- stunnel, version bump to 5.57
+
+-- tcpdump, version 4.9.3, security fix: CVE-2020-8037
 
 -- unbound (host), version bump to 1.12.0
 
@@ -66,11 +70,20 @@ Released @TBD@
 -- Asterisk 13.29.2 ('13se' no change)
    Older than latest Asterisk 13.x version but more tested, built --without-pjproject
 
--- Asterisk 13.37.1 (version bump) and 16.14.1 (version bump)
+-- Asterisk 13.38.0 (version bump) and 16.15.0 (version bump)
+   Adds: Asterisk 16 res_stir_shaken.so, res_pjsip_stir_shaken.so - STIR/SHAKEN support
 
 -- DAHDI, dahdi-linux 3.1.0 (no change) and dahdi-tools 3.1.0 (no change)
 
 -- pjsip 2.10 (no change)
+
+-- Add support for directory /var/spool/asterisk/outgoing_tmp for call file staging.
+
+-- Add support for persistent /mnt/kd/call-file/ directory for certain tmpfs spool directories.
+   If the directory /mnt/kd/call-file/ exists, the following symlinks will automatically occur:
+   == /var/spool/asterisk/outgoing -> /mnt/kd/call-file/outgoing
+   == /var/spool/asterisk/outgoing_tmp -> /mnt/kd/call-file/outgoing_tmp
+   == /var/spool/asterisk/outgoing_done -> /mnt/kd/call-file/outgoing_done
 
 -- FOP2, available version bump to 2.31.29
    Note: If you have a license, you may need to purchase an "Annual Software Maintenance" license if you upgrade.
@@ -81,6 +94,8 @@ Released @TBD@
 -- Edit tab, make '.sh' files use 'shell' codemirror mode (syntax).
 
 -- System tab, add view syslog messages.0 or messages.1
+
+-- Edit tab, CodeMirror, add shell syntax Heredoc support.
 
 
 Additions for AstLinux 1.4.0:
