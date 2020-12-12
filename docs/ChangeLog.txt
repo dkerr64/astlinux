@@ -10,6 +10,16 @@ Additions for AstLinux 1.4.1:
 
 Released @TBD@
 
+** IMPORTANT NOTICE
+
+-- The ipsec-tools (racoon) support in AstLinux is deprecated, and will be removed in the near future.
+   The development of ipsec-tools has been ABANDONED.
+   The Network tab -> VPN Type: "IPsec Peers" and "IPsec Mobile" is the web interface configuration for ipsec-tools.
+   The AstLinux Team suggests using either WireGuard or OpenVPN for your VPN needs, but if IPsec is required for
+   compatibility reasons the Network tab -> VPN Type: "IPsec strongSwan" should be able to do what you want,
+   albeit in a less than ideal text based configuration.
+   More info: https://doc.astlinux-project.org/userdoc:tt_ipsec_vpn_strongswan
+
 ** System
 
 -- Linux Kernel 4.19.160 (version bump), security and bug fixes
@@ -22,15 +32,19 @@ Released @TBD@
 
 -- expat, version bump to 2.2.10
 
+-- htop, version bump to 3.0.3
+
 -- libqrencode, version bump to 4.1.1
 
 -- Monit, version bump to 5.27.1
 
+-- rng-tools, version 6.5, jitterentropy version bump to 3.0.0
+
 -- strace, version bump to 5.9
 
--- zabbix, version bump to 4.0.26
+-- zabbix, version bump to 4.0.27
 
--- ca-certificates, update trusted root certificates 2020-10-14
+-- ca-certificates, update trusted root certificates 2020-12-08
 
 -- Time Zone Database update, tzdata2020d and php-timezonedb-2020.4
 
@@ -38,13 +52,15 @@ Released @TBD@
 
 ** Networking
 
--- OpenSSL, version bump to 1.1.1h, security fix: none
+-- OpenSSL, version bump to 1.1.1i, security fix: CVE-2020-1971
 
 -- WireGuard VPN, module 1.0.20201112 (version bump), tools 1.0.20200827 (no change)
 
--- libcurl (curl) version bump to 7.73.0
+-- libcurl (curl) version bump to 7.74.0, security fixes: CVE-2020-8284, CVE-2020-8285, CVE-2020-8286
 
 -- chrony, version bump to 4.0
+
+-- lighttpd, version 1.4.51, add security fix: CVE-2019-11072
 
 -- miniupnpd, version 2.1, add Debian security fixes: CVE-2019-12107, CVE-2019-12108
                                       CVE-2019-12109, CVE-2019-12110, CVE-2019-12111
@@ -61,7 +77,7 @@ Released @TBD@
 
 -- tcpdump, version 4.9.3, security fix: CVE-2020-8037
 
--- unbound (host), version bump to 1.12.0
+-- unbound (host), version bump to 1.13.0
 
 -- whois, version bump to 5.5.7
 
