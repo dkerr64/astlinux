@@ -36,11 +36,17 @@ Released @TBD@
 
 -- libqrencode, version bump to 4.1.1
 
+-- libusb, version bump to 1.0.24
+
 -- Monit, version bump to 5.27.1
 
 -- rng-tools, version 6.5, jitterentropy version bump to 3.0.0
 
--- strace, version bump to 5.9
+-- sqlite, version bump to 3.34.0
+
+-- strace, version bump to 5.10
+
+-- usbutils, version bump to 013
 
 -- zabbix, version bump to 4.0.27
 
@@ -77,7 +83,12 @@ Released @TBD@
 
 -- tcpdump, version 4.9.3, security fix: CVE-2020-8037
 
--- unbound (host), version bump to 1.13.0
+-- getdns/stubby, remove package, replace getdns/stubby with unbound for DNS-over-TLS
+   New rc.conf variable: DNS_TLS_PRIVATE
+   Remove stubby specific rc.conf variables: DNS_TLS_DNSSEC, DNS_TLS_QUERY_ALL
+   More info: https://doc.astlinux-project.org/userdoc:tt_dns_tls_proxy
+
+-- unbound, version bump to 1.13.0
 
 -- whois, version bump to 5.5.7
 
@@ -112,6 +123,8 @@ Released @TBD@
 -- System tab, add view syslog messages.0 or messages.1
 
 -- Edit tab, CodeMirror, add shell syntax Heredoc support.
+
+-- Replace getdns/stubby with unbound for DNS-over-TLS support.
 
 
 Additions for AstLinux 1.4.0:
