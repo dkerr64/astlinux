@@ -24,7 +24,7 @@ Released @TBD@
 
 -- Linux Kernel 4.19.160 (version bump), security and bug fixes
 
--- igb, version bump to 5.4.6, Intel Gigabit Ethernet Network Driver
+-- igb, version bump to 5.5.2, Intel Gigabit Ethernet Network Driver
 
 -- e1000e version bump to 3.8.7 Intel PCI-Express PRO/1000 Ethernet Linux driver
 
@@ -32,15 +32,19 @@ Released @TBD@
 
 -- expat, version bump to 2.2.10
 
--- htop, version bump to 3.0.3
+-- htop, version bump to 3.0.4, add support for libsensors CPU thermals
 
 -- kexec, version bump to 2.0.21
+
+-- libpcap, version bump to 1.10.0
 
 -- libqrencode, version bump to 4.1.1
 
 -- libusb, version bump to 1.0.24
 
 -- Monit, version bump to 5.27.1
+
+-- php, version 7.2.34, security fix patch: CVE-2020-7071
 
 -- rng-tools, version 6.5, jitterentropy version bump to 3.0.0
 
@@ -56,7 +60,7 @@ Released @TBD@
 
 -- ca-certificates, update trusted root certificates 2020-12-08
 
--- Time Zone Database update, tzdata2020d and php-timezonedb-2020.4
+-- Time Zone Database update, tzdata2020e and php-timezonedb-2020.5
 
 -- (Custom Build Only) dmidecode, version bump to 3.3
 
@@ -84,11 +88,15 @@ Released @TBD@
 
 -- openldap, version bump to 2.4.56
 
+-- pppd, version bump to 2.4.9
+   New PPPoE client support with pppd's pppoe kernel driver and our custom scripts
+   The Roaring Penguin RP-PPPoE package is no longer used
+
 -- sngrep, version bump to 1.4.8
 
 -- stunnel, version bump to 5.57
 
--- tcpdump, version 4.9.3, security fix: CVE-2020-8037
+-- tcpdump, version 4.99.0
 
 -- getdns/stubby, remove package, replace getdns/stubby with unbound for DNS-over-TLS
    New rc.conf variable: DNS_TLS_PRIVATE
