@@ -22,7 +22,9 @@ Released @TBD@
 
 ** System
 
--- Linux Kernel 4.19.160 (version bump), security and bug fixes
+-- Linux Kernel 4.19.167 (version bump), security and bug fixes
+
+-- RUNNIX, version bump to runnix-0.6.3, with Linux Kernel 4.19.167, kexec 2.0.21
 
 -- igb, version bump to 5.5.2, Intel Gigabit Ethernet Network Driver
 
@@ -32,7 +34,7 @@ Released @TBD@
 
 -- expat, version bump to 2.2.10
 
--- htop, version bump to 3.0.4, add support for libsensors CPU thermals
+-- htop, version bump to 3.0.5, add support for libsensors CPU thermals
 
 -- kexec, version bump to 2.0.21
 
@@ -42,7 +44,9 @@ Released @TBD@
 
 -- libusb, version bump to 1.0.24
 
--- Monit, version bump to 5.27.1
+-- logrotate, version bump to 3.18.0
+
+-- Monit, version bump to 5.27.2
 
 -- php, version 7.2.34, security fix patch: CVE-2020-7071
 
@@ -58,7 +62,9 @@ Released @TBD@
 
 -- zabbix, version bump to 4.0.27
 
--- ca-certificates, update trusted root certificates 2020-12-08
+-- ca-certificates, update trusted root certificates 2021-01-19
+
+-- mac2vendor, oui.txt database snapshot 2021-01-14
 
 -- Time Zone Database update, tzdata2020e and php-timezonedb-2020.5
 
@@ -77,6 +83,10 @@ Released @TBD@
 
 -- chrony, version bump to 4.0
 
+-- dnsmasq, version bump to 2.83, security fixes: CVE-2020-25684, CVE-2020-25685, CVE-2020-25686
+
+-- keepalived, version bump to 2.2.1
+
 -- lighttpd, version 1.4.51, add security fix: CVE-2019-11072
 
 -- miniupnpd, version 2.1, add Debian security fixes: CVE-2019-12107, CVE-2019-12108
@@ -90,6 +100,7 @@ Released @TBD@
 
 -- pppd, version bump to 2.4.9
    New PPPoE client support with pppd's pppoe kernel driver and our custom scripts
+   New rc.conf variable: PPPOE_PPP_OPTIONS
    The Roaring Penguin RP-PPPoE package is no longer used
 
 -- sngrep, version bump to 1.4.8
@@ -140,6 +151,8 @@ Released @TBD@
 -- Edit tab, CodeMirror, add shell syntax Heredoc support.
 
 -- Replace getdns/stubby with unbound for DNS-over-TLS support.
+
+-- PhoneProv tab, add a lockfile for "Generate Files".
 
 
 Additions for AstLinux 1.4.0:
