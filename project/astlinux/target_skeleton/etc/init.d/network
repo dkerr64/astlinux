@@ -582,6 +582,7 @@ start () {
     hdlc0|pvc0)
       ip tunnel add $EXT2IF mode ipip remote $EXT2GW local $EXT2IP
       ip link set dev $EXT2IF up
+      [[ "$EXT2IF_METER" == "yes" ]] && echo $(date +%s.%3N; cat /sys/class/net/$EXT2IF/statistics/rx_bytes; cat /sys/class/net/$EXT2IF/statistics/tx_bytes) "start" >> /var/log/$EXT2IF-meter.txt
       ;;
     *)
       up_delay=0
@@ -599,6 +600,7 @@ start () {
         fi
       fi
       ip link set dev $EXT2IF up
+      [[ "$EXT2IF_METER" == "yes" ]] && echo $(date +%s.%3N; cat /sys/class/net/$EXT2IF/statistics/rx_bytes; cat /sys/class/net/$EXT2IF/statistics/tx_bytes) "start" >> /var/log/$EXT2IF-meter.txt
       if [ $up_delay -gt 0 ]; then
         sleep $up_delay
       fi
@@ -627,6 +629,7 @@ start () {
     hdlc0|pvc0)
       ip tunnel add $EXTIF mode ipip remote $EXTGW local $EXTIP
       ip link set dev $EXTIF up
+      [[ "$EXTIF_METER" == "yes" ]] && echo $(date +%s.%3N; cat /sys/class/net/$EXTIF/statistics/rx_bytes; cat /sys/class/net/$EXTIF/statistics/tx_bytes) "start" >> /var/log/$EXTIF-meter.txt
       ;;
     *)
       up_delay=0
@@ -647,6 +650,7 @@ start () {
         fi
       fi
       ip link set dev $EXTIF up
+      [[ "$EXTIF_METER" == "yes" ]] && echo $(date +%s.%3N; cat /sys/class/net/$EXTIF/statistics/rx_bytes; cat /sys/class/net/$EXTIF/statistics/tx_bytes) "start" >> /var/log/$EXTIF-meter.txt
       while [ $up_delay -gt 0 ] && [ ! -f /var/db/dhcp6c_cache ]; do
         up_delay=$((up_delay - 1))
         sleep 1
@@ -677,6 +681,7 @@ start () {
     fi
     ifplugd -apq -t2 -u3 -d3 -i $EXT2IF -r /etc/ifplugd/udhcpc.action
     ip link set dev $EXT2IF up
+    [[ "$EXT2IF_METER" == "yes" ]] && echo $(date +%s.%3N; cat /sys/class/net/$EXT2IF/statistics/rx_bytes; cat /sys/class/net/$EXT2IF/statistics/tx_bytes) "start" >> /var/log/$EXT2IF-meter.txt
     sleep 4
 
     # No DHCPv6 - Static IPv6 if defined
@@ -696,6 +701,7 @@ start () {
   if [ -n "$EXTIF" -a -z "$EXTIP" ] && ! isextppp extif; then
     up_delay=0
     ip link set dev $EXTIF up
+    [[ "$EXTIF_METER" == "yes" ]] && echo $(date +%s.%3N; cat /sys/class/net/$EXTIF/statistics/rx_bytes; cat /sys/class/net/$EXTIF/statistics/tx_bytes) "start" >> /var/log/$EXTIF-meter.txt
     sleep 4
     if [ "$IPV6" = "yes" -a "$DHCPV6_CLIENT_ENABLE" = "yes" ]; then
       up_delay=10
@@ -764,6 +770,7 @@ stop () {
     if [ -n "$EXTIP_ALIAS" ]; then
       alias_interface delete $EXTIF "$EXTIP_ALIAS"
     fi
+    [[ "$EXTIF_METER" == "yes" ]] && echo $(date +%s.%3N; cat /sys/class/net/$EXTIF/statistics/rx_bytes; cat /sys/class/net/$EXTIF/statistics/tx_bytes) "stop" >> /var/log/$EXTIF-meter.txt
     ip link set dev $EXTIF down
   fi
 
@@ -772,6 +779,7 @@ stop () {
     if [ -n "$EXT2IP_ALIAS" ]; then
       alias_interface delete $EXT2IF "$EXT2IP_ALIAS"
     fi
+    [[ "$EXT2IF_METER" == "yes" ]] && echo $(date +%s.%3N; cat /sys/class/net/$EXT2IF/statistics/rx_bytes; cat /sys/class/net/$EXT2IF/statistics/tx_bytes) "stop" >> /var/log/$EXT2IF-meter.txt
     ip link set dev $EXT2IF down
   fi
 
