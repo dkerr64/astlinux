@@ -21,23 +21,43 @@ Released @TBD@
 
 ** System
 
--- Linux Kernel 4.19.167 (no change), security and bug fixes
+-- Linux Kernel 4.19.175 (version bump), security and bug fixes
+
+-- perl, version 5.24.4, perlcross 1.3.5, security fixes: CVE-2020-10543, CVE-2020-10878, CVE-2020-12723
+
+-- sudo, version bump to 1.8.32, includes previous CVE-2021-3156 fix plus security fixes: CVE-2021-23239, CVE-2021-23240
+
+-- zabbix, version bump to 4.0.28
+
+-- Time Zone Database update, tzdata2021a and php-timezonedb-2021.1
 
 ** Networking
 
 -- ipsec-tools (racoon) package has been removed.
    More info: https://doc.astlinux-project.org/userdoc:tt_ipsec_vpn_strongswan
 
+-- OpenVPN, version bump to 2.4.10
+
+-- libcurl (curl) version bump to 7.75.0
+
+-- netsnmp, version bump to 5.9
+
+-- openldap, version bump to 2.4.57
+
+-- unbound, version bump to 1.13.1
+
 -- vnStat, new package, version 2.6, interface counter history is saved to /mnt/kd/vnstat/vnstat.db every hour.
    Enabled by default to keep a log of network traffic for external interface(s). No sniffing of traffic is performed.
    New rc.conf variable VNSTAT_ENABLE can be set to "no" to disable.
+
+-- (Custom Build Only) mosquitto, version bump to 1.6.13
 
 ** Asterisk
 
 -- Asterisk 13.29.2 ('13se' no change)
    Older than latest Asterisk 13.x version but more tested, built --without-pjproject
 
--- Asterisk 13.38.1 (no change) and 16.15.1 (no change)
+-- Asterisk 13.38.1 (no change) and 16.16.0 (version bump)
 
 -- DAHDI, dahdi-linux 3.1.0 (no change) and dahdi-tools 3.1.0 (no change)
 
@@ -48,6 +68,10 @@ Released @TBD@
 -- Network tab -> VPN Type: "IPsec Peers" and "IPsec Mobile" has been removed. Remove IPsec (racoon) VPN support.
 
 -- Added vnStat tab, available to "admin/staff" users.  Hidden by default in Prefs tab.
+
+-- Staff tab, encrypted "primary" backup, exclude /mnt/kd/lxc/ directory.
+
+-- System tab, add backup "Linux Containers (lxc)" menu.
 
 
 Additions for AstLinux 1.4.1:
