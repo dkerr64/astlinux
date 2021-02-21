@@ -25,6 +25,8 @@ Released @TBD@
 
 -- perl, version 5.24.4, perlcross 1.3.5, security fixes: CVE-2020-10543, CVE-2020-10878, CVE-2020-12723
 
+-- strace, version bump to 5.11
+
 -- sudo, version bump to 1.8.32, includes previous CVE-2021-3156 fix plus security fixes: CVE-2021-23239, CVE-2021-23240
 
 -- zabbix, version bump to 4.0.28
@@ -36,9 +38,15 @@ Released @TBD@
 -- ipsec-tools (racoon) package has been removed.
    More info: https://doc.astlinux-project.org/userdoc:tt_ipsec_vpn_strongswan
 
+-- OpenSSL, version bump to 1.1.1j, security fixes: CVE-2021-23840, CVE-2021-23841
+
 -- OpenVPN, version bump to 2.4.10
 
+-- WireGuard VPN, module 1.0.20210219 (version bump), tools 1.0.20200827 (no change)
+
 -- libcurl (curl) version bump to 7.75.0
+
+-- luasec, version bump to 1.0
 
 -- netsnmp, version bump to 5.9
 
@@ -50,18 +58,32 @@ Released @TBD@
    Enabled by default to keep a log of network traffic for external interface(s). No sniffing of traffic is performed.
    New rc.conf variable VNSTAT_ENABLE can be set to "no" to disable.
 
+-- whois, version bump to 5.5.8
+
 -- (Custom Build Only) mosquitto, version bump to 1.6.13
 
 ** Asterisk
 
--- Asterisk 13.29.2 ('13se' no change)
+-- Asterisk 13.29.2 ('13se' w/sRTP replay protection patch)
    Older than latest Asterisk 13.x version but more tested, built --without-pjproject
 
--- Asterisk 13.38.1 (no change) and 16.16.0 (version bump)
+-- Asterisk 13.38.2 (version bump) and 16.16.1 (version bump)
+
+-- Note: All Asterisk versions now have sRTP replay protection, new rtp.conf config option: srtpreplayprotection=yes
+   This new rtp.conf option is enabled by default.
+   Buggy SIP user agents may require srtpreplayprotection=no if audio issues occur with sRTP streams.
 
 -- DAHDI, dahdi-linux 3.1.0 (no change) and dahdi-tools 3.1.0 (no change)
 
 -- pjsip 2.10 (no change)
+
+-- safe_asterisk script (disabled by default), new user.conf variable defaults.
+   New rc.conf variable: SAFE_ASTERISK_CONSOLE
+   SAFE_ASTERISK_TTY now defaults to "none"
+   SAFE_ASTERISK_CONSOLE defaults to "no"
+   == WARNING: If the Network tab -> "Asterisk Automatic Restart on Crash" is enabled, and
+   == in the user.conf SAFE_ASTERISK_TTY="7" and SAFE_ASTERISK_CONSOLE="yes" are defined, it will allow
+   == a virtual video console (Alt-Right-Arrow) full CLI access. Even with hosted Virtual Machine web access.
 
 ** Web Interface
 
