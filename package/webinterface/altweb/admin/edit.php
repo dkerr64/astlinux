@@ -617,6 +617,8 @@ require_once '../common/header.php';
       cm.setOption("mode", "text/x-perl");
     } else if (name.search('[.]php$') >= 0) {
       cm.setOption("mode", "application/x-httpd-php");
+    } else if (name.search('[.]js$') >= 0) {
+      cm.setOption("mode", "text/javascript");
     } else if (name.search('^/mnt/kd/rc[.]') >= 0 ||
                name.search('[.]script$') >= 0 ||
                name.search('[.]sh$') >= 0 ||
