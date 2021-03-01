@@ -1,0 +1,99 @@
+.ct-series-a .ct-area {
+  fill: #FFA500;
+  fill-opacity:.5
+}
+
+.ct-series-b .ct-area {
+  fill: #8C837A;
+  fill-opacity:.5
+}
+
+.ct-series-a {
+  stroke: #FFA500;
+}
+
+.ct-series-b {
+  stroke: #8C837A;
+}
+
+/* For 24 hours bar chart */
+.ct-series .ct-bar24 {
+  stroke-width: 4.5%
+}
+/* For 1 month (31 days) bar chart */
+.ct-series .ct-bar31 {
+  stroke-width: 3.5%
+}
+/* For 2 (48 hours) bar chart */
+.ct-series .ct-bar48 {
+  stroke-width: 2.25%
+}
+/* For 2 months (62 days) bar chart */
+.ct-series .ct-bar62 {
+  stroke-width: 1.7%
+}
+/* For 3 days (72 hours) bar chart */
+.ct-series .ct-bar72 {
+  stroke-width: 1.4%
+}
+/* For 3 months (93 days) bar chart */
+.ct-series .ct-bar93 {
+  stroke-width: 1%
+}
+/* For 4 days (96 hours) bar chart */
+.ct-series .ct-bar96 {
+  stroke-width: 1%
+}
+/* For 4 months (124 days) bar chart */
+.ct-series .ct-bar124 {
+  stroke-width: .8%
+}
+
+.ct-target-line-label {
+    color: #54545C;
+    font-size: 0.75rem;
+    white-space:nowrap;
+    overflow:visible;
+    text-align: right;
+    background: #F7F7F780;
+}
+
+.ct-subtotal-label {
+    color: #54545C;
+    font-size: 0.5rem;
+    white-space:nowrap;
+    overflow:visible;
+    text-align: left;
+    background: #F7F7F780;
+}
+.ct-chart-bar .ct-label.ct-horizontal.ct-end {
+    -webkit-box-align: flex-start;
+    -webkit-align-items: flex-start;
+    -ms-flex-align: flex-start;
+    align-items: flex-start;
+    -webkit-box-pack: flex-start;
+    -webkit-justify-content: flex-start;
+    -ms-flex-pack: flex-start;
+    justify-content: flex-start;
+    text-align: left;
+    text-anchor:start;
+}
+.ct-target-line {
+    stroke: #54545C;
+    stroke-width: 2px;
+    stroke-dasharray: 2px;
+    shape-rendering: crispEdges;
+}
+
+.ct-astlinux-box {
+  font-weight: normal;
+  border: 1px solid #54545C;
+  background: #F7F7F7;
+ /* padding: 10px; */
+  font-family: "Bitstream Vera Sans Mono", Menlo, "Lucida Console", "Lucida Sans Typewriter", Monaco, "Courier New", monospace;
+  font-size: 0.75rem;
+  width: 49.2%;
+  float: left;
+  margin: 0.2%;
+ /* line-height: 1.2em; */
+}
