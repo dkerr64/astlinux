@@ -128,6 +128,7 @@ function get_hour_data(array $vnstat_if, int $mode=1) : array {
   $data['vnstat_name'] = $vnstat_if['name'];
   $data['vnstat_alias'] = $vnstat_if['alias'];
   // Find the date that data was last updated (should be today)
+  $updated_minute = $vnstat_if['updated']['time']['minute'];
   $updated_hour = $vnstat_if['updated']['time']['hour'];
   $updated_day = $vnstat_if['updated']['date']['day'];
   $updated_month = $vnstat_if['updated']['date']['month'];
@@ -137,7 +138,7 @@ function get_hour_data(array $vnstat_if, int $mode=1) : array {
   $est_average_rx_total = 0;
   $est_average_tx_total = 0;
   $est_average_count = 0;
-  msg_debug2($vnstat_if['alias'] . " (" . $vnstat_if['name'] . "): Hour updated timestamp: $updated_hour_stamp at $updated_hour");
+  msg_debug2($vnstat_if['alias'] . " (" . $vnstat_if['name'] . "): Hour updated timestamp: $updated_hour_stamp at $updated_hour:$updated_minute hrs");
   // Explicitly unset this variable so we can detect first time though the loop.
   unset($hour);
   foreach ($vnstat_if['traffic']['hour'] as $record) {
@@ -148,19 +149,32 @@ function get_hour_data(array $vnstat_if, int $mode=1) : array {
     $this_year = $record['date']['year'];
     $this_hour_stamp = intdiv(mktime($this_hour,0,0,$this_month,$this_day,$this_year),3600);
     $add_msg = "";  // Anything in this is added to end of debug messages.
-    if (($mode > 1) && ($this_hour >= $updated_hour)) {
+    if (($mode > 1) && ($this_hour >= $updated_hour) &&
+        ($this_hour_stamp < $updated_hour_stamp)) {
       // keep running total and only count it if one of rx/tx data
       // is not zero.  Note that the above condition includes hours
-      // that are AFTER the current hour of the day.  We do this to more
+      // that are after the current hour of the day.  We do this to more
       // accurately estimate traffic to the end of day because data usage
       // can vary widely over 24 hours, we will base our estimate on averages
       // from similar time of day in the past.  So for example if it is 4pm now.
       // only count previous day(s) traffic between 4pm and midnight and average that.
-      $est_average_rx_total += $record['rx'];
-      $est_average_tx_total += $record['tx'];
       if (($record['rx'] != 0) || ($record['tx'] != 0)) {
-        $est_average_count++;
+        // exclude hours with no traffic
         $add_msg = "Include for est_average.";
+        if ($this_hour == $updated_hour) {
+          // if we are updating database multiple times per hour then we will
+          // have partial data for the current hour, so for estimating remaining
+          // only use fraction of the historical full hours
+          $est_average_rx_total += $record['rx'] * (60-$updated_minute) / 60;
+          $est_average_tx_total += $record['tx'] * (60-$updated_minute) / 60;
+          $add_msg = $add_msg . "(partial hour)";
+          // yes, increment by a fraction !
+          $est_average_count += ((60-$updated_minute) / 60);
+        } else {
+          $est_average_rx_total += $record['rx'];
+          $est_average_tx_total += $record['tx'];
+          $est_average_count += 1;
+        }
       }
     }
     // Skip all records over $requested_hours ago
@@ -189,21 +203,25 @@ function get_hour_data(array $vnstat_if, int $mode=1) : array {
     if ($mode == 1 || in_array($hour,$labels)) array_push($data['labels'],sprintf('%02d', $hour));
     else array_push($data['labels'],'');
     if ($hour == 0) $data['labels'][count($data['labels'])-1] = sprintf('%02d\n%s', $hour, day_of_week($this_day,$this_month,$this_year, 1));
+    // Add rx/tx data
     array_push($data['series'][0]['data'],$record['rx']);
     array_push($data['series'][1]['data'],$record['tx']);
     array_push($data['vnstat_index'],$hour);
     $data['vnstat_data_count']++;
+    // Keep running totals
     $data['vnstat_max_rx'] = max($data['vnstat_max_rx'], $record['rx']);
     $data['vnstat_max_tx'] = max($data['vnstat_max_tx'], $record['tx']);
     $data['vnstat_total_rx'] += $record['rx'];
     $data['vnstat_total_tx'] += $record['tx'];
   }
+  // End of looping through all our hourly data.  Calulate end values...
   $data['vnstat_average_rx'] = intdiv($data['vnstat_total_rx'], $data['vnstat_data_count']);
   $data['vnstat_average_tx'] = intdiv($data['vnstat_total_tx'], $data['vnstat_data_count']);
   if ($est_average_count > 0) {
     // Now calculate estimated traffic for the remainder of this day
-    $data['vnstat_estimated_rx'] = intdiv($est_average_rx_total, $est_average_count) * (23 - $hour);
-    $data['vnstat_estimated_tx'] = intdiv($est_average_tx_total, $est_average_count) * (23 - $hour);
+    msg_debug2("calculate rx average with $est_average_rx_total / $est_average_count * (23 - $hour + ((60-$updated_minute) / 60)");
+    $data['vnstat_estimated_rx'] = round($est_average_rx_total / $est_average_count * (23 - $hour + ((60-$updated_minute) / 60)));
+    $data['vnstat_estimated_tx'] = round($est_average_tx_total / $est_average_count * (23 - $hour + ((60-$updated_minute) / 60)));
   }
   if ($pad_to_24hrs) {
     msg_debug2("Pad with " . (23 - $hour) . " hours to end of day");
@@ -212,6 +230,7 @@ function get_hour_data(array $vnstat_if, int $mode=1) : array {
       if ($mode == 1 || in_array($hour,$labels)) array_push($data['labels'],sprintf('%02d', $hour));
       else array_push($data['labels'],'');
       if ($hour == 0) $data['labels'][count($data['labels'])-1] = sprintf('%02d\n%s', $hour, day_of_week($this_day,$this_month,$this_year, 1));
+      // Pad with zeros
       array_push($data['series'][0]['data'],0);
       array_push($data['series'][1]['data'],0);
       array_push($data['vnstat_index'],'');
@@ -234,7 +253,7 @@ function get_day_data(array $vnstat_if, int $mode=1) : array {
   $data = define_vmstat_data_object();
   $labels = array(1,7,14,21,28);
   $requested_days = $mode * 31;
-  $requested_months = $mode + 1;
+  $requested_months = $mode;
   $pad_to_mth = ($mode == 1 ? 0 : 1);
   $seek_to_mth = ($mode == 1 ? 0 : 1);
   $seek_to_day = ($mode == 1 ? 1 : 0);
@@ -242,6 +261,7 @@ function get_day_data(array $vnstat_if, int $mode=1) : array {
   $data['vnstat_name'] = $vnstat_if['name'];
   $data['vnstat_alias'] = $vnstat_if['alias'];
   // Find the date that data was last updated (should be today)
+  $updated_minute = $vnstat_if['updated']['time']['minute'];
   $updated_hour = $vnstat_if['updated']['time']['hour'];
   $updated_day = $vnstat_if['updated']['date']['day'];
   $updated_month = $vnstat_if['updated']['date']['month'];
@@ -252,41 +272,48 @@ function get_day_data(array $vnstat_if, int $mode=1) : array {
   $est_average_rx_total = 0;
   $est_average_tx_total = 0;
   $est_average_count = 0;
-  
-  msg_debug2($vnstat_if['alias'] . " (" . $vnstat_if['name'] . "): Day updated timestamp: $updated_mth_stamp, $updated_day_stamp at $updated_hour");
+  // running count of total days in the months we are graphing
+  $total_days = 0;
+
+  msg_debug2($vnstat_if['alias'] . " (" . $vnstat_if['name'] . "): Day updated timestamp: $updated_mth_stamp, $updated_day_stamp at $updated_hour:$updated_minute hrs");
   // Explicitly unset these variables so we can detect first time though the loop.
   unset($days_in_month, $day);
   foreach ($vnstat_if['traffic']['day'] as $record) {
     // We are looping through each day of the traffic.
+    // Start by recording current date and create timestamp
     $this_day = $record['date']['day'];
     $this_month = $record['date']['month'];
     $this_year = $record['date']['year'];
-    $this_mth_stamp = $this_year*12 + $this_month-1;
+    $this_mth_stamp = $this_year*12 + $this_month;
     $this_day_stamp = intdiv(mktime(0,0,0,$this_month,$this_day,$this_year),86400);
     $add_msg = "";  // Anything in this is added to end of debug messages.
-    if (!isset($days_in_month)) $days_in_month = $total_days = days_in_month($this_month,$this_year);
+
+    // if first time through, find current days in month.
+    if (!isset($days_in_month)) $days_in_month = days_in_month($this_month,$this_year);
     elseif (($mode > 1) && ($this_day_stamp < $updated_day_stamp)) {
-      // keep running total and only count it if one of rx/tx
-      // data is not zero.  Note that the above condition excludes
+      // if not first time thought, start to keep running total so we
+      // can calculate averages. Note that the above condition excludes
       // the first and last days... which may contain partial day data.
-      // Our daily average will be more accurate if we exclude that.
-      $est_average_rx_total += $record['rx'];
-      $est_average_tx_total += $record['tx'];
+      // Our daily average will be more accurate if we exclude those.
       if (($record['rx'] != 0) || ($record['tx'] != 0)) {
+        // exclude days with no traffic
+        $est_average_rx_total += $record['rx'];
+        $est_average_tx_total += $record['tx'];
         $est_average_count++;
         $add_msg = "Include for est_average.";
       }
     }
     // Skip all records over $requested_months ago
-    if (($seek_to_mth && ($updated_mth_stamp - $this_mth_stamp > $requested_months)) ||
+    $add_msg = $add_msg . "(".$this_mth_stamp.")";
+    if (($seek_to_mth && ($updated_mth_stamp - $this_mth_stamp >= $requested_months)) ||
         ($seek_to_day && ($updated_day_stamp - $this_day_stamp >= $requested_days))) {
       msg_debug2("Skipping data older than $requested_months months ($this_year/$this_month/$this_day) $add_msg");
-      if ($this_day == 1) $days_in_month = $total_days = days_in_month($this_month,$this_year);
+      if ($this_day == 1) $days_in_month = days_in_month($this_month,$this_year);
       continue;
     }
     elseif ($seek_to_mth) {
       $seek_to_mth = 0; // we only want to come in here once.
-      if ($pad_to_mth) {
+      if ($pad_to_mth && $this_day > 1) {
         // We want our array of data to start on the first day of the month
         // even if the first data point we have is mid-month.  So pad the
         // array with empties.
@@ -399,7 +426,7 @@ function get_vnstat_data_as_json() : string {
   $data = array();
 
   // Request all the hours / day data that we can get... the more we have
-  // the better our averages calculations will be.
+  // the better our estimate daily/monthly calculations will be.
   $hours = ($VNSTAT_HOURS_MODE > 0) ? json_decode(@exec('/usr/bin/vnstat --json h'), TRUE) : null;
   $days = ($VNSTAT_DAYS_MODE > 0) ? json_decode(@exec('/usr/bin/vnstat --json d'), TRUE) : null;
   foreach ($interfaces as $if) {
@@ -512,7 +539,53 @@ function vnstat_graph_javascript() {
                          (rxtx ? (" (rx: " + rx.toFixed(2) + d.byte_label +
                                    " tx: " + tx.toFixed(2) + d.byte_label + ")") : "");
     }
-    
+
+    //----------------------------------------------------------------
+    // Function to place labels on the cumulative charts to show
+    // total for each day or month.
+    function periodTotalLabels(context) {
+      var d = context.options.vnstat_data;
+      if (!d.vnstat_cumulative) return;
+      // convert each unit for X and Y into pixels
+      var ux = (context.chartRect.x2 - context.chartRect.x1) / d.vnstat_index.length;
+      var uy = (context.chartRect.y2 - context.chartRect.y1) / (context.bounds.max - context.bounds.min);
+      // find first index on our array that is start of a day or start of a month
+      var start = 0;  // days start at 00:00 hrs
+      var i = d.vnstat_index.indexOf(start,1);
+      // if 00:00 hrs not found then months start on 1st day
+      if (i < 0) i = d.vnstat_index.indexOf(++start,1);
+      // so 'start' is now 0 or 1 and 'i' is index to the array.
+      // find the last non-zero value in our data.
+      var last = d.vnstat_index.length;
+      while (last-- && !d.vnstat_index[last]);
+      // initialise our label text
+      var txt = ((d.vnstat_mode > 1) ? ((start == 0) ? 'Day ' : 'Month ') : '') + 'Total<br>';
+      // so we now have from i[ndex] to last to work with
+      while ((i > 0) || (last > 0)) {
+        // if i < 0 then we are at the last value in the data
+        if (i <= 0) { i = last+1; last = -1; }
+        if ((d.vnstat_mode > 1) || (last == -1)) {
+          var rx = d.series[0].data[i-1];
+          var tx = d.series[1].data[i-1];
+          var tt = rx + tx;
+          var rxtx = <?php echo $VNSTAT_RXTX?>;
+          var label = txt + tt.toFixed(2) + d.byte_label +
+                   (rxtx ? ("<br>rx: " + rx.toFixed(2) + d.byte_label +
+                            "<br>tx: " + tx.toFixed(2) + d.byte_label ) : "");
+          // Use foreignObject rather than text so we can apply HTML styles (like background)
+          context.svg.foreignObject('<p><span class="ct-subtotal-label">'+label+'</span></p>', {
+            x: Math.min(context.chartRect.x2 - 40, context.chartRect.x1 + ux * i),
+            y: context.chartRect.y1 + Math.max((context.chartRect.y2 - context.chartRect.y1) / 2, Math.min(uy * tt,-40)),
+            style: 'width: auto;',
+          }, 'ct-subtotal-label', false);
+        }
+        // Now seek to the next start of day or start of month
+        i = d.vnstat_index.indexOf(start,i+1);
+      }
+    }
+
+
+    //----------------------------------------------------------------
     //----------------------------------------------------------------
     // Copy constants from the PHP domain into the browser Javascript domain
     var data_json = '<?php echo get_vnstat_data_as_json()?>';
@@ -527,7 +600,7 @@ function vnstat_graph_javascript() {
     var elemId = [ "days_total", "hours_total", "days", "hours" ];
     var status_panel = document.getElementById("status-panel");
 
-    // Now loop through the data selecting only those interfaces that
+    // Loop through the data selecting only those interfaces that
     // we want a graph for.
     var interfaces = vnstat_interfaces.split(/[ ,]+/);  // make list an array
     var data = JSON.parse(data_json);
@@ -596,38 +669,8 @@ function vnstat_graph_javascript() {
           chOptions.plugins = [ Chartist.plugins.ctTargetLine({ value: d.ch_target_line, label: d.ch_target_text }) ];
         }
         d.chart = new Chartist.Bar("#" + id, d, chOptions);
-        d.chart.on('created', function (context) {
-          if (context.options.vnstat_data.vnstat_cumulative === 1) {
-            var d = context.options.vnstat_data;
-            var n = 0;
-            var l = d.vnstat_index.length;
-            var last = l;
-            var ux = (context.chartRect.x2 - context.chartRect.x1) / l;
-            var uy = (context.chartRect.y2 - context.chartRect.y1) / (context.bounds.max - context.bounds.min);
-            var i = d.vnstat_index.indexOf(n,1);
-            if (i < 0) i = d.vnstat_index.indexOf(++n,1);
-            while (last-- && !d.vnstat_index[last]);
-            var txt = ((n == 0) ? 'Day' : 'Month') + ' Total<br>';
-            while ((i > 0) || (last > 0)) {
-              if (i <= 0) { i = last+1; last = -1; }
-           
-              var rx = d.series[0].data[i-1];
-              var tx = d.series[1].data[i-1];
-              var tt = rx + tx;
-              var rxtx = <?php echo $VNSTAT_RXTX?>;
-              var label = txt + tt.toFixed(2) + d.byte_label +
-                         (rxtx ? ("<br>rx: " + rx.toFixed(2) + d.byte_label +
-                                  "<br>tx: " + tx.toFixed(2) + d.byte_label ) : "");
-              // Use foreignObject rather than text so we can apply HTML styles (like background)
-              context.svg.foreignObject('<p><span class="ct-subtotal-label">'+label+'</span></p>', {
-                x: Math.min(context.chartRect.x2 - 40, context.chartRect.x1 + ux * i),
-                y: context.chartRect.y1 + Math.max((context.chartRect.y2 - context.chartRect.y1) / 2, uy * tt),
-                style: 'width: auto;',
-              }, 'ct-subtotal-label', false);
-              i = d.vnstat_index.indexOf(n,i+1);
-            }
-          }
-        });
+        // Now add labels to the chart for totals for each day or month
+        d.chart.on('created', periodTotalLabels);
       });
     });
   </script>
