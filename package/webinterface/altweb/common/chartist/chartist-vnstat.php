@@ -106,7 +106,8 @@ function define_vmstat_data_object() : array {
     'vnstat_average_tx' => 0,   // Average tx per period (hour or day)
     'vnstat_estimated_rx' => 0, // Estimated rx to end of day or month (mode >=2)
     'vnstat_estimated_tx' => 0, // Estimated tx to end of day or month (mode >=2)
-    'vnstat_cumulative' => 0    // 1 = values are cumulative not each period.
+    'vnstat_cumulative' => 0,   // 1 = values are cumulative not each period
+    'vnstat_update_time' => ''  // Database updated at day/time string
   );
   return $data;
 }
@@ -130,7 +131,9 @@ function get_hour_data(array $vnstat_if, int $mode=1) : array {
   $updated_day = $vnstat_if['updated']['date']['day'];
   $updated_month = $vnstat_if['updated']['date']['month'];
   $updated_year = $vnstat_if['updated']['date']['year'];
-  $updated_hour_stamp = intdiv(mktime($updated_hour,0,0,$updated_month,$updated_day,$updated_year),3600);
+  $timestamp = mktime($updated_hour,$updated_minute,0,$updated_month,$updated_day,$updated_year);
+  $data['vnstat_update_time'] = date('Y-m-d H:i T',$timestamp);
+  $updated_hour_stamp = intdiv($timestamp,3600);
   // For estimating the remaining traffic to end-of-day, keep running totals.
   $est_average_rx_total = 0;
   $est_average_tx_total = 0;
@@ -263,8 +266,10 @@ function get_day_data(array $vnstat_if, int $mode=1) : array {
   $updated_day = $vnstat_if['updated']['date']['day'];
   $updated_month = $vnstat_if['updated']['date']['month'];
   $updated_year = $vnstat_if['updated']['date']['year'];
+  $timestamp = mktime($updated_hour,$updated_minute,0,$updated_month,$updated_day,$updated_year);
+  $data['vnstat_update_time'] = date('Y-m-d H:i T',$timestamp);
   $updated_mth_stamp = $updated_year * 12 + $updated_month;
-  $updated_day_stamp = intdiv(mktime(0,0,0,$updated_month,$updated_day,$updated_year),86400);
+  $updated_day_stamp = intdiv($timestamp,86400);
   // For estimating the remaining traffic to end-of-month, keep running totals.
   $est_average_rx_total = 0;
   $est_average_tx_total = 0;
@@ -605,7 +610,7 @@ function vnstat_graph_javascript($vnstat_interfaces = 'eth0', $td_element) {
     var data = JSON.parse(data_json);
     var rxtx = <?php echo $VNSTAT_RXTX?>;
     var title_text = "";
-    var last_data_at = "unknown";
+    var updated_text = "unknown";
     interfaces.forEach(function (iif) {
       var iif_data = data[iif];
       if (!iif_data) return;  // No data for this interface name.
@@ -618,7 +623,8 @@ function vnstat_graph_javascript($vnstat_interfaces = 'eth0', $td_element) {
         normalizeByOrderOfMagnitude(iif_data.hours_total);
         createTargetLine(iif_data.hours,"Average hourly traffic: ", "average");
         createTargetLine(iif_data.hours_total,"Today's estimated traffic: ", "estimated");
-        title_text = iif_data.hours.vnstat_alias + " (" + iif_data.hours.vnstat_name + ")";
+        title_text = iif_data.hours.vnstat_alias + "(" + iif_data.hours.vnstat_name + ")";
+        updated_text = iif_data.hours.vnstat_update_time;
       }
       if (iif_data.days) {
         iif_data.days_total = cloneObject(iif_data.days);
@@ -627,15 +633,15 @@ function vnstat_graph_javascript($vnstat_interfaces = 'eth0', $td_element) {
         normalizeByOrderOfMagnitude(iif_data.days_total);
         createTargetLine(iif_data.days,"Average daily traffic: ", "average");
         createTargetLine(iif_data.days_total,"This month's estimated traffic: ", "estimated");
-        title_text = iif_data.days.vnstat_alias + " (" + iif_data.days.vnstat_name + ")";
+        title_text = iif_data.days.vnstat_alias + "(" + iif_data.days.vnstat_name + ")";
+        updated_text = iif_data.days.vnstat_update_time;
       }      
 
+      // Add row for title text
       var title_row = table.insertRow(1);
       var cell = title_row.insertCell(0);
-      cell.innerHTML = "<h1>"+title_text+"</h1>";
-      cell = title_row.insertCell(1);
-      cell.innerHTML = "<h2>"+last_data_at+"</h2>";
-      status_panel.colSpan = "2";
+      cell.innerHTML = '<span style="text-align:left; font-size:1.5em; width:30%; display:inline-block;">'+title_text+'</span>'+
+                       '<span style="text-align:right; font-size:1em; width:70%; display:inline-block;">Database updated: '+updated_text+'</span>';
       // Create <div> elements for each graph and insert them into the DOM
       elemId.forEach(function (elem) {
         var d = iif_data[elem];
