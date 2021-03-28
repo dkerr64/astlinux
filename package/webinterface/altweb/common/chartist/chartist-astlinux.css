@@ -7,6 +7,12 @@
   width: 100%;
 }
 
+@media only screen and (max-width: 768px) {
+  /* For phone: */
+  .vnstat-txt {column-count: 1;}
+  .vnstat-txt-pre {font-size: 1.7vw;}
+}
+
 @media only screen and (min-width: 768px) {
   /* For desktop: */
   .col-1 {width: 8.33%;}
@@ -21,9 +27,9 @@
   .col-10 {width: 83.33%;}
   .col-11 {width: 91.66%;}
   .col-12 {width: 100%;}
+  .vnstat-txt {column-count: 2;}
+  .vnstat-txt-pre {font-size: 0.9vw;}
 }
-
-
 
 .ct-series-a .ct-area {
   fill: #FFA500;
@@ -65,15 +71,15 @@
 }
 /* For 3 months (93 days) bar chart */
 .ct-series .ct-bar93 {
-  stroke-width: 1%
+  stroke-width: 0.8%
 }
 /* For 4 days (96 hours) bar chart */
 .ct-series .ct-bar96 {
-  stroke-width: 1%
+  stroke-width: 0.8%
 }
 /* For 4 months (124 days) bar chart */
 .ct-series .ct-bar124 {
-  stroke-width: .8%
+  stroke-width: 0.6%
 }
 
 .ct-target-line-label {
@@ -123,4 +129,17 @@
   float: left;
   margin: 2px;
  /* line-height: 1.2em; */
+}
+
+.vnstat-txt {
+  /* column-gap: 8px; */
+}
+
+.vnstat-txt-div {
+  break-inside: avoid;
+}
+
+.vnstat-txt-pre {
+  border: 1px solid #54545C;
+  background: #F7F7F7;
 }

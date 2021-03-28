@@ -22,8 +22,10 @@ require_once '../common/functions.php';
 //####################################################################
 function display_section($output, $label) {
 
-  putHtml('<h2>'.$label.':</h2>');
-  putHtml('<pre style="background: #F7F7F7; border: 1px solid #54545C;">');
+ // putHtml('<div style="float: left;">');
+  putHtml('<div class="vnstat-txt-div">');
+  putHtml('<h2 style="margin-block-start:0px">'.$label.':</h2>');
+  putHtml('<pre class="vnstat-txt-pre">');
 
   while (! feof($output)) {
     if (($line = fgets($output, 1024)) !== FALSE) {
@@ -34,6 +36,7 @@ function display_section($output, $label) {
     }
   }
   putHtml("</pre>");
+  putHtml("</div>");
 }
 
 
@@ -92,9 +95,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $cmd .= '; echo "#next#"';
       $vnstat_output = @popen($cmd, 'r');
     }
-    else {
+ //   else {
       require_once '../common/chartist/chartist-vnstat.php';
-    }
+ //   }
   }
 
   putHtml('<center>');
@@ -106,7 +109,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   putHtml('</center>');
 
   putHtml('<center>');
-  putHtml('<table class="status"><tr><td style="text-align: center;">');
+  putHtml('<table class="status" style="width:100%"><tr><td style="text-align: center;">');
   putHtml('<h2>View Network Statistics:</h2>');
   if (isset($dbiflist_array)) {
     foreach ($dbiflist_array as $iface) {
@@ -122,7 +125,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     putHtml('</td></tr><tr><td>');  
     if (isset($vnstat_output)) {
       if ($vnstat_output !== FALSE) {
-
+putHtml('<div class="vnstat-txt">');
         display_section($vnstat_output, "Hours Graph");
 
         display_section($vnstat_output, ($iface_opt !== '') ? "Summary" : "All Monitored Summary");
@@ -140,6 +143,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         pclose($vnstat_output);
       }
+putHtml('</div>');
     } else {
       putHtml('<p style="color: red;">The vnStat package is not installed.</p>');
     }

@@ -107,7 +107,8 @@ function define_vmstat_data_object() : array {
     'vnstat_estimated_rx' => 0, // Estimated rx to end of day or month (mode >=2)
     'vnstat_estimated_tx' => 0, // Estimated tx to end of day or month (mode >=2)
     'vnstat_cumulative' => 0,   // 1 = values are cumulative not each period
-    'vnstat_update_time' => ''  // Database updated at day/time string
+    'vnstat_update_time' => '', // Database updated at day/time string
+    'ch_target_line' => 0       // Value for horizontal marker line on graph
   );
   return $data;
 }
@@ -493,6 +494,8 @@ function vnstat_graph_javascript($vnstat_interfaces = 'eth0', $td_element) {
       d.vnstat_max_rx = Math.max(d.vnstat_max_rx,rx_total);
       d.vnstat_max_tx = Math.max(d.vnstat_max_tx,tx_total);
       d.vnstat_cumulative = 1;
+      d.ch_target_line = d.vnstat_estimated_rx +  d.vnstat_last_rx +
+                         d.vnstat_estimated_tx +  d.vnstat_last_tx;
     }
 
     //----------------------------------------------------------------
@@ -504,7 +507,7 @@ function vnstat_graph_javascript($vnstat_interfaces = 'eth0', $td_element) {
       if (d === undefined) return;
       var kb_divisor = <?php echo ($VNSTAT_CONFIG['UnitMode'] == 2 ? 1000 : 1024)?>;
       var byte_labels = <?php echo ($VNSTAT_CONFIG['UnitMode'] == 0 ? '[ "B", "KiB", "MiB", "GiB", "TiB", "PiB" ]' : '[ "B", "KB", "MB", "GB", "TB", "PB" ]')?>;
-      d.oom = Math.floor(Math.floor(Math.log(d.vnstat_max_rx + d.vnstat_max_tx) / Math.LN10) / 3);
+      d.oom = Math.floor(Math.floor(Math.log(Math.max(d.ch_target_line,d.vnstat_max_rx + d.vnstat_max_tx)) / Math.LN10) / 3);
       d.byte_label = byte_labels[d.oom];
       var divisor = Math.pow(kb_divisor, d.oom);
       if (divisor > 1) {
@@ -522,6 +525,7 @@ function vnstat_graph_javascript($vnstat_interfaces = 'eth0', $td_element) {
         d.vnstat_average_tx /= divisor;
         d.vnstat_estimated_rx /= divisor;
         d.vnstat_estimated_tx /= divisor;
+        d.ch_target_line /= divisor;
       }
     }
 
@@ -637,9 +641,9 @@ function vnstat_graph_javascript($vnstat_interfaces = 'eth0', $td_element) {
         updated_text = iif_data.days.vnstat_update_time;
       }      
 
-      // Add row for title text
       var title_row = table.insertRow(1);
       var cell = title_row.insertCell(0);
+      // cell.style.verticalAlign='text-bottom';
       cell.innerHTML = '<span style="text-align:left; font-size:1.5em; width:30%; display:inline-block;">'+title_text+'</span>'+
                        '<span style="text-align:right; font-size:1em; width:70%; display:inline-block;">Database updated: '+updated_text+'</span>';
       // Create <div> elements for each graph and insert them into the DOM
