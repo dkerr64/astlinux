@@ -80,24 +80,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       }
     }
 
-    if (!isset($_GET['graph'])) {
-      $cmd = '/usr/bin/vnstat -hg'.$iface_opt;
-      $cmd .= '; echo "#next#"';
-      $cmd .= '; /usr/bin/vnstat'.$iface_opt;
-      $cmd .= '; echo "#next#"';
-      $cmd .= '; /usr/bin/vnstat -m'.$iface_opt;
-      $cmd .= '; echo "#next#"';
-      $cmd .= '; /usr/bin/vnstat -t'.$iface_opt;
-      $cmd .= '; echo "#next#"';
-      $cmd .= '; /usr/bin/vnstat -d'.$iface_opt;
-      $cmd .= '; echo "#next#"';
-      $cmd .= '; /usr/bin/vnstat -y'.$iface_opt;
-      $cmd .= '; echo "#next#"';
-      $vnstat_output = @popen($cmd, 'r');
-    }
- //   else {
-      require_once '../common/chartist/chartist-vnstat.php';
- //   }
+    $cmd = '/usr/bin/vnstat -hg'.$iface_opt;
+    $cmd .= '; echo "#next#"';
+    $cmd .= '; /usr/bin/vnstat'.$iface_opt;
+    $cmd .= '; echo "#next#"';
+    $cmd .= '; /usr/bin/vnstat -m'.$iface_opt;
+    $cmd .= '; echo "#next#"';
+    $cmd .= '; /usr/bin/vnstat -t'.$iface_opt;
+    $cmd .= '; echo "#next#"';
+    $cmd .= '; /usr/bin/vnstat -d'.$iface_opt;
+    $cmd .= '; echo "#next#"';
+    $cmd .= '; /usr/bin/vnstat -y'.$iface_opt;
+    $cmd .= '; echo "#next#"';
+    $vnstat_output = @popen($cmd, 'r');
+    require_once '../common/chartist/chartist-vnstat.php';
   }
 
   putHtml('<center>');
@@ -107,59 +103,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     putHtml('<p>&nbsp;</p>');
   }
   putHtml('</center>');
-
   putHtml('<center>');
+
   putHtml('<table class="status" style="width:100%"><tr><td style="text-align: center;">');
   putHtml('<h2>View Network Statistics:</h2>');
   if (isset($dbiflist_array)) {
     foreach ($dbiflist_array as $iface) {
       if ($iface != '') {
-        putHtml('<a href="'.$myself.'?iface='.$iface.(isset($_GET['graph'])?'&graph':'').'" class="headerText">'.$iface.'</a>');
+        putHtml('<a href="'.$myself.'?iface='.$iface.'" class="headerText">'.$iface.'</a>');
       }
     }
   }
+ // putHtml('</td></tr><tr><td>');
 
-  if (!isset($_GET['graph'])) {
-    // Default text-based mode
-    putHtml('<a href="'.$myself.'?iface='.$_GET['iface'].'&graph" class="headerText">Graph mode</a>');
-    putHtml('</td></tr><tr><td>');  
-    if (isset($vnstat_output)) {
-      if ($vnstat_output !== FALSE) {
-putHtml('<div class="vnstat-txt">');
-        display_section($vnstat_output, "Hours Graph");
+  if (isset($vnstat_output)) {
+    if ($vnstat_output !== FALSE) {
+      putHtml('</td></tr><tr><td id="status-panel" class="vnstat-graphs">');
+      // Now transition to Javascript to build the Chartist graphs...
+      vnstat_graph_javascript($_GET['iface'], 'status-panel');
+      // Add a new row to the table for the rest...
+      putHtml('</td></tr><tr><td>');
+      putHtml('<div class="vnstat-txt">');
 
-        display_section($vnstat_output, ($iface_opt !== '') ? "Summary" : "All Monitored Summary");
+      display_section($vnstat_output, "Hours Graph");
 
-        display_section($vnstat_output, "Months");
+      display_section($vnstat_output, ($iface_opt !== '') ? "Summary" : "All Monitored Summary");
 
-        display_section($vnstat_output, "Top Days");
+      display_section($vnstat_output, "Months");
 
-        display_section($vnstat_output, "Days");
+      display_section($vnstat_output, "Top Days");
 
-        display_section($vnstat_output, "Years");
+      display_section($vnstat_output, "Days");
 
-        while (! feof($vnstat_output)) {
-          fgets($vnstat_output, 1024);
-        }
-        pclose($vnstat_output);
+      display_section($vnstat_output, "Years");
+
+      putHtml('</div>');
+      while (! feof($vnstat_output)) {
+        fgets($vnstat_output, 1024);
       }
-putHtml('</div>');
-    } else {
-      putHtml('<p style="color: red;">The vnStat package is not installed.</p>');
+      pclose($vnstat_output);
     }
-  }
-  else {
-    // For Chartist graphs we want the table to be 100% width
-    // rather than sized based on the contents.
-    putHtml('<script>');
-    putHtml('var tables = document.getElementsByClassName("status");');
-    putHtml('for(var i=0; i<tables.length; i++) tables[i].style.width = "100%";');
-    putHtml('</script>');
-
-    putHtml('<a href="'.$myself.'?iface='.$_GET['iface'].'" class="headerText">Text mode</a>');
-    putHtml('</td></tr><tr><td id="status-panel">');
-    // Now transition to Javascript to built the Chartist graphs...
-    vnstat_graph_javascript($_GET['iface'], 'status-panel');
+  } else {
+    putHtml('<p style="color: red;">The vnStat package is not installed.</p>');
   }
 
   putHtml('</td></tr></table>');

@@ -600,10 +600,10 @@ function vnstat_graph_javascript($vnstat_interfaces = 'eth0', $td_element) {
     // We need to adjust the width of bars in our chart based on the number
     // of bars displayed.  Chartist requires this be done in CSS styles
     // 24hrs, 31days, 48hrs, 62days, 72hrs, etc. etc.
-    var bar_css_index = [ 24, 31, 48, 62, 72, 93, 96, 124 ];
-    var bar_css = [ "ct-bar24", "ct-bar31", "ct-bar48", "ct-bar62", "ct-bar72", "ct-bar93", "ct-bar96", "ct-bar124" ];
+    var bar_css_index = [ 25, 31, 48, 62, 72, 93, 96, 124, 144, 168 ];
+    var bar_css = [ "ct-bar24", "ct-bar31", "ct-bar48", "ct-bar62", "ct-bar72", "ct-bar93", "ct-bar96", "ct-bar124", "ct-bar144", "ct-bar168" ];
     // elemId must match names of objects inside iif_data.  Order determines order of <div> elements
-    var elemId = [ "days_total", "hours_total", "days", "hours" ];
+    var elemId = [ "days_total", "days", "hours_total", "hours" ];
     var status_panel = document.getElementById(td_element);
     var tr_element = status_panel.parentElement;
     var table = tr_element.parentElement;
@@ -627,7 +627,7 @@ function vnstat_graph_javascript($vnstat_interfaces = 'eth0', $td_element) {
         normalizeByOrderOfMagnitude(iif_data.hours_total);
         createTargetLine(iif_data.hours,"Average hourly traffic: ", "average");
         createTargetLine(iif_data.hours_total,"Today's estimated traffic: ", "estimated");
-        title_text = iif_data.hours.vnstat_alias + "(" + iif_data.hours.vnstat_name + ")";
+        title_text = iif_data.hours.vnstat_alias + " (" + iif_data.hours.vnstat_name + ")";
         updated_text = iif_data.hours.vnstat_update_time;
       }
       if (iif_data.days) {
@@ -637,15 +637,15 @@ function vnstat_graph_javascript($vnstat_interfaces = 'eth0', $td_element) {
         normalizeByOrderOfMagnitude(iif_data.days_total);
         createTargetLine(iif_data.days,"Average daily traffic: ", "average");
         createTargetLine(iif_data.days_total,"This month's estimated traffic: ", "estimated");
-        title_text = iif_data.days.vnstat_alias + "(" + iif_data.days.vnstat_name + ")";
+        title_text = iif_data.days.vnstat_alias + " (" + iif_data.days.vnstat_name + ")";
         updated_text = iif_data.days.vnstat_update_time;
       }      
 
       var title_row = table.insertRow(1);
       var cell = title_row.insertCell(0);
-      // cell.style.verticalAlign='text-bottom';
-      cell.innerHTML = '<span style="text-align:left; font-size:1.5em; width:30%; display:inline-block;">'+title_text+'</span>'+
-                       '<span style="text-align:right; font-size:1em; width:70%; display:inline-block;">Database updated: '+updated_text+'</span>';
+      cell.style.paddingBottom = "0px";
+      cell.innerHTML = '<h2 style="text-align:left; width:30%; display:inline-block; margin-block-start:0px; margin-block-end:0px">'+title_text+'</h2>'+
+                       '<span style="text-align:right; font-size:1em; width:70%; display:inline-block; margin-block-start:0px; margin-block-end:0px">Database updated: '+updated_text+'</span>';
       // Create <div> elements for each graph and insert them into the DOM
       elemId.forEach(function (elem) {
         var d = iif_data[elem];
@@ -654,7 +654,7 @@ function vnstat_graph_javascript($vnstat_interfaces = 'eth0', $td_element) {
         var div = document.createElement('div');
 
         div.setAttribute("id", id);
-        div.setAttribute("class", "ct-chart ct-major-seventh ct-astlinux-box col-6");
+        div.setAttribute("class", "ct-chart ct-major-seventh ct-astlinux-box");
 
         status_panel.insertBefore(div, status_panel.childNodes[0]);
 
