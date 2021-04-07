@@ -29,6 +29,7 @@
 // 02-21-2020, Remove PPTP VPN support
 // 05-10-2020, Added Linux Containers (LXC)
 // 02-05-2021, Added Show vnStat Tab
+// 04-06-2021, Added vnStat tab options
 //
 
 $myself = $_SERVER['PHP_SELF'];
@@ -326,6 +327,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     fwrite($fp, $value."\n");
     $value = 'users_voicemail_reload_cmdstr = "'.tuqp($_POST['voicemail_reload']).'"';
     fwrite($fp, $value."\n");
+
+    if (($value = $_POST['vnstat_days']) !== '') {
+      $value = 'vnstat_days = "'.$value.'"';
+      fwrite($fp, $value."\n");
+    }
+    if (($value = $_POST['vnstat_months']) !== '') {
+      $value = 'vnstat_months = "'.$value.'"';
+      fwrite($fp, $value."\n");
+    }
+    if (($value = $_POST['vnstat_precision']) !== '') {
+      $value = 'vnstat_precision = "'.$value.'"';
+      fwrite($fp, $value."\n");
+    }
+    if (isset($_POST['vnstat_rxtx'])) {
+      $value = 'vnstat_rxtx = 1';
+      fwrite($fp, $value."\n");
+    }
 
     if (! isset($_POST['codemirror_editor'])) {
       $value = 'disable_codemirror_editor = yes';
@@ -1056,6 +1074,53 @@ require_once '../common/header.php';
     $value = 'module reload app_voicemail.so';
   }
   putHtml('<input type="text" size="28" maxlength="64" value="'.$value.'" name="voicemail_reload" /></td></tr>');
+
+  putHtml('<tr class="dtrow0"><td colspan="6">&nbsp;</td></tr>');
+
+  putHtml('<tr class="dtrow0"><td class="dialogText" style="text-align: left;" colspan="6">');
+  putHtml('<strong>vnStat Tab Options:</strong>');
+  putHtml('</td></tr>');
+
+  $VNSTAT_CONFIG = parse_ini_string(@shell_exec('vnstat --showconfig | sed -r -e \'s/^#.*//\' -e \'/^$/ d\' -e \'s/("[^"]*"|\\S+)\\s+/\\1=/g\''));
+  putHtml('<tr class="dtrow1"><td style="text-align: right;" colspan="4">Number of days to graph:</td><td colspan="2">');
+  if (($value = getPREFdef($global_prefs, 'vnstat_days')) === '') {
+    $value = '3';
+  }
+  putHtml('<select name="vnstat_days">');
+  // maximum of 7 days or content of vnStat database, whichever less.
+  for ($i = 1; $i <= min(7,max(1, $VNSTAT_CONFIG['HourlyDays'])); $i++) {
+    $sel = ($i == $value) ? ' selected="selected"' : '';
+    putHtml('<option value="'.$i.'"'.$sel.'>&nbsp;'.$i.'&nbsp;</option>');
+  }
+  putHtml('</select>');
+  putHtml('</td></tr>');
+  putHtml('<tr class="dtrow1"><td style="text-align: right;" colspan="4">Number of months to graph:</td><td colspan="2">');
+  if (($value = getPREFdef($global_prefs, 'vnstat_months')) === '') {
+    $value = '2';
+  }
+  putHtml('<select name="vnstat_months">');
+  // maximum of 6 months or content of vnStat database, whichever less.
+  for ($i = 1; $i <= min(6, max(1, round($VNSTAT_CONFIG['DailyDays'] / 31))); $i++) {
+    $sel = ($i == $value) ? ' selected="selected"' : '';
+    putHtml('<option value="'.$i.'"'.$sel.'>&nbsp;'.$i.'&nbsp;</option>');
+  }
+  putHtml('</select>');
+  putHtml('</td></tr>');
+  putHtml('<tr class="dtrow1"><td style="text-align: right;" colspan="4">Decimal precision for data values:</td><td colspan="2">');
+  if (($value = getPREFdef($global_prefs, 'vnstat_precision')) === '') {
+    $value = '2';
+  }
+  putHtml('<select name="vnstat_precision">');
+  for ($i = 0; $i <= 3; $i++) {
+    $sel = ($i == $value) ? ' selected="selected"' : '';
+    putHtml('<option value="'.$i.'"'.$sel.'>&nbsp;'.$i.'&nbsp;</option>');
+  }
+  putHtml('</select>');
+  putHtml('</td></tr>');
+
+  putHtml('<tr class="dtrow1"><td style="text-align: right;">');
+  $sel = (getPREFdef($global_prefs, 'vnstat_rxtx') === '1') ? ' checked="checked"' : '';
+  putHtml('<input type="checkbox" value="vnstat_rxtx" name="vnstat_rxtx"'.$sel.' /></td><td colspan="5">Show both received and transmitted data values</td></tr>');
 
   putHtml('<tr class="dtrow0"><td colspan="6">&nbsp;</td></tr>');
 

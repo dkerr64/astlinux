@@ -12,12 +12,20 @@
 //
 //####################################################################
 
-$VNSTAT_DEBUG=0;
-$VNSTAT_RXTX = 0;
-
 $VNSTAT_CONFIG = get_vnstat_config();
-$VNSTAT_HOURS_MODE = $VNSTAT_HOURS_MODE ?? 3;
-$VNSTAT_DAYS_MODE = $VNSTAT_DAYS_MODE ?? 2;
+
+$VNSTAT_DEBUG=0;
+$VNSTAT_RXTX = intval(getPREFdef($global_prefs, 'vnstat_rxtx'));
+$VNSTAT_HOURS_MODE = intval(getPREFdef($global_prefs, 'vnstat_days'));
+$VNSTAT_DAYS_MODE = intval(getPREFdef($global_prefs, 'vnstat_months'));
+// Graphs default to 3 days and 2 months,
+if ($VNSTAT_HOURS_MODE == 0) $VNSTAT_HOURS_MODE = 3;
+if ($VNSTAT_DAYS_MODE == 0) $VNSTAT_DAYS_MODE = 2;
+// Graphs  must not exceed available data in vnStat db
+$VNSTAT_HOURS_MODE = min($VNSTAT_HOURS_MODE, max(1, $VNSTAT_CONFIG['HourlyDays']));
+$VNSTAT_DAYS_MODE  = min($VNSTAT_DAYS_MODE,  max(1, round($VNSTAT_CONFIG['DailyDays'] / 31)));
+// Decimal places to round tx/rx values to...
+$VNSTAT_ROUND = (getPREFdef($global_prefs, 'vnstat_precision') == '') ? 2 : intval(getPREFdef($global_prefs, 'vnstat_precision'));
 
 function msg_debug($msg) {
   global $VNSTAT_DEBUG;
@@ -192,18 +200,19 @@ function get_hour_data(array $vnstat_if, int $mode=1) : array {
       // records with zero rx/tx values.
       msg_debug2("Pad missing hour $hour ($this_hour)");
       // Add X-axis labels.  If midnight include the day name.
-      if ($mode == 1 || in_array($hour,$labels)) array_push($data['labels'],sprintf('%02d', $hour));
-      else array_push($data['labels'],'');
-      if ($hour == 0) $data['labels'][count($data['labels'])-1] = sprintf('%02d\n%s', $hour, day_of_week($this_day,$this_month,$this_year, 1));
+      $lbl = ($hour == 0) ? sprintf('%02d\n%s', $hour, day_of_week($this_day,$this_month,$this_year, 1)) : sprintf('%02d', $hour);
+      if ($mode != 1 && !in_array($hour,$labels)) $lbl = '';
+      array_push($data['labels'],$lbl);
+      // Pad with zeros
       array_push($data['series'][0]['data'],0);
       array_push($data['series'][1]['data'],0);
       array_push($data['vnstat_index'],$hour);
     }
     msg_debug2("Add hour $hour ($this_hour) $add_msg");
     // Add X-axis labels.  If midnight include the day name.
-    if ($mode == 1 || in_array($hour,$labels)) array_push($data['labels'],sprintf('%02d', $hour));
-    else array_push($data['labels'],'');
-    if ($hour == 0) $data['labels'][count($data['labels'])-1] = sprintf('%02d\n%s', $hour, day_of_week($this_day,$this_month,$this_year, 1));
+    $lbl = ($hour == 0) ? sprintf('%02d\n%s', $hour, day_of_week($this_day,$this_month,$this_year, 1)) : sprintf('%02d', $hour);
+    if ($mode != 1 && !in_array($hour,$labels)) $lbl = '';
+    array_push($data['labels'],$lbl);
     // Add rx/tx data
     array_push($data['series'][0]['data'],$record['rx']);
     array_push($data['series'][1]['data'],$record['tx']);
@@ -228,9 +237,8 @@ function get_hour_data(array $vnstat_if, int $mode=1) : array {
     msg_debug2("Pad with " . (23 - $hour) . " hours to end of day");
     while ($hour++ < 23) {
       // Add X-axis labels.  If midnight include the day name.
-      if ($mode == 1 || in_array($hour,$labels)) array_push($data['labels'],sprintf('%02d', $hour));
-      else array_push($data['labels'],'');
-      if ($hour == 0) $data['labels'][count($data['labels'])-1] = sprintf('%02d\n%s', $hour, day_of_week($this_day,$this_month,$this_year, 1));
+      $lbl = ($hour == 0) ? sprintf('%02d\n%s', $hour, day_of_week($this_day,$this_month,$this_year, 1)) : sprintf('%02d', $hour);
+      array_push($data['labels'],in_array($hour,$labels) ? $lbl : '');
       // Pad with zeros
       array_push($data['series'][0]['data'],0);
       array_push($data['series'][1]['data'],0);
@@ -346,9 +354,13 @@ function get_day_data(array $vnstat_if, int $mode=1) : array {
       }
       msg_debug2("Pad missing day $day ($this_day) ($this_year/$this_month), days = $days_in_month");
       // Add X-axis labels.  If first of month include the month name.
-      if ($mode == 1 || in_array($day,$labels)) array_push($data['labels'],$day);
-      else array_push($data['labels'],'');
-      if ($day == 1) $data['labels'][count($data['labels'])-1] = sprintf('%d\n%s', $day, name_of_month($this_month, 1));
+      $lbl = ($day == 1) ? sprintf('%d\n%s', $day, name_of_month($this_month, 1)) : $day;
+      if ($mode != 1) {
+        if (!in_array($day,$labels)) $lbl = '';
+        else if ($day == 28 && $this_month == 2 && $updated_month != $this_month) $lbl = '';
+      }
+      array_push($data['labels'],$lbl);
+      // Pad with zeros
       array_push($data['series'][0]['data'],0);
       array_push($data['series'][1]['data'],0);
       array_push($data['vnstat_index'],$day);
@@ -360,14 +372,18 @@ function get_day_data(array $vnstat_if, int $mode=1) : array {
     }
     msg_debug2("Add day $day ($this_day) ($this_year/$this_month), days = $days_in_month. $add_msg");
     // Add X-axis labels.  If first of month include the month name.
-    if ($mode == 1 || in_array($day,$labels)) array_push($data['labels'],$day);
-    else array_push($data['labels'],'');
-    if ($day == 1) $data['labels'][count($data['labels'])-1] = sprintf('%d\n%s', $day, name_of_month($this_month, 1));
+    $lbl = ($day == 1) ? sprintf('%d\n%s', $day, name_of_month($this_month, 1)) : $day;
+    if ($mode != 1) {
+      if (!in_array($day,$labels)) $lbl = '';
+      else if ($day == 28 && $this_month == 2 && $updated_month != $this_month) $lbl = '';
+    }
+    array_push($data['labels'],$lbl);
     // Add traffic data to array, update running totals, etc.
     array_push($data['series'][0]['data'],$record['rx']);
     array_push($data['series'][1]['data'],$record['tx']);
     array_push($data['vnstat_index'],$this_day);
     $data['vnstat_data_count']++;
+    // Keep running totals
     $data['vnstat_max_rx'] = max($data['vnstat_max_rx'], $record['rx']);
     $data['vnstat_max_tx'] = max($data['vnstat_max_tx'], $record['tx']);
     $data['vnstat_total_rx'] += $record['rx'];
@@ -390,9 +406,9 @@ function get_day_data(array $vnstat_if, int $mode=1) : array {
     msg_debug2("Pad with " . ($days_in_month - $day) . " days to end of month");
     while ($day++ < $days_in_month) {
       // Add X-axis labels.  If first of month include the month name.
-      if ($mode == 1 || in_array($day,$labels)) array_push($data['labels'],$day);
-      else array_push($data['labels'],'');
-      if ($day == 1) $data['labels'][count($data['labels'])-1] = sprintf('%d\n%s', $day, name_of_month($this_month, 1));
+      $lbl = ($day == 1) ? sprintf('%d\n%s', $day, name_of_month($this_month, 1)) : $day;
+      array_push($data['labels'],in_array($day,$labels) ? $lbl : '');
+      // Pad with zeros
       array_push($data['series'][0]['data'],0);
       array_push($data['series'][1]['data'],0);
       array_push($data['vnstat_index'],'');
@@ -450,9 +466,10 @@ function get_vnstat_data_as_json($vnstat_interfaces = 'eth0') : string {
 // Function:
 //
 //####################################################################
-function vnstat_graph_javascript($vnstat_interfaces = 'eth0', $td_element) {
+function vnstat_graph_javascript($vnstat_interfaces = 'eth0', $element) {
   global $VNSTAT_CONFIG;
   global $VNSTAT_RXTX;
+  global $VNSTAT_ROUND;
   ?>
   <script>
     //----------------------------------------------------------------
@@ -494,8 +511,9 @@ function vnstat_graph_javascript($vnstat_interfaces = 'eth0', $td_element) {
       d.vnstat_max_rx = Math.max(d.vnstat_max_rx,rx_total);
       d.vnstat_max_tx = Math.max(d.vnstat_max_tx,tx_total);
       d.vnstat_cumulative = 1;
-      d.ch_target_line = d.vnstat_estimated_rx +  d.vnstat_last_rx +
-                         d.vnstat_estimated_tx +  d.vnstat_last_tx;
+      d.ch_target_line = (d.vnstat_mode > 1) ? d.vnstat_estimated_rx +  d.vnstat_last_rx +
+                                               d.vnstat_estimated_tx +  d.vnstat_last_tx
+                                             : 0;
     }
 
     //----------------------------------------------------------------
@@ -536,13 +554,14 @@ function vnstat_graph_javascript($vnstat_interfaces = 'eth0', $td_element) {
       if ((type === 'estimated') && (d.vnstat_mode < 2)) return;
       var rx = d['vnstat_'+type+'_rx'];
       var tx = d['vnstat_'+type+'_tx'];
+      var prec = <?php echo $VNSTAT_ROUND?>;
       rx += (type === 'estimated') ? d.vnstat_last_rx : 0;
       tx += (type === 'estimated') ? d.vnstat_last_tx : 0;
       var rxtx = <?php echo $VNSTAT_RXTX?>;
       d.ch_target_line = rx + tx;
-      d.ch_target_text = txt + d.ch_target_line.toFixed(2) + d.byte_label +
-                         (rxtx ? (" (rx: " + rx.toFixed(2) + d.byte_label +
-                                   " tx: " + tx.toFixed(2) + d.byte_label + ")") : "");
+      d.ch_target_text = txt + d.ch_target_line.toFixed(prec) + d.byte_label +
+                         (rxtx ? (" (rx: " + rx.toFixed(prec) + d.byte_label +
+                                   " tx: " + tx.toFixed(prec) + d.byte_label + ")") : "");
     }
 
     //----------------------------------------------------------------
@@ -550,6 +569,8 @@ function vnstat_graph_javascript($vnstat_interfaces = 'eth0', $td_element) {
     // total for each day or month.
     function periodTotalLabels(context) {
       var d = context.options.vnstat_data;
+      var prec = <?php echo $VNSTAT_ROUND?>;
+
       if (!d.vnstat_cumulative) return;
       // convert each unit for X and Y into pixels
       var ux = (context.chartRect.x2 - context.chartRect.x1) / d.vnstat_index.length;
@@ -563,8 +584,9 @@ function vnstat_graph_javascript($vnstat_interfaces = 'eth0', $td_element) {
       // find the last non-zero value in our data.
       var last = d.vnstat_index.length;
       while (last-- && !d.vnstat_index[last]);
-      // initialise our label text
-      var txt = ((d.vnstat_mode > 1) ? ((start == 0) ? 'Day ' : 'Month ') : '') + 'Total<br>';
+      // initialise our label text with name of day or month
+      var txt = d.labels[0].toString();
+      txt = (d.vnstat_mode > 1) ? txt.substr(txt.indexOf('\n')+1) + '<br>' : 'Total<br>';
       // so we now have from i[ndex] to last to work with
       while ((i > 0) || (last > 0)) {
         // if i < 0 then we are at the last value in the data
@@ -574,16 +596,23 @@ function vnstat_graph_javascript($vnstat_interfaces = 'eth0', $td_element) {
           var tx = d.series[1].data[i-1];
           var tt = rx + tx;
           var rxtx = <?php echo $VNSTAT_RXTX?>;
-          var label = txt + tt.toFixed(2) + d.byte_label +
-                   (rxtx ? ("<br>rx: " + rx.toFixed(2) + d.byte_label +
-                            "<br>tx: " + tx.toFixed(2) + d.byte_label ) : "");
+          var label = txt + tt.toFixed(prec) + d.byte_label +
+                   (rxtx ? ("<br>rx: " + rx.toFixed(prec) + d.byte_label +
+                            "<br>tx: " + tx.toFixed(prec) + d.byte_label ) : "");
           // Use foreignObject rather than text so we can apply HTML styles (like background)
-          context.svg.foreignObject('<p><span class="ct-subtotal-label">'+label+'</span></p>', {
-            x: Math.min(context.chartRect.x2 - 40, context.chartRect.x1 + ux * i),
-            y: context.chartRect.y1 + Math.max((context.chartRect.y2 - context.chartRect.y1) / 2, Math.min(uy * tt,-40)),
-            style: 'width: auto;',
-          }, 'ct-subtotal-label', false);
+          var span = document.createElement('span');
+          span.setAttribute("class", "ct-subtotal-label");
+          span.innerHTML = label;
+          var fobj = context.svg.foreignObject(span, { x: -1000, y: -1000 }, '', false);
+          var rect = span.getBoundingClientRect();
+          fobj._node.setAttribute('x', Math.min(context.chartRect.x2 - rect.width, context.chartRect.x1 + ux * i) + 'px');
+          fobj._node.setAttribute('y', context.chartRect.y1 + Math.max((context.chartRect.y2 - context.chartRect.y1) / 2, Math.min(uy * tt,-rect.height)) + 'px');
+          fobj._node.setAttribute('width', Math.ceil(rect.width) + 'px');
+          fobj._node.setAttribute('height', Math.ceil(rect.height) + 'px');
         }
+        // Capture name of day or month for next label
+        txt = (d.labels[i]) ? d.labels[i].toString() : '';
+        txt = (d.vnstat_mode > 1) ? txt.substr(txt.indexOf('\n')+1) + '<br>' : 'Total<br>';
         // Now seek to the next start of day or start of month
         i = d.vnstat_index.indexOf(start,i+1);
       }
@@ -595,7 +624,7 @@ function vnstat_graph_javascript($vnstat_interfaces = 'eth0', $td_element) {
     // Copy constants from the PHP domain into the browser Javascript domain
     var data_json = '<?php echo get_vnstat_data_as_json($vnstat_interfaces)?>';
     var vnstat_interfaces = '<?php echo $vnstat_interfaces ?>';
-    var td_element = '<?php echo $td_element ?>';
+    var element = '<?php echo $element ?>';
 
     // We need to adjust the width of bars in our chart based on the number
     // of bars displayed.  Chartist requires this be done in CSS styles
@@ -604,9 +633,9 @@ function vnstat_graph_javascript($vnstat_interfaces = 'eth0', $td_element) {
     var bar_css = [ "ct-bar24", "ct-bar31", "ct-bar48", "ct-bar62", "ct-bar72", "ct-bar93", "ct-bar96", "ct-bar124", "ct-bar144", "ct-bar168" ];
     // elemId must match names of objects inside iif_data.  Order determines order of <div> elements
     var elemId = [ "days_total", "days", "hours_total", "hours" ];
-    var status_panel = document.getElementById(td_element);
-    var tr_element = status_panel.parentElement;
-    var table = tr_element.parentElement;
+    var status_panel = document.getElementById(element);
+    var tbody = status_panel.parentElement;
+    while (tbody.nodeName != 'TBODY') tbody = tbody.parentElement;
 
     // Loop through the data selecting only those interfaces that
     // we want a graph for.
@@ -641,11 +670,25 @@ function vnstat_graph_javascript($vnstat_interfaces = 'eth0', $td_element) {
         updated_text = iif_data.days.vnstat_update_time;
       }      
 
-      var title_row = table.insertRow(1);
+      var title_row = tbody.insertRow(1);
       var cell = title_row.insertCell(0);
       cell.style.paddingBottom = "0px";
-      cell.innerHTML = '<h2 style="text-align:left; width:30%; display:inline-block; margin-block-start:0px; margin-block-end:0px">'+title_text+'</h2>'+
-                       '<span style="text-align:right; font-size:1em; width:70%; display:inline-block; margin-block-start:0px; margin-block-end:0px">Database updated: '+updated_text+'</span>';
+      cell.innerHTML = '<h2 style="text-align:left; width:30%; display:inline-block; margin-block-start:0px; margin-block-end:0px">'+
+        title_text+
+        '</h2>'+
+        '<span style="text-align:right; font-size:1em; width:70%; display:inline-block; margin-block-start:0px; margin-block-end:0px">'+
+        'Database updated: '+updated_text+
+        '</span>'+
+        '<br>'+
+        '<span style="text-align:center; width:100%; display: inline-block; margin-top: 0.2em">'+
+        '<span style="display: inline-block; outline: 1px solid #54545C;">'+
+        '<span class="ct-series-a">'+
+        '<svg width="3em" height="0.8em"><rect x="0.5em" y="0.2em" width="2em" height="0.6em"></svg>'+
+        'Received&nbsp;data </span>'+
+        '<span class="ct-series-b">'+
+        '<svg width="3em" height="0.8em"><rect x="0.5em" y="0.2em" width="2em" height="0.6em"></svg>'+
+        'Transmitted&nbsp;data&nbsp;</span>'+
+        '</span></span>';
       // Create <div> elements for each graph and insert them into the DOM
       elemId.forEach(function (elem) {
         var d = iif_data[elem];
@@ -679,7 +722,12 @@ function vnstat_graph_javascript($vnstat_interfaces = 'eth0', $td_element) {
         if (d.ch_target_line > 0) {
           // Make sure the Y axis goes high enough to accommodate the target line
           chOptions.axisY.high = Math.max(d.ch_target_line * 1.02 ,(d.vnstat_max_rx + d.vnstat_max_tx));
-          chOptions.plugins = [ Chartist.plugins.ctTargetLine({ value: d.ch_target_line, label: d.ch_target_text }) ];
+          chOptions.plugins = [ Chartist.plugins.ctTargetLine({
+            value: d.ch_target_line,
+            label: d.ch_target_text,
+            textAlign: 'right',
+            labelOffset: { y: 1 }
+          }) ];
         }
         d.chart = new Chartist.Bar("#" + id, d, chOptions);
         // Now add labels to the chart for totals for each day or month

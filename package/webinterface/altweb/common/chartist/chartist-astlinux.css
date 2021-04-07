@@ -2,22 +2,20 @@
   box-sizing: border-box;
 }
 
-.ct-series-a .ct-area {
-  fill: #FFA500;
-  fill-opacity:.5
-}
-
-.ct-series-b .ct-area {
-  fill: #8C837A;
-  fill-opacity:.5
+foreignObject {
+  overflow: visible;
 }
 
 .ct-series-a {
   stroke: #FFA500;
+  fill: #FFA500;
+  fill-opacity:1
 }
 
 .ct-series-b {
   stroke: #8C837A;
+  fill: #8C837A;
+  fill-opacity:1
 }
 
 /* For 24 hours bar chart */
@@ -62,39 +60,44 @@
 }
 
 .ct-target-line-label {
-    color: #54545C;
-    font-size: 0.75rem;
-    white-space:nowrap;
-    overflow:visible;
-    text-align: right;
-    background: #F7F7F780;
+  color: #54545C;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  overflow: visible;
+  vertical-align: middle;
+  background: #F7F7F780;
+  margin: 0;
+  height: 1em;
 }
 
 .ct-subtotal-label {
-    color: #54545C;
-    font-size: 0.5rem;
-    white-space:nowrap;
-    overflow:visible;
-    text-align: left;
-    background: #F7F7F780;
+  color: #54545C;
+  font-size: 0.5rem;
+  white-space: nowrap;
+  overflow: visible;
+  vertical-align: middle;
+  background: #F7F7F780;
+  line-height: 110%;
+  height: 2em;
 }
 .ct-chart-bar .ct-label.ct-horizontal.ct-end {
-    -webkit-box-align: flex-start;
-    -webkit-align-items: flex-start;
-    -ms-flex-align: flex-start;
-    align-items: flex-start;
-    -webkit-box-pack: flex-start;
-    -webkit-justify-content: flex-start;
-    -ms-flex-pack: flex-start;
-    justify-content: flex-start;
-    text-align: left;
-    text-anchor: start;
+  -webkit-box-align: flex-start;
+  -webkit-align-items: flex-start;
+  -ms-flex-align: flex-start;
+  align-items: flex-start;
+  -webkit-box-pack: flex-start;
+  -webkit-justify-content: flex-start;
+  -ms-flex-pack: flex-start;
+  justify-content: flex-start;
+  text-align: left;
+  text-anchor: start;
 }
 .ct-target-line {
-    stroke: #54545C;
-    stroke-width: 2px;
-    stroke-dasharray: 2px;
-    shape-rendering: crispEdges;
+  stroke: #54545C;
+  stroke-width: 2px;
+  stroke-dasharray: 2px;
+  shape-rendering: crispEdges;
+  margin: 0;
 }
 
 .ct-astlinux-box {
@@ -110,7 +113,7 @@
 }
 
 .vnstat-txt {
-  /* column-gap: 8px; */
+  column-count: 1;
 }
 
 .vnstat-txt-div {
@@ -123,32 +126,76 @@
 }
 
 .vnstat-graphs {
-  /* column-gap: 8px; */
+  column-count: 1;
 }
 
 @media only screen
-       and (max-width: 768px) {
-  /* For phone: */
+       and (max-device-width: 768px)
+       and (orientation:portrait){
+  /* For phone */
   .vnstat-graphs {column-count: 1;}
   .vnstat-txt {column-count: 1;}
   .vnstat-txt-pre {font-size: 1.7vw;}
-  .ct-label {font-size: min(1.7vw, 0.75rem)};
+  .ct-label {font-size: min(1.7vw, 0.75rem)}
+  .ct-subtotal-label { font-size: min(1.7vw, 0.75rem)}
+  .ct-target-line-label { font-size: min(1.7vw, 0.75rem)}
 }
 
 @media only screen
-       and (max-width: 768px)
+       and (max-device-width: 768px)
        and (orientation: landscape) {
-  /* For phone: */
+  /* For phone landscape */
   .vnstat-graphs {column-count: 2;}
   .vnstat-txt {column-count: 1;}
   .vnstat-txt-pre {font-size: 1.7vw;}
-  .ct-label {font-size: min(1.7vw, 0.75rem)}; 
+  .ct-label {font-size: min(1.7vw, 0.75rem)}
+  .ct-subtotal-label { font-size: min(0.9vw, 0.75rem)}
+  .ct-target-line-label { font-size: min(0.9vw, 0.75rem)}
 }
 
-@media only screen and (min-width: 769px) {
+@media only screen
+       and (min-device-width: 769px)
+       and (max-device-width: 1024px)
+       and (orientation:portrait) {
+  /* for iPad */
+  .vnstat-graphs {column-count: 2;}
+  .vnstat-txt {column-count: 1;}
+  .vnstat-txt-pre {font-size: 1.7vw;}
+  .ct-label {font-size: min(1.7vw, 0.75rem)}
+  .ct-subtotal-label { font-size: min(0.9vw, 0.75rem)}
+  .ct-target-line-label { font-size: min(0.9vw, 0.75rem)}
+}
+
+@media only screen
+       and (min-device-width: 769px)
+       and (max-device-width: 1024px)
+       and (orientation:landscape) {
+  /* for iPad landscape */
+  .vnstat-graphs {column-count: 2;}
+  .vnstat-txt {column-count: 2;}
+  .vnstat-txt-pre {font-size: 0.9vw;}
+  .ct-label {font-size: min(0.9vw, 0.75rem)}
+  .ct-subtotal-label { font-size: min(0.8vw, 0.75rem)}
+  .ct-target-line-label { font-size: min(0.8vw, 0.75rem)}
+}
+
+@media only screen and (min-width: 1025px)
+                   and (max-width: 2560px){
   /* For desktop: */
   .vnstat-graphs {column-count: 2;}
   .vnstat-txt {column-count: 2;}
   .vnstat-txt-pre {font-size: 0.9vw;}
-  .ct-label {font-size: min(0.9vw, 0.75rem)}; 
+  .ct-label {font-size: min(0.9vw, 0.75rem)}
+  .ct-subtotal-label { font-size: min(0.8vw, 0.75rem)}
+  .ct-target-line-label { font-size: min(0.8vw, 0.75rem)}
+}
+
+@media only screen and (min-width: 2561px) {
+  /* For extra wide desktop: */
+  .vnstat-graphs {column-count: 4;}
+  .vnstat-txt {column-count: 3;}
+  .vnstat-txt-pre {font-size: 0.65vw;}
+  .ct-label {font-size: min(0.45vw, 0.75rem)}
+  .ct-subtotal-label { font-size: min(0.45vw, 0.75rem)}
+  .ct-target-line-label { font-size: min(0.45vw, 0.75rem)}
 }

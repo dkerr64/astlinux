@@ -6,7 +6,7 @@
 // version 3 as published by the Free Software Foundation; you can
 // redistribute it and/or modify it under the terms of the GNU
 // General Public License; and comes with ABSOLUTELY NO WARRANTY.
-
+//
 // vnstat.php for AstLinux
 // 02-05-2021
 // 02-12-2021 - Add graphs for hourly and daily traffic
@@ -21,12 +21,9 @@ require_once '../common/functions.php';
 //
 //####################################################################
 function display_section($output, $label) {
-
- // putHtml('<div style="float: left;">');
   putHtml('<div class="vnstat-txt-div">');
   putHtml('<h2 style="margin-block-start:0px">'.$label.':</h2>');
   putHtml('<pre class="vnstat-txt-pre">');
-
   while (! feof($output)) {
     if (($line = fgets($output, 1024)) !== FALSE) {
       if (($line = rtrim($line)) === '#next#') {
@@ -114,13 +111,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       }
     }
   }
- // putHtml('</td></tr><tr><td>');
 
   if (isset($vnstat_output)) {
     if ($vnstat_output !== FALSE) {
-      putHtml('</td></tr><tr><td id="status-panel" class="vnstat-graphs">');
+      putHtml('</td></tr><tr><td>');
+      putHtml('<div id="status-panel" class="vnstat-graphs">');
       // Now transition to Javascript to build the Chartist graphs...
       vnstat_graph_javascript($_GET['iface'], 'status-panel');
+      putHtml('</div>');
       // Add a new row to the table for the rest...
       putHtml('</td></tr><tr><td>');
       putHtml('<div class="vnstat-txt">');
