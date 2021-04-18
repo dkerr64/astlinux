@@ -359,7 +359,7 @@ function getIPV6address() {
   $cmd .= ' | awk \'$3 == "inet6" { split($4, field, "/"); print field[1]; nextfile; }\'';
   $cmd .= ';echo "#next#"';
   $cmd .= ';/sbin/ip -6 -o addr show scope global 2>/dev/null';
-  $cmd .= ' | awk \'$2 != "\'"$EXTIF"\'" && $3 == "inet6" { print $4," ["$2"]"; }\'';
+  $cmd .= ' | awk \'$2 != "\'"$EXTIF"\'" && $2 != "\'"$EXT2IF"\'" && $3 == "inet6" { print $4," ["$2"]"; }\'';
 
   $output = array();
   @exec($cmd, $output);
