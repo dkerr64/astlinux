@@ -26,6 +26,7 @@
 // 01-05-2017, Added BLOCKED_HOST_LOG direction support
 // 11-06-2017, Added WIREGUARD_ALLOWLAN support
 // 10-12-2018, Added WIREGUARD_ALLOW_OPENVPN support
+// 05-03-2021, Added support for variable number of internal LANs
 //
 // System location of /mnt/kd/rc.conf.d directory
 $FIREWALLCONFDIR = '/mnt/kd/rc.conf.d';
@@ -37,6 +38,14 @@ $TRAFFIC_SHAPER_PLUGIN = 'traffic-shaper';
 $myself = $_SERVER['PHP_SELF'];
 
 require_once '../common/functions.php';
+
+// System location of gui.network.conf file
+$NETCONFFILE = '/mnt/kd/rc.conf.d/gui.network.conf';
+if (is_file($NETCONFFILE)) {
+  $netvars = parseRCconf($NETCONFFILE);
+  if (($INTIF_COUNT = getVARdef($netvars, 'INTIF_COUNT')) === '') $INTIF_COUNT = 4;
+}
+else $INTIF_COUNT = 4;
 
 $action_label = array (
   'NAT_EXT_LAN' => 'NAT EXT->LAN',
@@ -90,53 +99,6 @@ $proto_label = array (
   '41' => '6to4'
 );
 
-$lan_permutations_label = array (
-  'INTIF' => '1st',
-  'INT2IF' => '2nd',
-  'INT3IF' => '3rd',
-  'INT4IF' => '4th',
-  'INTIF INT2IF' => '1st, 2nd',
-  'INTIF INT3IF' => '1st, 3rd',
-  'INTIF INT4IF' => '1st, 4th',
-  'INT2IF INT3IF' => '2nd, 3rd',
-  'INT2IF INT4IF' => '2nd, 4th',
-  'INT3IF INT4IF' => '3rd, 4th',
-  'INTIF INT2IF INT3IF' => '1st, 2nd, 3rd',
-  'INTIF INT2IF INT4IF' => '1st, 2nd, 4th',
-  'INTIF INT3IF INT4IF' => '1st, 3rd, 4th',
-  'INT2IF INT3IF INT4IF' => '2nd, 3rd, 4th',
-  'INTIF INT2IF INT3IF INT4IF' => '1st, 2nd, 3rd, 4th'
-);
-
-$allowlans_label = array (
-  'INTIF INT2IF' => '1st + 2nd',
-  'INTIF INT3IF' => '1st + 3rd',
-  'INTIF INT4IF' => '1st + 4th',
-  'INT2IF INT3IF' => '2nd + 3rd',
-  'INT2IF INT4IF' => '2nd + 4th',
-  'INT3IF INT4IF' => '3rd + 4th',
-  'INTIF INT2IF INT3IF' => '1st + 2nd + 3rd',
-  'INTIF INT2IF INT4IF' => '1st + 2nd + 4th',
-  'INTIF INT3IF INT4IF' => '1st + 3rd + 4th',
-  'INT2IF INT3IF INT4IF' => '2nd + 3rd + 4th',
-  'INTIF INT2IF INT3IF INT4IF' => '1st + 2nd + 3rd + 4th',
-  'INTIF INT2IF~INTIF INT3IF' => '1st + 2nd, 1st + 3rd',
-  'INTIF INT2IF~INTIF INT4IF' => '1st + 2nd, 1st + 4th',
-  'INTIF INT2IF~INT2IF INT3IF' => '1st + 2nd, 2nd + 3rd',
-  'INTIF INT2IF~INT2IF INT4IF' => '1st + 2nd, 2nd + 4th',
-  'INTIF INT2IF~INT3IF INT4IF' => '1st + 2nd, 3rd + 4th',
-  'INTIF INT3IF~INTIF INT4IF' => '1st + 3rd, 1st + 4th',
-  'INTIF INT3IF~INT2IF INT3IF' => '1st + 3rd, 2nd + 3rd',
-  'INTIF INT3IF~INT2IF INT4IF' => '1st + 3rd, 2nd + 4th',
-  'INTIF INT3IF~INT3IF INT4IF' => '1st + 3rd, 3rd + 4th',
-  'INTIF INT4IF~INT2IF INT3IF' => '1st + 4th, 2nd + 3rd',
-  'INTIF INT4IF~INT2IF INT4IF' => '1st + 4th, 2nd + 4th',
-  'INTIF INT4IF~INT3IF INT4IF' => '1st + 4th, 3rd + 4th',
-  'INT2IF INT3IF~INT2IF INT4IF' => '2nd + 3rd, 2nd + 4th',
-  'INT2IF INT3IF~INT3IF INT4IF' => '2nd + 3rd, 3rd + 4th',
-  'INT2IF INT4IF~INT3IF INT4IF' => '2nd + 4th, 3rd + 4th'
-);
-
 $lan_default_policy_label = array (
   '0' => 'Pass LAN->EXT',
   '1' => 'Deny LAN->EXT'
@@ -158,6 +120,61 @@ $log_blocked_label = array (
 //$MY_VERSION = trim(shell_exec('grep -m1 \'^MY_VERSION=\' /usr/sbin/arno-iptables-firewall | sed -e \'s/MY_VERSION=//\' -e \'s/"//g\''));
 //$arno_vers = (strncmp($MY_VERSION, '1.8.', 4) == 0) ? 18 : 19;
 //
+
+// Function: decodeAllowLANs
+// Take a string representing allowed firewall traffic between LANs
+// e.g. "INTIF INT2IF~INT3IF INT4IF" and convert it into an array
+// where each row is a string representing a unique rule.
+// e.g. [0] = "1 2" [1] = "3 4"
+function decodeAllowLANs($str,$maxif) {
+  // convert INTxIF into x where x is a decimal. Then into an array.
+  $arr = explode('~',preg_replace('/[^0-9 ~]/','',str_replace('INTIF','INT1IF',$str)));
+  // make sure that each row is sorted.  This is to make sure that works with
+  // manually edited INTxIF strings and ensure that "1 2" is considered equal to "2 1"
+  // for dedup
+  $arr = array_map(function($row) use ($maxif) {
+    $row = explode(' ', $row);
+    $row = array_filter($row, function($value) use ($maxif) {
+      return $value <= $maxif;
+    });
+    if (sizeof($row) <= 1) return null;
+    sort($row);
+    return(implode(' ', $row));
+  }, $arr);
+  // return the array after dedupe and reducing
+  return(reduceAllowLANs($arr));
+}
+
+// Function: encodeAllowLANs
+// Take array representing allowed firewall traffic between LANs and
+// convert it to a string "INTxIF INTxIF" with each row separated by '~'
+function encodeAllowLANs($arr) {
+  $arr = reduceAllowLANs($arr);
+  if (empty($arr)) return('');
+  return(str_replace("INT1IF","INTIF","INT".implode("IF~INT",str_replace(" ","IF INT",$arr))."IF"));
+}
+
+// Function: reduceAllowLANs
+// Dedup and reduce LAN-LAN firewall rule array to lowest required rules.
+// e.g. if LANs 1,2,3 are permitted to talk, can delete rule for LAN 1,3
+// as those LANs already permitted by first rule.
+function reduceAllowLANs($arr) {
+  // remove duplicates.
+  $arr = array_unique($arr);
+  // renove similar (e.g. remove "1 2" if "1 2 3" exists.
+  $arr = array_filter($arr, function($row) use ($arr) {
+    // return true (i.e. keep row) if it is unique by testing
+    // for empty array of similar rows (ie, no similar rule).
+    return(empty(array_filter($arr, function($value) use ($row) {
+      $columns = explode(' ', $row);
+      $found = 0;
+      foreach ($columns as $check) if($check && strpos($value, $check) !== false) $found++;
+      return( ($found === sizeof($columns)) && (strcmp($value, $row) !== 0));
+    }) ) );
+  });
+  // remove empty elements and return
+  return(array_filter($arr));
+}
 
 // Function: getARNOvars
 //
@@ -271,6 +288,7 @@ function getARNOvars($db) {
 function saveFIREWALLsettings($conf_dir, $conf_file, $db, $delete = NULL) {
   global $TRAFFIC_SHAPER_FILE;
   global $TRAFFIC_SHAPER_ENABLE;
+  global $INTIF_COUNT;
 
   if (is_dir($conf_dir) === FALSE) {
     return(3);
@@ -333,15 +351,44 @@ function saveFIREWALLsettings($conf_dir, $conf_file, $db, $delete = NULL) {
   fwrite($fp, $value."\n");
   $value = 'DMZ_INET_DEFAULT_POLICY_DROP="'.$_POST['dmz_DP'].'"';
   fwrite($fp, $value."\n");
-  $value = 'DMZ_DENYLAN="'.(isset($_POST['is_dmz_denylan']) ? $_POST['dmz_denylan'] : '').'"';
+  $value = '';
+  for ($i = 1; $i <= $INTIF_COUNT; $i++) {
+    $intif = 'INT'.(($i>1)?$i:'').'IF';
+    $value .= (isset($_POST['dmz_denylan_'.$intif])) ? ' '.$intif : ''; 
+  }
+  $value = 'DMZ_DENYLAN="'.trim($value).'"';
   fwrite($fp, $value."\n");
-  $value = 'ALLOWLANS="'.(isset($_POST['is_allowlans']) ? $_POST['allowlans'] : '').'"';
+  $value='';
+  $arr = array();
+  for ($i = 1; $i <= $_POST['allowlans_rows']; $i++) {
+    for ($j = 1; $j <= $INTIF_COUNT; $j++) {
+      if (isset($_POST['allowlans_'.$i.'_'.$j])) {
+        $arr[$i] = trim($arr[$i]." $j");
+      }
+    }
+  }
+  $value = 'ALLOWLANS="'.encodeAllowLANs($arr).'"';
   fwrite($fp, $value."\n");
-  $value = 'OVPNC_ALLOWLAN="'.(isset($_POST['is_ovpnc_allowlan']) ? $_POST['ovpnc_allowlan'] : '').'"';
+  $value = '';
+  for ($i = 1; $i <= $INTIF_COUNT; $i++) {
+    $intif = 'INT'.(($i>1)?$i:'').'IF';
+    $value .= (isset($_POST['ovpnc_allowlan_'.$intif])) ? ' '.$intif : ''; 
+  }
+  $value = 'OVPNC_ALLOWLAN="'.trim($value).'"';
   fwrite($fp, $value."\n");
-  $value = 'OVPN_ALLOWLAN="'.(isset($_POST['is_ovpn_allowlan']) ? $_POST['ovpn_allowlan'] : '').'"';
+  $value = '';
+  for ($i = 1; $i <= $INTIF_COUNT; $i++) {
+    $intif = 'INT'.(($i>1)?$i:'').'IF';
+    $value .= (isset($_POST['ovpn_allowlan_'.$intif])) ? ' '.$intif : ''; 
+  }
+  $value = 'OVPN_ALLOWLAN="'.trim($value).'"';
   fwrite($fp, $value."\n");
-  $value = 'WIREGUARD_ALLOWLAN="'.(isset($_POST['is_wireguard_allowlan']) ? $_POST['wireguard_allowlan'] : '').'"';
+  $value = '';
+  for ($i = 1; $i <= $INTIF_COUNT; $i++) {
+    $intif = 'INT'.(($i>1)?$i:'').'IF';
+    $value .= (isset($_POST['wireguard_allowlan_'.$intif])) ? ' '.$intif : ''; 
+  }
+  $value = 'WIREGUARD_ALLOWLAN="'.trim($value).'"';
   fwrite($fp, $value."\n");
   $value = 'WIREGUARD_ALLOW_OPENVPN="'.(isset($_POST['wireguard_allow_openvpn']) ? 'yes' : 'no').'"';
   fwrite($fp, $value."\n");
@@ -813,6 +860,56 @@ require_once '../common/header.php';
       	break;
     }
   }
+
+  function findEmptyRow(prefix, rows, columns) {
+    var checked = 0;
+    for (var i = 1; i <= rows; i++) {
+      checked = 0;
+      for (var j = 1; j <= columns; j++) {
+        var cb = document.getElementsByName(prefix+'_'+i+'_'+j);
+        if (cb[0].checked) checked++;
+      }
+      if (checked == 0) return true;
+    }
+    return false;
+  }
+
+  function addLANsRule(button,ifCount) {
+    var inputElem = document.getElementById('allowlans_rows');
+    var tdElem = document.getElementById('allowlans_msg');
+    var trElem = button.parentElement;
+    while (trElem.nodeName != 'TR') trElem = trElem.parentElement;
+    var row = parseInt(inputElem.value);
+    if (findEmptyRow('allowlans',row,ifCount)) {
+      tdElem.innerHTML=" Use empty row before adding new rule.";
+    }
+    else {
+      row++;
+      var newRow = document.createElement("tr");
+      var lCell = newRow.insertCell(-1);
+      var mCell = newRow.insertCell(-1);
+      var rCell = newRow.insertCell(-1);
+      var rCellDiv = document.createElement("div");
+      var ifname = ['1<sup>st</sup>', '2<sup>nd</sup>', '3<sup>rd</sup>'];
+      newRow.classList.add("dtrow1");
+      lCell.style.width='75px';
+      mCell.style.width='1px';
+      mCell.style.whiteSpace='nowrap';
+      mCell.style.textAlign='right';
+      mCell.innerHTML=(ifname[row-1]?ifname[row-1]:row+'<sup>th</sup>')+" Rule:";
+      rCell.style.whiteSpace='nowrap';
+      rCellDiv.style.whiteSpace='nowrap';
+      rCellDiv.style.width=(40*ifCount)+'px';
+      rCellDiv.innerHTML='';
+      for (var i = 1; i <= ifCount; i++) {
+        rCellDiv.innerHTML+='<div class="lan-checkbox"><span><input type="checkbox" value="allowlans_'+row+'_'+i+'" name="allowlans_'+row+'_'+i+'"/>'+(ifname[i-1]?ifname[i-1]:i+'<sup>th</sup>')+'&nbsp;</span></div>';
+      }
+      rCell.appendChild(rCellDiv);
+      inputElem.value = row.toString();
+      tdElem.innerHTML="";
+      trElem.parentNode.insertBefore(newRow, trElem);
+    }
+  }
   //]]>
   </script>
   <center>
@@ -1017,11 +1114,11 @@ if (! is_null($TRAFFIC_SHAPER_FILE)) {
 }
 
   putHtml('<table width="100%" class="stdtable">');
-  putHtml('<tr class="dtrow0"><td class="dialogText" style="text-align: left;" colspan="2">');
+  putHtml('<tr class="dtrow0"><td class="dialogText" style="text-align: left;" colspan="3">');
   putHtml('<strong>Firewall Options:</strong>');
   putHtml('</td></tr>');
 
-  putHtml('<tr class="dtrow1"><td width="75" style="text-align: right;">&nbsp;</td><td>');
+  putHtml('<tr class="dtrow1"><td width="75" style="text-align: right;">&nbsp;</td><td colspan="2">');
   putHtml('Default Policy for LAN to EXT:');
   $lan_DP = getVARdef($vars, 'LAN_INET_DEFAULT_POLICY_DROP');
   putHtml('<select name="lan_DP">');
@@ -1032,7 +1129,7 @@ if (! is_null($TRAFFIC_SHAPER_FILE)) {
   putHtml('</select>');
   putHtml('</td></tr>');
 
-  putHtml('<tr class="dtrow1"><td width="75" style="text-align: right;">&nbsp;</td><td>');
+  putHtml('<tr class="dtrow1"><td width="75" style="text-align: right;">&nbsp;</td><td colspan="2">');
   putHtml('Default Policy for DMZ to EXT:');
   $dmz_DP = getVARdef($vars, 'DMZ_INET_DEFAULT_POLICY_DROP');
   putHtml('<select name="dmz_DP">');
@@ -1043,97 +1140,133 @@ if (! is_null($TRAFFIC_SHAPER_FILE)) {
   putHtml('</select>');
   putHtml('</td></tr>');
 
+  putHtml('<tr class="dtrow1"><td width="75">');
+  putHtml('</td><td style="white-space: nowrap; width: 1px;"></td><td style="white-space: nowrap; padding: 0px;">');
+  putHtml('<div style="white-space: nowrap; width: '.(40*$INTIF_COUNT).'px">');
+  for ($i = 1; $i <= $INTIF_COUNT; $i++) {
+    $intnickname = 'INT'.(($i>1)?$i:'').'NICKNAME';
+    if (($value = getVARdef($netvars, $intnickname)) === '') $value = 'INT'.(($i>1)?$i:'').'IF';
+    putHtml('<div class="rotate45"><span>'.$value.'</span></div>');
+  }
+  putHtml('</div>');
+  putHtml('</td></tr>');
+
   putHtml('<tr class="dtrow1"><td width="75" style="text-align: right;">');
   $dmz_denylan = getVARdef($vars, 'DMZ_DENYLAN');
-  $sel = ($dmz_denylan !== '') ? ' checked="checked"' : '';
-  putHtml('<input type="checkbox" value="is_dmz_denylan" name="is_dmz_denylan"'.$sel.' /></td><td>Deny LAN to DMZ for the');
-  putHtml('<select name="dmz_denylan">');
-  foreach ($lan_permutations_label as $key => $value) {
-    $sel = ($dmz_denylan === $key) ? ' selected="selected"' : '';
-    putHtml('<option value="'.$key.'"'.$sel.'>'.$value.'</option>');
+  putHtml('</td><td style="white-space: nowrap; width: 1px;">Deny LAN to DMZ for the LAN Interface(s):</td><td style="white-space: nowrap;">');
+  $ifname = array ('1<sup>st</sup>', '2<sup>nd</sup>', '3<sup>rd</sup>');
+  putHtml('<div style="white-space: nowrap; width: '.(40*$INTIF_COUNT).'px">');
+  for ($i = 1; $i <= $INTIF_COUNT; $i++) {
+    $intif = 'INT'.(($i>1)?$i:'').'IF';
+    $sel = (strpos($dmz_denylan,$intif) !== false) ? ' checked="checked"' : '';
+    putHtml('<div class="lan-checkbox"><span>');
+    putHtml('<input type="checkbox" value="dmz_denylan_'.$intif.'" name="dmz_denylan_'.$intif.'"'.$sel.' />'.($ifname[$i-1]?:$i.'<sup>th</sup>').'&nbsp;');
+    putHtml('</span></div>');
   }
-  putHtml('</select>');
-  putHtml('LAN Interface(s)</td></tr>');
-
-  putHtml('<tr class="dtrow1"><td width="75" style="text-align: right;">');
-  $allowlans = getVARdef($vars, 'ALLOWLANS');
-  $sel = ($allowlans !== '') ? ' checked="checked"' : '';
-  putHtml('<input type="checkbox" value="is_allowlans" name="is_allowlans"'.$sel.' /></td><td>Allow LAN to LAN for the');
-  putHtml('<select name="allowlans">');
-  foreach ($allowlans_label as $key => $value) {
-    $sel = ($allowlans === $key) ? ' selected="selected"' : '';
-    putHtml('<option value="'.$key.'"'.$sel.'>'.$value.'</option>');
+  putHtml('</div>');
+  putHtml('</td></tr>');
+  if ($INTIF_COUNT > 1) {
+    putHtml('<tr class="dtrow1"><td width="75" style="text-align: right;">');
+    $allowlans = getVARdef($vars, 'ALLOWLANS');
+    putHtml('</td><td colspan="2">Allow LAN to LAN for the LAN Interfaces:');
+    putHtml('</td></tr>');
+    $allowed = decodeAllowLANs($allowlans,$INTIF_COUNT);
+    $row=0;
+    foreach ($allowed as $rule) {
+      $row++;
+      putHtml('<tr class="dtrow1"><td width="75" style="text-align: right;">&nbsp;</td>');
+      putHtml('<td style="text-align: right; white-space: nowrap; width: 1px;">');
+      if ($row == 1) putHtml(tt('','Select LAN interfaces that are permitted to access each other. Create independent groups by adding rules as required. To delete a rule uncheck all interfaces in the row. Unnecessary rules are collapsed when saving (e.g. if LANs 1,2,3 are permitted, a rule for LANs 2,3 is deleted on save).'));
+      putHtml(($ifname[$row-1]?:$row.'<sup>th</sup>').' Rule:</td><td style="white-space: nowrap;">');
+      putHtml('<div style="white-space: nowrap; width: '.(40*$INTIF_COUNT).'px">');
+      for ($i = 1; $i <= $INTIF_COUNT; $i++) {
+        $sel = (preg_match("/\b${i}\b/", $rule)) ? ' checked="checked"' : '';
+        putHtml('<div class="lan-checkbox"><span>');
+        putHtml('<input type="checkbox" value="allowlans_'.$row.'_'.$i.'" name="allowlans_'.$row.'_'.$i.'"'.$sel.'/>'.($ifname[$i-1]?:$i.'<sup>th</sup>').'&nbsp;');
+        putHtml('</span></div>');
+      }
+      putHtml('</div>');
+      putHtml('</td></tr>');
+    }
+    putHtml('<tr class="dtrow1"><td width="75" style="text-align: right; padding: 0px;">&nbsp;</td>');
+    putHtml('<td style="text-align: right; white-space: nowrap; width: 1px; padding: 0px;">');
+    putHtml('<input type="hidden" id="allowlans_rows" name="allowlans_rows" value="'.$row.'"/>');
+    putHtml('<input type="button" onclick="addLANsRule(this,'.$INTIF_COUNT.')" value="Add Rule">&nbsp;</td>');
+    putHtml('<td id="allowlans_msg" style="padding: 0px; color:red; white-space: nowrap;"></td></tr>');
   }
-  putHtml('</select>');
-  putHtml('LAN Interfaces</td></tr>');
-
   putHtml('<tr class="dtrow1"><td width="75" style="text-align: right;">');
   $ovpn_allowlan = getVARdef($vars, 'OVPNC_ALLOWLAN');
-  $sel = ($ovpn_allowlan !== '') ? ' checked="checked"' : '';
-  putHtml('<input type="checkbox" value="is_ovpnc_allowlan" name="is_ovpnc_allowlan"'.$sel.' /></td><td>Allow OpenVPN Client tunnel to the');
-  putHtml('<select name="ovpnc_allowlan">');
-  foreach ($lan_permutations_label as $key => $value) {
-    $sel = ($ovpn_allowlan === $key) ? ' selected="selected"' : '';
-    putHtml('<option value="'.$key.'"'.$sel.'>'.$value.'</option>');
+  putHtml('</td><td style="white-space: nowrap; width: 1px;">Allow OpenVPN Client tunnel to the LAN Interface(s):</td><td style="white-space: nowrap;">');
+  putHtml('<div style="white-space: nowrap; width: '.(40*$INTIF_COUNT).'px">');
+  for ($i = 1; $i <= $INTIF_COUNT; $i++) {
+    $intif = 'INT'.(($i>1)?$i:'').'IF';
+    $sel = (strpos($ovpn_allowlan,$intif) !== false) ? ' checked="checked"' : '';
+    putHtml('<div class="lan-checkbox"><span>');
+    putHtml('<input type="checkbox" value="ovpnc_allowlan_'.$intif.'" name="ovpnc_allowlan_'.$intif.'"'.$sel.' />'.($ifname[$i-1]?:$i.'<sup>th</sup>').'&nbsp;');
+    putHtml('</span></div>');
   }
-  putHtml('</select>');
-  putHtml('LAN Interface(s)</td></tr>');
+  putHtml('</div>');
+  putHtml('</td></tr>');
 
   putHtml('<tr class="dtrow1"><td width="75" style="text-align: right;">');
   $ovpn_allowlan = getVARdef($vars, 'OVPN_ALLOWLAN');
-  $sel = ($ovpn_allowlan !== '') ? ' checked="checked"' : '';
-  putHtml('<input type="checkbox" value="is_ovpn_allowlan" name="is_ovpn_allowlan"'.$sel.' /></td><td>Allow OpenVPN Server tunnel to the');
-  putHtml('<select name="ovpn_allowlan">');
-  foreach ($lan_permutations_label as $key => $value) {
-    $sel = ($ovpn_allowlan === $key) ? ' selected="selected"' : '';
-    putHtml('<option value="'.$key.'"'.$sel.'>'.$value.'</option>');
+  putHtml('</td><td style="white-space: nowrap; width: 1px;">Allow OpenVPN Server tunnel to the LAN Interface(s):</td><td style="white-space: nowrap;">');
+  putHtml('<div style="white-space: nowrap; width: '.(40*$INTIF_COUNT).'px">');
+  for ($i = 1; $i <= $INTIF_COUNT; $i++) {
+    $intif = 'INT'.(($i>1)?$i:'').'IF';
+    $sel = (strpos($ovpn_allowlan,$intif) !== false) ? ' checked="checked"' : '';
+    putHtml('<div class="lan-checkbox"><span>');
+    putHtml('<input type="checkbox" value="ovpn_allowlan_'.$intif.'" name="ovpn_allowlan_'.$intif.'"'.$sel.' />'.($ifname[$i-1]?:$i.'<sup>th</sup>').'&nbsp;');
+    putHtml('</span></div>');
   }
-  putHtml('</select>');
-  putHtml('LAN Interface(s)</td></tr>');
+  putHtml('</div>');
+  putHtml('</td></tr>');
 
   putHtml('<tr class="dtrow1"><td width="75" style="text-align: right;">');
   $wireguard_allowlan = getVARdef($vars, 'WIREGUARD_ALLOWLAN');
-  $sel = ($wireguard_allowlan !== '') ? ' checked="checked"' : '';
-  putHtml('<input type="checkbox" value="is_wireguard_allowlan" name="is_wireguard_allowlan"'.$sel.' /></td><td>Allow WireGuard VPN tunnel to the');
-  putHtml('<select name="wireguard_allowlan">');
-  foreach ($lan_permutations_label as $key => $value) {
-    $sel = ($wireguard_allowlan === $key) ? ' selected="selected"' : '';
-    putHtml('<option value="'.$key.'"'.$sel.'>'.$value.'</option>');
+  putHtml('</td><td style="white-space: nowrap; width: 1px;">Allow WireGuard VPN tunnel to the LAN Interface(s):</td><td style="white-space: nowrap;">');
+  putHtml('<div style="white-space: nowrap; width: '.(40*$INTIF_COUNT).'px">');
+  for ($i = 1; $i <= $INTIF_COUNT; $i++) {
+    $intif = 'INT'.(($i>1)?$i:'').'IF';
+    $sel = (strpos($wireguard_allowlan,$intif) !== false) ? ' checked="checked"' : '';
+    putHtml('<div class="lan-checkbox"><span>');
+    putHtml('<input type="checkbox" value="wireguard_allowlan_'.$intif.'" name="wireguard_allowlan_'.$intif.'"'.$sel.' />'.($ifname[$i-1]?:$i.'<sup>th</sup>').'&nbsp;');
+    putHtml('</span></div>');
   }
-  putHtml('</select>');
-  putHtml('LAN Interface(s)</td></tr>');
+  putHtml('</div>');
+  putHtml('</td></tr>');
 
   putHtml('<tr class="dtrow1"><td width="75" style="text-align: right;">');
   $sel = (getVARdef($vars, 'WIREGUARD_ALLOW_OPENVPN') === 'yes') ? ' checked="checked"' : '';
-  putHtml('<input type="checkbox" value="wireguard_allow_openvpn" name="wireguard_allow_openvpn"'.$sel.' /></td><td>Allow WireGuard VPN tunnel to the OpenVPN tunnel(s)</td></tr>');
+  putHtml('<input type="checkbox" value="wireguard_allow_openvpn" name="wireguard_allow_openvpn"'.$sel.' /></td><td colspan="2">Allow WireGuard VPN tunnel to the OpenVPN tunnel(s)</td></tr>');
 
   putHtml('<tr class="dtrow1"><td width="75" style="text-align: right;">');
   $sel = (getVARdef($vars, 'OPEN_ICMP') == 1) ? ' checked="checked"' : '';
-  putHtml('<input type="checkbox" value="allow_icmp" name="allow_icmp"'.$sel.' /></td><td>Allow IPv4 ICMP (ping) on External (EXT) Interface</td></tr>');
+  putHtml('<input type="checkbox" value="allow_icmp" name="allow_icmp"'.$sel.' /></td><td colspan="2">Allow IPv4 ICMP (ping) on External (EXT) Interface</td></tr>');
   putHtml('<tr class="dtrow1"><td width="75" style="text-align: right;">');
   $value = getVARdef($vars, 'OPEN_ICMPV6');
   $sel = ($value == 1 || $value === '') ? ' checked="checked"' : '';
-  putHtml('<input type="checkbox" value="allow_icmpv6" name="allow_icmpv6"'.$sel.' /></td><td>Allow IPv6 ICMPv6 on External (EXT) Interface</td></tr>');
+  putHtml('<input type="checkbox" value="allow_icmpv6" name="allow_icmpv6"'.$sel.' /></td><td colspan="2">Allow IPv6 ICMPv6 on External (EXT) Interface</td></tr>');
 
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getVARdef($vars, 'DMZ_INPUT_DENY_LOG') == 1) ? ' checked="checked"' : '';
-  putHtml('<input type="checkbox" value="log_dmz" name="log_dmz"'.$sel.' /></td><td>Log Denied DMZ interface packets</td></tr>');
+  putHtml('<input type="checkbox" value="log_dmz" name="log_dmz"'.$sel.' /></td><td colspan="2">Log Denied DMZ interface packets</td></tr>');
 
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getVARdef($vars, 'ICMP_REQUEST_LOG') == 1) ? ' checked="checked"' : '';
-  putHtml('<input type="checkbox" value="log_icmp" name="log_icmp"'.$sel.' /></td><td>Log Denied ICMP (ping) attempts</td></tr>');
+  putHtml('<input type="checkbox" value="log_icmp" name="log_icmp"'.$sel.' /></td><td colspan="2">Log Denied ICMP (ping) attempts</td></tr>');
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getVARdef($vars, 'PRIV_TCP_LOG') == 1) ? ' checked="checked"' : '';
-  putHtml('<input type="checkbox" value="log_tcp" name="log_tcp"'.$sel.' /></td><td>Log Denied TCP attempts to privileged and unprivileged ports</td></tr>');
+  putHtml('<input type="checkbox" value="log_tcp" name="log_tcp"'.$sel.' /></td><td colspan="2">Log Denied TCP attempts to privileged and unprivileged ports</td></tr>');
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getVARdef($vars, 'PRIV_UDP_LOG') == 1) ? ' checked="checked"' : '';
-  putHtml('<input type="checkbox" value="log_udp" name="log_udp"'.$sel.' /></td><td>Log Denied UDP attempts to privileged and unprivileged ports</td></tr>');
+  putHtml('<input type="checkbox" value="log_udp" name="log_udp"'.$sel.' /></td><td colspan="2">Log Denied UDP attempts to privileged and unprivileged ports</td></tr>');
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getVARdef($vars, 'OTHER_IP_LOG') == 1) ? ' checked="checked"' : '';
-  putHtml('<input type="checkbox" value="log_other" name="log_other"'.$sel.' /></td><td>Log Denied non-TCP/UDP/ICMP attempts</td></tr>');
+  putHtml('<input type="checkbox" value="log_other" name="log_other"'.$sel.' /></td><td colspan="2">Log Denied non-TCP/UDP/ICMP attempts</td></tr>');
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
   $sel = (getVARdef($vars, 'FORWARD_DROP_LOG') == 1) ? ' checked="checked"' : '';
-  putHtml('<input type="checkbox" value="log_forward" name="log_forward"'.$sel.' /></td><td>Log Denied attempts to forward packets</td></tr>');
+  putHtml('<input type="checkbox" value="log_forward" name="log_forward"'.$sel.' /></td><td colspan="2">Log Denied attempts to forward packets</td></tr>');
   putHtml('</table>');
 
   putHtml('<table width="100%" class="stdtable">');

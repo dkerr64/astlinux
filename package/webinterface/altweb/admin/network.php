@@ -57,6 +57,7 @@
 // 05-10-2020, Added Linux Containers (LXC)
 // 12-13-2020, Replace getdns/stubby with unbound for DNS-over-TLS
 // 02-04-2021, Remove IPsec (racoon) VPN support
+// 03-30-2021, Allow for variable number of internal interfaces
 //
 // System location of rc.conf file
 $CONFFILE = '/etc/rc.conf';
@@ -76,6 +77,17 @@ require_once '../common/functions.php';
 require_once '../common/openssl.php';
 
 require_once '../common/timezones.php';
+
+
+if (is_file($NETCONFFILE)) {
+  $db = parseRCconf($NETCONFFILE);
+  $cur_db = parseRCconf($CONFFILE);
+} else {
+  $db = parseRCconf($CONFFILE);
+  $cur_db = NULL;
+}
+
+if (($INTIF_COUNT = getVARdef($db, 'INTIF_COUNT', $cur_db)) === '') $INTIF_COUNT = 4;
 
 $select_ntp = array (
   'User Defined&nbsp;&nbsp;&nbsp;&gt;&gt;&gt;' => '',
@@ -173,18 +185,17 @@ $select_upnp = array (
 //
 function checkNETWORKsettings() {
   global $FIREWALLCONFFILE;
+  global $INTIF_COUNT;
 
   $eth[] = $_POST['ext_eth'];
   $eth[] = $_POST['ext2_eth'];
   $eth[] = $_POST['int_eth'];
-  $eth[] = $_POST['int2_eth'];
-  $eth[] = $_POST['int3_eth'];
-  $eth[] = $_POST['int4_eth'];
+  for ($i = 2; $i <= $INTIF_COUNT; $i++) $eth[] = $_POST['int'.$i.'_eth'];
   $eth[] = $_POST['dmz_eth'];
 
   foreach ($eth as $ki => $i) {
     foreach ($eth as $kj => $j) {
-      if ($ki != $kj && $i !== '' && $j !== '') {
+      if ($ki != $kj && $i != '' && $j != '') {
         if ($i === $j) {
           return(100);
         }
@@ -193,8 +204,10 @@ function checkNETWORKsettings() {
   }
 
   if ($_POST['dmz_eth'] !== '') {
-    if ($_POST['int_eth'] === '' && $_POST['int2_eth'] === '' && $_POST['int3_eth'] === '' && $_POST['int4_eth'] === '') {
-      return(101);
+    if ($_POST['int_eth'] === '') {
+      $found = 0;
+      for ($i = 2; $i <= $INTIF_COUNT; $i++) if ($_POST['int'.$i.'_eth'] !== '') $found += 1;
+      if ($found === 0) return(101);
     }
   }
 
@@ -219,7 +232,11 @@ function checkNETWORKsettings() {
 function saveNETWORKsettings($conf_dir, $conf_file) {
   global $global_prefs;
   global $USERCONFFILE;
+  global $INTIF_COUNT;
 
+  if (($INTIF_COUNT != $_POST['int_lan_count']) && !isset($_POST['confirm_int_lan_count'])) {
+    return(104);
+  }
   $isFIRSTtime = FALSE;
   if (is_dir($conf_dir) === FALSE) {
     if (@mkdir($conf_dir, 0755) === FALSE) {
@@ -313,138 +330,67 @@ function saveNETWORKsettings($conf_dir, $conf_file) {
 
   $value = 'EXT2IF="'.$_POST['ext2_eth'].'"';
   fwrite($fp, "### External Failover Interface\n".$value."\n");
+  // Save number of internal interfaces
+  $INTIF_COUNT = $_POST['int_lan_count'];
+  $value = 'INTIF_COUNT="'.$INTIF_COUNT.'"';
+  fwrite($fp, "### Number of internal interfaces\n".$value."\n");
+  // Loop through all the internal interfaces
+  $ifname = array (
+  'INT'  => '1<sup>st</sup> LAN',
+  'INT2' => '2<sup>nd</sup> LAN',
+  'INT3' => '3<sup>rd</sup> LAN',
+  'INT*' => '*th LAN',
+  'DMZ'  => 'The DMZ'
+  );
+  $int_prefix[] = "INT";
+  for ($i = 2; $i <= $INTIF_COUNT; $i++) $int_prefix[] = "INT" . $i;
+  $int_prefix[] = "DMZ";
+  foreach ($int_prefix as $ifn => $prefix) {
+    $lcprefix = strtolower($prefix);
 
-  $value = 'INTIF="'.$_POST['int_eth'].'"';
-  fwrite($fp, "### 1st LAN Interface\n".$value."\n");
+    $value = $prefix.'NICKNAME="'.tuq($_POST[$lcprefix.'_nickname']).'"';
+    fwrite($fp, "###".([$prefix]?:($ifn+1).'th LAN')." Nickname\n".$value."\n");
 
-  $value = 'INTIP="'.tuq($_POST['int_ip']).'"';
-  fwrite($fp, "### 1st LAN IPv4\n".$value."\n");
+    $value = $prefix.'IF="'.$_POST[$lcprefix.'_eth'].'"';
+    fwrite($fp, "###".($ifname[$prefix]?:($ifn+1).'th LAN')." Interface\n".$value."\n");
 
-  $value = 'INTNM="'.tuq($_POST['int_mask_ip']).'"';
-  fwrite($fp, "### 1st LAN NetMask\n".$value."\n");
+    $value = $prefix.'IP="'.tuq($_POST[$lcprefix.'_ip']).'"';
+    fwrite($fp, "###".($ifname[$prefix]?:($ifn+1).'th LAN')." IPv4\n".$value."\n");
 
-  $value = tuq($_POST['int_ipv6']);
-  if ($value !== '' && strpos($value, '/') === FALSE) {
-    $value="$value/64";
-  }
-  if ($value !== '') {
-    if ($value[0] == ':') {
-      $ula_prefix = $_POST['ipv6_ula_prefix'];
-      $value = substr($ula_prefix,0,strrpos($ula_prefix,':')-1).$value;
+    $value = $prefix.'NM="'.tuq($_POST[$lcprefix.'_mask_ip']).'"';
+    fwrite($fp, "###".($ifname[$prefix]?:($ifn+1).'th LAN')." NetMask\n".$value."\n");
+
+    $value = tuq($_POST[$lcprefix.'_ipv6']);
+    if ($value !== '' && strpos($value, '/') === FALSE) {
+      $value="$value/64";
     }
-    $value = compressIPV6addr($value);
-  }
-  $value = 'INTIPV6="'.$value.'"';
-  fwrite($fp, "### 1st LAN IPv6\n".$value."\n");
-
-  $value = 'INT2IF="'.$_POST['int2_eth'].'"';
-  fwrite($fp, "### 2nd LAN Interface\n".$value."\n");
-
-  $value = 'INT2IP="'.tuq($_POST['int2_ip']).'"';
-  fwrite($fp, "### 2nd LAN IPv4\n".$value."\n");
-
-  $value = 'INT2NM="'.tuq($_POST['int2_mask_ip']).'"';
-  fwrite($fp, "### 2nd LAN NetMask\n".$value."\n");
-
-  $value = tuq($_POST['int2_ipv6']);
-  if ($value !== '' && strpos($value, '/') === FALSE) {
-    $value="$value/64";
-  }
-  if ($value !== '') {
-    if ($value[0] == ':') {
-      $ula_prefix = $_POST['ipv6_ula_prefix'];
-      $value = substr($ula_prefix,0,strrpos($ula_prefix,':')-1).$value;
+    if ($value !== '') {
+      if ($value[0] == ':') {
+        $ula_prefix = $_POST['ipv6_ula_prefix'];
+        $value = substr($ula_prefix,0,strrpos($ula_prefix,':')-1).$value;
+      }
+      $value = compressIPV6addr($value);
     }
-    $value = compressIPV6addr($value);
+    $value = $prefix.'IPV6="'.$value.'"';
+    fwrite($fp, "###".($ifname[$prefix]?:($ifn+1).'th LAN')." IPv6\n".$value."\n");
   }
-  $value = 'INT2IPV6="'.$value.'"';
-  fwrite($fp, "### 2nd LAN IPv6\n".$value."\n");
-
-  $value = 'INT3IF="'.$_POST['int3_eth'].'"';
-  fwrite($fp, "### 3rd LAN Interface\n".$value."\n");
-
-  $value = 'INT3IP="'.tuq($_POST['int3_ip']).'"';
-  fwrite($fp, "### 3rd LAN IPv4\n".$value."\n");
-
-  $value = 'INT3NM="'.tuq($_POST['int3_mask_ip']).'"';
-  fwrite($fp, "### 3rd LAN NetMask\n".$value."\n");
-
-  $value = tuq($_POST['int3_ipv6']);
-  if ($value !== '' && strpos($value, '/') === FALSE) {
-    $value="$value/64";
-  }
-  if ($value !== '') {
-    if ($value[0] == ':') {
-      $ula_prefix = $_POST['ipv6_ula_prefix'];
-      $value = substr($ula_prefix,0,strrpos($ula_prefix,':')-1).$value;
-    }
-    $value = compressIPV6addr($value);
-  }
-  $value = 'INT3IPV6="'.$value.'"';
-  fwrite($fp, "### 3rd LAN IPv6\n".$value."\n");
-
-  $value = 'INT4IF="'.$_POST['int4_eth'].'"';
-  fwrite($fp, "### 4th LAN Interface\n".$value."\n");
-
-  $value = 'INT4IP="'.tuq($_POST['int4_ip']).'"';
-  fwrite($fp, "### 4th LAN IPv4\n".$value."\n");
-
-  $value = 'INT4NM="'.tuq($_POST['int4_mask_ip']).'"';
-  fwrite($fp, "### 4th LAN NetMask\n".$value."\n");
-
-  $value = tuq($_POST['int4_ipv6']);
-  if ($value !== '' && strpos($value, '/') === FALSE) {
-    $value="$value/64";
-  }
-  if ($value !== '') {
-    if ($value[0] == ':') {
-      $ula_prefix = $_POST['ipv6_ula_prefix'];
-      $value = substr($ula_prefix,0,strrpos($ula_prefix,':')-1).$value;
-    }
-    $value = compressIPV6addr($value);
-  }
-  $value = 'INT4IPV6="'.$value.'"';
-  fwrite($fp, "### 4th LAN IPv6\n".$value."\n");
-
-  $value = 'DMZIF="'.$_POST['dmz_eth'].'"';
-  fwrite($fp, "### DMZ Interface\n".$value."\n");
-
-  $value = 'DMZIP="'.tuq($_POST['dmz_ip']).'"';
-  fwrite($fp, "### DMZ IPv4\n".$value."\n");
-
-  $value = 'DMZNM="'.tuq($_POST['dmz_mask_ip']).'"';
-  fwrite($fp, "### DMZ NetMask\n".$value."\n");
-
-  $value = tuq($_POST['dmz_ipv6']);
-  if ($value !== '' && strpos($value, '/') === FALSE) {
-    $value="$value/64";
-  }
-  if ($value !== '') {
-    if ($value[0] == ':') {
-      $ula_prefix = $_POST['ipv6_ula_prefix'];
-      $value = substr($ula_prefix,0,strrpos($ula_prefix,':')-1).$value;
-    }
-    $value = compressIPV6addr($value);
-  }
-  $value = 'DMZIPV6="'.$value.'"';
-  fwrite($fp, "### DMZ IPv6\n".$value."\n");
 
   $value = 'NODHCP="'.getNODHCP_value().'"';
   fwrite($fp, "### No DHCP on interfaces\n".$value."\n");
 
-  $value = isset($_POST['int_ula']) ? ' INTIF' : '';
-  $value .= isset($_POST['int2_ula']) ? ' INT2IF' : '';
-  $value .= isset($_POST['int3_ula']) ? ' INT3IF' : '';
-  $value .= isset($_POST['int4_ula']) ? ' INT4IF' : '';
-  $value .= isset($_POST['dmz_ula']) ? ' DMZIF' : '';
+  $value = '';
+  foreach ($int_prefix as $prefix) {
+    $lcprefix = strtolower($prefix);
+    $value .= isset($_POST[$lcprefix.'_ula']) ? ' '.$prefix.'IF' : '';
+  }
   $value = 'IPV6_PREFIX_ULA="'.trim($value).'"';
   fwrite($fp, "### IPv6 Autoconfig Site ULA\n".$value."\n");
 
-  $value = isset($_POST['int_gua']) ? ' INTIF' : '';
-  $value .= isset($_POST['int2_gua']) ? ' INT2IF' : '';
-  $value .= isset($_POST['int3_gua']) ? ' INT3IF' : '';
-  $value .= isset($_POST['int4_gua']) ? ' INT4IF' : '';
-  $value .= isset($_POST['dmz_gua']) ? ' DMZIF' : '';
+  $value = '';
+  foreach ($int_prefix as $prefix) {
+    $lcprefix = strtolower($prefix);
+    $value .= isset($_POST[$lcprefix.'_gua']) ? ' '.$prefix.'IF' : '';
+  }
   $value = 'IPV6_PREFIX_DELEGATION="'.trim($value).'"';
   fwrite($fp, "### IPv6 Prefix Delegation\n".$value."\n");
 
@@ -558,24 +504,9 @@ function saveNETWORKsettings($conf_dir, $conf_file) {
   $value = 'NETSTAT_SERVER="'.$_POST['netstat_server'].'"';
   fwrite($fp, "### NetStat Server\n".$value."\n");
 
-  $x_value = '';
-  if (isset($_POST['netstat_EXTIF'])) {
-    $x_value .= ' EXTIF';
-  }
-  if (isset($_POST['netstat_INTIF'])) {
-    $x_value .= ' INTIF';
-  }
-  if (isset($_POST['netstat_INT2IF'])) {
-    $x_value .= ' INT2IF';
-  }
-  if (isset($_POST['netstat_INT3IF'])) {
-    $x_value .= ' INT3IF';
-  }
-  if (isset($_POST['netstat_INT4IF'])) {
-    $x_value .= ' INT4IF';
-  }
-  if (isset($_POST['netstat_DMZIF'])) {
-    $x_value .= ' DMZIF';
+  $x_value = isset($_POST['netstat_EXTIF']) ? 'EXTIF' : '';
+  foreach ($int_prefix as $prefix) {
+    $x_value .= isset($_POST['netstat_'.$prefix.'IF']) ? ' '.$prefix.'IF' : '';
   }
   if ($x_value === '') {  // set default
     $x_value = 'EXTIF';
@@ -591,20 +522,8 @@ function saveNETWORKsettings($conf_dir, $conf_file) {
   fwrite($fp, "### UPnP Enable\n".$value."\n");
 
   $x_value = '';
-  if (isset($_POST['upnp_INTIF'])) {
-    $x_value .= ' INTIF';
-  }
-  if (isset($_POST['upnp_INT2IF'])) {
-    $x_value .= ' INT2IF';
-  }
-  if (isset($_POST['upnp_INT3IF'])) {
-    $x_value .= ' INT3IF';
-  }
-  if (isset($_POST['upnp_INT4IF'])) {
-    $x_value .= ' INT4IF';
-  }
-  if (isset($_POST['upnp_DMZIF'])) {
-    $x_value .= ' DMZIF';
+  foreach ($int_prefix as $prefix) {
+    $x_value .= isset($_POST['upnp_'.$prefix.'IF']) ? ' '.$prefix.'IF' : '';
   }
   $value = 'UPNP_LISTEN="'.trim($x_value).'"';
   fwrite($fp, "### UPnP Listen Interfaces\n".$value."\n");
@@ -896,14 +815,11 @@ function putDNS_DHCP_Html($db, $cur_db, $varif, $name) {
 // Function: getNODHCP_value
 //
 function getNODHCP_value() {
-
-  $entries = array (
-    'int_dhcp'  => 'int_eth',
-    'int2_dhcp' => 'int2_eth',
-    'int3_dhcp' => 'int3_eth',
-    'int4_dhcp' => 'int4_eth',
-    'dmz_dhcp'  => 'dmz_eth'
-  );
+  global $INTIF_COUNT;
+  $entries = array ();
+  $entries['int_dhcp'] = 'int_eth';
+  for ($i = 2; $i <= $INTIF_COUNT; $i++) $entries['int'.$i.'_dhcp'] = 'int'.$i.'_eth';
+  $entries['dmz_dhcp'] = 'dmz_eth';
   $rtn = '';
 
   foreach ($entries as $key => $value) {
@@ -967,8 +883,8 @@ function putDNS_DHCPV6_Html($db, $cur_db, $varif, $name) {
       }
     }
   }
-  putHtml('&ndash;');
-  putHtml('<select name="'.$name.'">');
+  echo '&nbsp;&ndash;&nbsp;';
+  echo '<select name="'.$name.'">';
   putHtml('<option value="">No Router Advertisements</option>');
   putHtml('<option value="raonly"'.$sel_raonly.'>RA Only</option>');
   putHtml('<option value="stateless"'.$sel_stateless.'>RA &amp; Stateless DHCP</option>');
@@ -980,14 +896,11 @@ function putDNS_DHCPV6_Html($db, $cur_db, $varif, $name) {
 // Function: getDHCPV6_value
 //
 function getDHCPV6_value($selection) {
-
-  $entries = array (
-    'int_ipv6ra'  => 'INTIF',
-    'int2_ipv6ra' => 'INT2IF',
-    'int3_ipv6ra' => 'INT3IF',
-    'int4_ipv6ra' => 'INT4IF',
-    'dmz_ipv6ra'  => 'DMZIF'
-  );
+  global $INTIF_COUNT;
+  $entries = array ();
+  $entries['int_ipv6ra'] = 'INTIF';
+  for ($i = 2; $i <= $INTIF_COUNT; $i++) $entries['int'.$i.'_ipv6ra'] = 'INT'.$i.'IF';
+  $entries['dmz_ipv6ra'] = 'DMZIF';
   $rtn = '';
 
   foreach ($entries as $key => $value) {
@@ -1043,43 +956,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       exit;
     }
   } elseif (isset($_POST['submit_edit_firewall'])) {
-    $result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE);
-    header('Location: /admin/firewall.php');
-    exit;
-  } elseif (isset($_POST['submit_edit_plugin'])) {
-    $result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE);
-    if (is_writable($file = $_POST['firewall_plugin'])) {
-      header('Location: /admin/edit.php?file='.$file);
+    if (($result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE)) == 11) {
+      header('Location: /admin/firewall.php');
       exit;
+    }
+  } elseif (isset($_POST['submit_edit_plugin'])) {
+    if (($result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE)) == 11) {
+      if (is_writable($file = $_POST['firewall_plugin'])) {
+        header('Location: /admin/edit.php?file='.$file);
+        exit;
+      }
     }
   } elseif (isset($_POST['submit_edit_ntp'])) {
-    $result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE);
-    if (is_writable($file = '/mnt/kd/chrony.conf')) {
-      header('Location: /admin/edit.php?file='.$file);
-      exit;
+    if (($result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE)) == 11) {
+      if (is_writable($file = '/mnt/kd/chrony.conf')) {
+        header('Location: /admin/edit.php?file='.$file);
+        exit;
+      }
     }
   } elseif (isset($_POST['submit_test_smtp'])) {
-    $result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE);
-    header('Location: /admin/testmail.php');
-    exit;
-  } elseif (isset($_POST['submit_smtp_aliases'])) {
-    $result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE);
-    if (is_writable($file = '/mnt/kd/msmtp-aliases.conf')) {
-      header('Location: /admin/edit.php?file='.$file);
+    if (($result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE)) == 11) {
+      header('Location: /admin/testmail.php');
       exit;
     }
+  } elseif (isset($_POST['submit_smtp_aliases'])) {
+    if (($result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE)) == 11) {
+      if (is_writable($file = '/mnt/kd/msmtp-aliases.conf')) {
+        header('Location: /admin/edit.php?file='.$file);
+        exit;
+      }
+    }
   } elseif (isset($_POST['submit_dns_hosts'])) {
-    $result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE);
-    header('Location: /admin/dnshosts.php');
-    exit;
+    if (($result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE)) == 11) {
+      header('Location: /admin/dnshosts.php');
+      exit;
+    }
   } elseif (isset($_POST['submit_dns_tls'])) {
-    $result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE);
-    header('Location: /admin/dnstls.php');
-    exit;
+    if (($result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE)) == 11) {
+      header('Location: /admin/dnstls.php');
+      exit;
+    }
   } elseif (isset($_POST['submit_dnscrypt'])) {
-    $result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE);
-    header('Location: /admin/dnscrypt.php');
-    exit;
+    if (($result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE)) == 11) {
+      header('Location: /admin/dnscrypt.php');
+      exit;
+    }
   } elseif (isset($_POST['submit_self_signed_https'])) {
     if (isset($_POST['confirm_self_signed_https'])) {
       if (($result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE)) == 11) {
@@ -1089,136 +1010,157 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $result = 2;
     }
   } elseif (isset($_POST['submit_self_signed_sip_tls'])) {
-    $result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE);
-    header('Location: /admin/siptlscert.php');
-    exit;
+    if (($result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE)) == 11) {
+      header('Location: /admin/siptlscert.php');
+      exit;
+    }
   } elseif (isset($_POST['submit_kamailio'])) {
-    $result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE);
-    if (is_writable($file = '/mnt/kd/kamailio/kamailio-local.cfg')) {
-      header('Location: /admin/edit.php?file='.$file);
-      exit;
-    } elseif (is_writable($file = '/mnt/kd/kamailio/kamailio.cfg')) {
-      header('Location: /admin/edit.php?file='.$file);
-      exit;
+    if (($result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE)) == 11) {
+      if (is_writable($file = '/mnt/kd/kamailio/kamailio-local.cfg')) {
+        header('Location: /admin/edit.php?file='.$file);
+        exit;
+      } elseif (is_writable($file = '/mnt/kd/kamailio/kamailio.cfg')) {
+        header('Location: /admin/edit.php?file='.$file);
+        exit;
+      }
     }
   } elseif (isset($_POST['submit_slapd'])) {
-    $result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE);
-    if (is_writable($file = '/mnt/kd/slapd.conf')) {
-      header('Location: /admin/edit.php?file='.$file);
-    } else {
-      header('Location: /admin/slapd.php');
-    }
-    exit;
-  } elseif (isset($_POST['submit_xmpp'])) {
-    $result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE);
-    header('Location: /admin/xmpp.php');
-    exit;
-  } elseif (isset($_POST['submit_snmp_agent'])) {
-    $result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE);
-    if (is_writable($file = '/mnt/kd/snmp/snmpd.conf')) {
-      header('Location: /admin/edit.php?file='.$file);
+    if (($result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE)) == 11) {
+      if (is_writable($file = '/mnt/kd/slapd.conf')) {
+        header('Location: /admin/edit.php?file='.$file);
+      } else {
+        header('Location: /admin/slapd.php');
+      }
       exit;
+    }
+  } elseif (isset($_POST['submit_xmpp'])) {
+    if (($result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE)) == 11) {
+      header('Location: /admin/xmpp.php');
+      exit;
+    }
+  } elseif (isset($_POST['submit_snmp_agent'])) {
+    if (($result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE)) == 11) {
+      if (is_writable($file = '/mnt/kd/snmp/snmpd.conf')) {
+        header('Location: /admin/edit.php?file='.$file);
+        exit;
+      }
     }
   } elseif (isset($_POST['submit_keepalived'])) {
-    $result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE);
-    if (is_writable($file = '/mnt/kd/keepalived/keepalived.conf')) {
-      header('Location: /admin/edit.php?file='.$file);
-      exit;
+    if (($result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE)) == 11) {
+      if (is_writable($file = '/mnt/kd/keepalived/keepalived.conf')) {
+        header('Location: /admin/edit.php?file='.$file);
+        exit;
+      }
     }
   } elseif (isset($_POST['submit_monit'])) {
-    $result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE);
-    header('Location: /admin/monitconfig.php');
-    exit;
-  } elseif (isset($_POST['submit_zabbix'])) {
-    $result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE);
-    header('Location: /admin/zabbix.php');
-    exit;
-  } elseif (isset($_POST['submit_edit_vsftpd_conf'])) {
-    $result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE);
-    if (is_writable($file = '/mnt/kd/vsftpd.conf')) {
-      header('Location: /admin/edit.php?file='.$file);
+    if (($result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE)) == 11) {
+      header('Location: /admin/monitconfig.php');
       exit;
+    }
+  } elseif (isset($_POST['submit_zabbix'])) {
+    if (($result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE)) == 11) {
+      header('Location: /admin/zabbix.php');
+      exit;
+    }
+  } elseif (isset($_POST['submit_edit_vsftpd_conf'])) {
+    if (($result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE)) == 11) {
+      if (is_writable($file = '/mnt/kd/vsftpd.conf')) {
+        header('Location: /admin/edit.php?file='.$file);
+        exit;
+      }
     }
   } elseif (isset($_POST['submit_avahi'])) {
-    $result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE);
-    if (is_writable($file = '/mnt/kd/avahi/avahi-daemon.conf')) {
-      header('Location: /admin/edit.php?file='.$file);
-      exit;
+    if (($result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE)) == 11) {
+      if (is_writable($file = '/mnt/kd/avahi/avahi-daemon.conf')) {
+        header('Location: /admin/edit.php?file='.$file);
+        exit;
+      }
     }
   } elseif (isset($_POST['submit_edit_dnsmasq_conf'])) {
-    $result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE);
-    if (is_writable($file = '/mnt/kd/dnsmasq.conf')) {
-      header('Location: /admin/edit.php?file='.$file);
-      exit;
+    if (($result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE)) == 11) {
+      if (is_writable($file = '/mnt/kd/dnsmasq.conf')) {
+        header('Location: /admin/edit.php?file='.$file);
+        exit;
+      }
     }
   } elseif (isset($_POST['submit_edit_dnsmasq_static'])) {
-    $result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE);
-    if (is_writable($file = '/mnt/kd/dnsmasq.static')) {
-      header('Location: /admin/edit.php?file='.$file);
-      exit;
+    if (($result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE)) == 11) {
+      if (is_writable($file = '/mnt/kd/dnsmasq.static')) {
+        header('Location: /admin/edit.php?file='.$file);
+        exit;
+      }
     }
   } elseif (isset($_POST['submit_edit_ipsec'])) {
-    $result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE);
-    if (is_writable($file = '/mnt/kd/ipsec/strongswan/ipsec.conf')) {
-      header('Location: /admin/edit.php?file='.$file);
-      exit;
+    if (($result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE)) == 11) {
+      if (is_writable($file = '/mnt/kd/ipsec/strongswan/ipsec.conf')) {
+        header('Location: /admin/edit.php?file='.$file);
+        exit;
+      }
     }
   } elseif (isset($_POST['submit_edit_wireguard'])) {
-    $result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE);
-    header('Location: /admin/wireguard.php');
-    exit;
-  } elseif (isset($_POST['submit_edit_ddclient'])) {
-    $result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE);
-    if (is_writable($file = '/mnt/kd/ddclient.conf')) {
-      header('Location: /admin/edit.php?file='.$file);
+    if (($result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE)) == 11) {
+      header('Location: /admin/wireguard.php');
       exit;
+    }
+  } elseif (isset($_POST['submit_edit_ddclient'])) {
+    if (($result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE)) == 11) {
+      if (is_writable($file = '/mnt/kd/ddclient.conf')) {
+        header('Location: /admin/edit.php?file='.$file);
+        exit;
+      }
     }
   } elseif (isset($_POST['submit_edit_ldap'])) {
-    $result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE);
-    if (is_writable($file = '/mnt/kd/ldap.conf')) {
-      header('Location: /admin/edit.php?file='.$file);
-      exit;
+    if (($result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE)) == 11) {
+      if (is_writable($file = '/mnt/kd/ldap.conf')) {
+        header('Location: /admin/edit.php?file='.$file);
+        exit;
+      }
     }
   } elseif (isset($_POST['submit_edit_ups'])) {
-    $result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE);
-    if (is_writable($file = '/mnt/kd/ups/ups.conf')) {
-      header('Location: /admin/edit.php?file='.$file);
-      exit;
+    if (($result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE)) == 11) {
+      if (is_writable($file = '/mnt/kd/ups/ups.conf')) {
+        header('Location: /admin/edit.php?file='.$file);
+        exit;
+      }
     }
   } elseif (isset($_POST['submit_edit_openvpn'])) {
-    $result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE);
-    if (is_writable($file = '/mnt/kd/openvpn/openvpn.conf')) {
-      if (is_file($tmpfile = '/mnt/kd/rc.conf.d/gui.openvpn.conf')) {
-        @unlink($tmpfile);
+    if (($result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE)) == 11) {
+      if (is_writable($file = '/mnt/kd/openvpn/openvpn.conf')) {
+        if (is_file($tmpfile = '/mnt/kd/rc.conf.d/gui.openvpn.conf')) {
+          @unlink($tmpfile);
+        }
+        header('Location: /admin/edit.php?file='.$file);
+      } else {
+        header('Location: /admin/openvpn.php');
       }
-      header('Location: /admin/edit.php?file='.$file);
-    } else {
-      header('Location: /admin/openvpn.php');
-    }
-    exit;
-  } elseif (isset($_POST['submit_edit_openvpnclient'])) {
-    $result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE);
-    if (is_writable($file = '/mnt/kd/openvpn/openvpnclient.conf')) {
-      if (is_file($tmpfile = '/mnt/kd/rc.conf.d/gui.openvpnclient.conf')) {
-        @unlink($tmpfile);
-      }
-      header('Location: /admin/edit.php?file='.$file);
-    } else {
-      header('Location: /admin/openvpnclient.php');
-    }
-    exit;
-  } elseif (isset($_POST['submit_tarsnap_backup'])) {
-    $result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE);
-    header('Location: /admin/backup.php');
-    exit;
-  } elseif (isset($_POST['submit_edit_user_conf'])) {
-    $result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE);
-    if (createUSERconf($file = $USERCONFFILE) === FALSE) {
-      $result = 3;
-    }
-    if (is_writable($file)) {
-      header('Location: /admin/edit.php?file='.$file);
       exit;
+    }
+  } elseif (isset($_POST['submit_edit_openvpnclient'])) {
+    if (($result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE)) == 11) {
+      if (is_writable($file = '/mnt/kd/openvpn/openvpnclient.conf')) {
+        if (is_file($tmpfile = '/mnt/kd/rc.conf.d/gui.openvpnclient.conf')) {
+          @unlink($tmpfile);
+        }
+        header('Location: /admin/edit.php?file='.$file);
+      } else {
+        header('Location: /admin/openvpnclient.php');
+      }
+      exit;
+    }
+  } elseif (isset($_POST['submit_tarsnap_backup'])) {
+    if (($result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE)) == 11) {
+      header('Location: /admin/backup.php');
+      exit;
+    }
+  } elseif (isset($_POST['submit_edit_user_conf'])) {
+    if (($result = saveNETWORKsettings($NETCONFDIR, $NETCONFFILE)) == 11) {
+      if (createUSERconf($file = $USERCONFFILE) === FALSE) {
+        $result = 3;
+      }
+      if (is_writable($file)) {
+        header('Location: /admin/edit.php?file='.$file);
+        exit;
+      }
     }
   } elseif (isset($_POST['submit_new_ula_prefix'])) {
     if (isset($_POST['confirm_new_prefix'])) {
@@ -1307,14 +1249,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 } else { // Start of HTTP GET
 $ACCESS_RIGHTS = 'admin';
 require_once '../common/header.php';
-
-  if (is_file($NETCONFFILE)) {
-    $db = parseRCconf($NETCONFFILE);
-    $cur_db = parseRCconf($CONFFILE);
-  } else {
-    $db = parseRCconf($CONFFILE);
-    $cur_db = NULL;
-  }
 
   if (isset($_GET['reboot_restart'])) {
     $reboot_restart = $_GET['reboot_restart'];
@@ -1408,6 +1342,8 @@ require_once '../common/header.php';
       putHtml('<p style="color: red;">Warning! Firewall is enabled, but not configured, click "Firewall Configuration" and save.</p>');
     } elseif ($result == 103) {
       putHtml('<p style="color: red;">Error in Network Configuration, Invalid Timezone setting.</p>');
+    } elseif ($result == 104) {
+      putHtml('<p style="color: red;">No Action, check "Confirm" when changing number of internal interfaces.</p>');
     } elseif ($result == 999) {
       putHtml('<p style="color: red;">Permission denied for user "'.$global_user.'".</p>');
     } else {
@@ -1597,7 +1533,7 @@ require_once '../common/header.php';
   putHtml('<tr class="dtrow1"><td class="dialogText" style="text-align: left;" colspan="6">');
   putHtml('<strong>External Static IPv4 Settings:</strong>&nbsp;<i>(Cleared for DHCP)</i>');
   putHtml('</td></tr>');
-  putHtml('<tr class="dtrow1"><td style="text-align: left;" colspan="2">');
+  putHtml('<tr class="dtrow1" style="white-space: nowrap;"><td style="text-align: left;" colspan="2">');
   $value = getVARdef($db, 'EXTIP', $cur_db);
   putHtml('Static IPv4:<input type="text" size="18" maxlength="15" value="'.$value.'" name="static_ip" /></td>');
   putHtml('<td style="text-align: center;" colspan="2">');
@@ -1697,168 +1633,85 @@ require_once '../common/header.php';
   putHtml('<strong>Internal Interfaces:</strong>'.tt('https://doc.astlinux-project.org/userdoc:system-config?do=export_xhtmlbody','Configure internal interfaces with IPv4 and/or IPv6 addresses and DHCP server support. <strong>More...</strong>'));
   putHtml('</td></tr>');
   putHtml('<tr class="dtrow1"><td style="text-align: left;" colspan="6">');
-  putHtml('&nbsp;&nbsp;<strong>Site IPv6 ULA Prefix:</strong>');
+  putHtml('<strong>Site IPv6 ULA Prefix:</strong>');
   $value = getVARdef($db, 'IPV6_SITE_ULA_PREFIX', $cur_db);
   putHtml('<input type="text" size="25" maxlength="20" value="'.$value.'" name="ipv6_ula_prefix" />');
   putHtml('&ndash;&nbsp;<input type="submit" value="Generate new prefix" name="submit_new_ula_prefix" class="formbtn" />');
-  putHtml('&ndash;<input type="checkbox" value="new_prefix" name="confirm_new_prefix" />&nbsp;Confirm');
+  putHtml('&ndash;&nbsp;<input type="checkbox" value="new_prefix" name="confirm_new_prefix" />&nbsp;Confirm');
   putHtml('</td></tr>');
-
   putHtml('<tr class="dtrow1"><td style="text-align: left;" colspan="6">');
-  putHtml('<strong>1st LAN Interface:</strong>');
-  putHtml('<select name="int_eth">');
-  putHtml('<option value="">none</option>');
-  $varif = getVARdef($db, 'INTIF', $cur_db);
-  if (($n = arrayCount($eth)) > 0) {
-    for ($i = 0; $i < $n; $i++) {
-      $sel = ($varif === $eth[$i]) ? ' selected="selected"' : '';
-      putHtml('<option value="'.$eth[$i].'"'.$sel.'>'.$eth[$i].'</option>');
-    }
+  //------------------------------
+  // Allow for multiple internal interfaces.
+  // Valid range 1..10 with default of 4
+  putHtml('<strong>Number of internal LANs:</strong>');
+  putHtml(tt('','WARNING: Reducing the number of LAN interfaces will delete saved values for the removed interfaces (e.g. IP address, Nickname, etc.)'));
+  putHtml('<select name="int_lan_count">');
+  $INTIF_COUNT = (getVARdef($db, 'INTIF_COUNT', $cur_db) == '') ? 4 : getVARdef($db, 'INTIF_COUNT', $cur_db);
+  for ($i = 1; $i <= 10; $i++) {
+      $sel = ($i == $INTIF_COUNT) ? ' selected="selected"' : '';
+      putHtml('<option value="'.$i.'"'.$sel.'>'.$i.'</option>');
   }
   putHtml('</select>');
-  $value = getVARdef($db, 'INTIP', $cur_db);
-  putHtml('&nbsp;&nbsp;IPv4:<input type="text" size="16" maxlength="15" value="'.$value.'" name="int_ip" />');
-  if (($value = getVARdef($db, 'INTNM', $cur_db)) === '') {
-    $value = '255.255.255.0';
-  }
-  putHtml('NetMask:<input type="text" size="16" maxlength="15" value="'.$value.'" name="int_mask_ip" />');
-  putDNS_DHCP_Html($db, $cur_db, $varif, 'int_dhcp');
+  putHtml('&ndash;&nbsp;<input type="checkbox" value="new_prefix" name="confirm_int_lan_count" />&nbsp;Confirm');
   putHtml('</td></tr>');
+  $ifname = array (
+  'INT'  => '1<sup>st</sup> LAN',
+  'INT2' => '2<sup>nd</sup> LAN',
+  'INT3' => '3<sup>rd</sup> LAN',
+  'INT*' => '*th LAN',
+  'DMZ'  => 'The DMZ'
+  );
+  $int_prefix[] = "INT";
+  for ($i = 2; $i <= $INTIF_COUNT; $i++) $int_prefix[] = "INT" . $i;
+  $int_prefix[] = "DMZ";
+  foreach ($int_prefix as $ifn => $prefix) {
+    $lcprefix = strtolower($prefix);
+    $intif = $prefix . "IF";
+    $intnm = $prefix . "NM";
+    $intip = $prefix . "IP";
+    $intipv6 = $prefix . "IPV6";
+    $intnickname = $prefix . "NICKNAME";
 
-  putHtml('<tr class="dtrow1"><td style="text-align: left;" colspan="6">');
-  $value = getVARdef($db, 'INTIPV6', $cur_db);
-  putHtml('&nbsp;&nbsp;IPv6/nn:<input type="text" size="45" maxlength="43" value="'.$value.'" name="int_ipv6" placeholder="Optional if GUA or ULA assigned" />');
-  $sel = isVARtype('IPV6_PREFIX_DELEGATION', $db, $cur_db, 'INTIF') ? ' checked="checked"' : '';
-  putHtml('<input type="checkbox" value="int_gua" name="int_gua"'.$sel.' />Assign GUA');
-  $sel = isVARtype('IPV6_PREFIX_ULA', $db, $cur_db, 'INTIF') ? ' checked="checked"' : '';
-  putHtml('<input type="checkbox" value="int_ula" name="int_ula"'.$sel.' />Assign ULA');
-  putDNS_DHCPV6_Html($db, $cur_db, 'INTIF', 'int_ipv6ra');
-  putHtml('</td></tr>');
-
-  putHtml('<tr class="dtrow1"><td style="text-align: left;" colspan="6">');
-  putHtml('<strong>2nd LAN Interface:</strong>');
-  putHtml('<select name="int2_eth">');
-  putHtml('<option value="">none</option>');
-  $varif = getVARdef($db, 'INT2IF', $cur_db);
-  if (($n = arrayCount($eth)) > 0) {
-    for ($i = 0; $i < $n; $i++) {
-      $sel = ($varif === $eth[$i]) ? ' selected="selected"' : '';
-      putHtml('<option value="'.$eth[$i].'"'.$sel.'>'.$eth[$i].'</option>');
+    if (($value = getVARdef($db, $intnickname, $cur_db)) === '') $value = $intif;
+    putHtml('<tr class="dtrow1" style="text-align: left; white-space: nowrap;"><td colspan="1">');
+    # Use echo rather than putHtml so that no newline inserted at end
+    echo '<strong>'.($ifname[$prefix]?:($ifn+1).'<sup>th</sup> LAN').' Interface (';
+    echo '<span contenteditable="true"
+          onkeypress="if (event.which === 13 || this.innerHTML.length >= 15) event.preventDefault();"
+          onkeyup="document.getElementById(\''.$lcprefix.'_nickname\').value=this.innerText;">'.$value.'</span>';
+    echo '):</strong>';
+    if ($prefix === 'INT') {
+      # show tooltip only on the first interface
+      putHtml(tt('','You can edit the nickname, just select text inside the brackets and type.'));
     }
-  }
-  putHtml('</select>');
-  $value = getVARdef($db, 'INT2IP', $cur_db);
-  putHtml('&nbsp;&nbsp;IPv4:<input type="text" size="16" maxlength="15" value="'.$value.'" name="int2_ip" />');
-  if (($value = getVARdef($db, 'INT2NM', $cur_db)) === '') {
-    $value = '255.255.255.0';
-  }
-  putHtml('NetMask:<input type="text" size="16" maxlength="15" value="'.$value.'" name="int2_mask_ip" />');
-  putDNS_DHCP_Html($db, $cur_db, $varif, 'int2_dhcp');
-  putHtml('</td></tr>');
-
-  putHtml('<tr class="dtrow1"><td style="text-align: left;" colspan="6">');
-  $value = getVARdef($db, 'INT2IPV6', $cur_db);
-  putHtml('&nbsp;&nbsp;IPv6/nn:<input type="text" size="45" maxlength="43" value="'.$value.'" name="int2_ipv6" placeholder="Optional if GUA or ULA assigned" />');
-  $sel = isVARtype('IPV6_PREFIX_DELEGATION', $db, $cur_db, 'INT2IF') ? ' checked="checked"' : '';
-  putHtml('<input type="checkbox" value="int2_gua" name="int2_gua"'.$sel.' />Assign GUA');
-  $sel = isVARtype('IPV6_PREFIX_ULA', $db, $cur_db, 'INT2IF') ? ' checked="checked"' : '';
-  putHtml('<input type="checkbox" value="int2_ula" name="int2_ula"'.$sel.' />Assign ULA');
-  putDNS_DHCPV6_Html($db, $cur_db, 'INT2IF', 'int2_ipv6ra');
-  putHtml('</td></tr>');
-
-  putHtml('<tr class="dtrow1"><td style="text-align: left;" colspan="6">');
-  putHtml('<strong>3rd LAN Interface:</strong>');
-  putHtml('<select name="int3_eth">');
-  putHtml('<option value="">none</option>');
-  $varif = getVARdef($db, 'INT3IF', $cur_db);
-  if (($n = arrayCount($eth)) > 0) {
-    for ($i = 0; $i < $n; $i++) {
-      $sel = ($varif === $eth[$i]) ? ' selected="selected"' : '';
-      putHtml('<option value="'.$eth[$i].'"'.$sel.'>'.$eth[$i].'</option>');
+    putHtml('<input type="hidden" id="'.$lcprefix.'_nickname" name="'.$lcprefix.'_nickname" value="'.$value.'"/>');
+    putHtml('</td><td colspan="5">');
+    putHtml('<select name="'.$lcprefix.'_eth">');
+    putHtml('<option value="">none</option>');
+    $varif = getVARdef($db, $intif, $cur_db);
+    if (($n = arrayCount($eth)) > 0) {
+      for ($i = 0; $i < $n; $i++) {
+        $sel = ($varif === $eth[$i]) ? ' selected="selected"' : '';
+        putHtml('<option value="'.$eth[$i].'"'.$sel.'>'.$eth[$i].'</option>');
+      }
     }
+    putHtml('</select>');
+    $value = getVARdef($db, $intip, $cur_db);
+    putHtml('&nbsp;&nbsp;IPv4:<input type="text" size="16" maxlength="15" value="'.$value.'" name="'.$lcprefix.'_ip" />');
+    if (($value = getVARdef($db, $intnm, $cur_db)) === '') $value = '255.255.255.0';
+    putHtml('NetMask:<input type="text" size="16" maxlength="15" value="'.$value.'" name="'.$lcprefix.'_mask_ip" />');
+    putDNS_DHCP_Html($db, $cur_db, $varif, $lcprefix.'_dhcp');
+    putHtml('</td></tr>');
+    putHtml('<tr class="dtrow1"><td style="text-align: left;" colspan="6">');
+    $value = getVARdef($db, $intipv6, $cur_db);
+    putHtml('&nbsp;&nbsp;IPv6/nn:<input type="text" size="45" maxlength="43" value="'.$value.'" name="'.$lcprefix.'_ipv6" placeholder="Optional if GUA or ULA assigned" />');
+    $sel = isVARtype('IPV6_PREFIX_DELEGATION', $db, $cur_db, $intif) ? ' checked="checked"' : '';
+    putHtml('<input type="checkbox" value="'.$lcprefix.'_gua" name="'.$lcprefix.'_gua"'.$sel.' />Assign GUA');
+    $sel = isVARtype('IPV6_PREFIX_ULA', $db, $cur_db, $intif) ? ' checked="checked"' : '';
+    putHtml('<input type="checkbox" value="'.$lcprefix.'_ula" name="'.$lcprefix.'_ula"'.$sel.' />Assign ULA');
+    putDNS_DHCPV6_Html($db, $cur_db, $intif, $lcprefix.'_ipv6ra');
+    putHtml('</td></tr>');
   }
-  putHtml('</select>');
-  $value = getVARdef($db, 'INT3IP', $cur_db);
-  putHtml('&nbsp;&nbsp;IPv4:<input type="text" size="16" maxlength="15" value="'.$value.'" name="int3_ip" />');
-  if (($value = getVARdef($db, 'INT3NM', $cur_db)) === '') {
-    $value = '255.255.255.0';
-  }
-  putHtml('NetMask:<input type="text" size="16" maxlength="15" value="'.$value.'" name="int3_mask_ip" />');
-  putDNS_DHCP_Html($db, $cur_db, $varif, 'int3_dhcp');
-  putHtml('</td></tr>');
-
-  putHtml('<tr class="dtrow1"><td style="text-align: left;" colspan="6">');
-  $value = getVARdef($db, 'INT3IPV6', $cur_db);
-  putHtml('&nbsp;&nbsp;IPv6/nn:<input type="text" size="45" maxlength="43" value="'.$value.'" name="int3_ipv6" placeholder="Optional if GUA or ULA assigned" />');
-  $sel = isVARtype('IPV6_PREFIX_DELEGATION', $db, $cur_db, 'INT3IF') ? ' checked="checked"' : '';
-  putHtml('<input type="checkbox" value="int3_gua" name="int3_gua"'.$sel.' />Assign GUA');
-  $sel = isVARtype('IPV6_PREFIX_ULA', $db, $cur_db, 'INT3IF') ? ' checked="checked"' : '';
-  putHtml('<input type="checkbox" value="int3_ula" name="int3_ula"'.$sel.' />Assign ULA');
-  putDNS_DHCPV6_Html($db, $cur_db, 'INT3IF', 'int3_ipv6ra');
-  putHtml('</td></tr>');
-
-  putHtml('<tr class="dtrow1"><td style="text-align: left;" colspan="6">');
-  putHtml('<strong>4th LAN Interface:</strong>');
-  putHtml('<select name="int4_eth">');
-  putHtml('<option value="">none</option>');
-  $varif = getVARdef($db, 'INT4IF', $cur_db);
-  if (($n = arrayCount($eth)) > 0) {
-    for ($i = 0; $i < $n; $i++) {
-      $sel = ($varif === $eth[$i]) ? ' selected="selected"' : '';
-      putHtml('<option value="'.$eth[$i].'"'.$sel.'>'.$eth[$i].'</option>');
-    }
-  }
-  putHtml('</select>');
-  $value = getVARdef($db, 'INT4IP', $cur_db);
-  putHtml('&nbsp;&nbsp;IPv4:<input type="text" size="16" maxlength="15" value="'.$value.'" name="int4_ip" />');
-  if (($value = getVARdef($db, 'INT4NM', $cur_db)) === '') {
-    $value = '255.255.255.0';
-  }
-  putHtml('NetMask:<input type="text" size="16" maxlength="15" value="'.$value.'" name="int4_mask_ip" />');
-  putDNS_DHCP_Html($db, $cur_db, $varif, 'int4_dhcp');
-  putHtml('</td></tr>');
-
-  putHtml('<tr class="dtrow1"><td style="text-align: left;" colspan="6">');
-  $value = getVARdef($db, 'INT4IPV6', $cur_db);
-  putHtml('&nbsp;&nbsp;IPv6/nn:<input type="text" size="45" maxlength="43" value="'.$value.'" name="int4_ipv6" placeholder="Optional if GUA or ULA assigned" />');
-  $sel = isVARtype('IPV6_PREFIX_DELEGATION', $db, $cur_db, 'INT4IF') ? ' checked="checked"' : '';
-  putHtml('<input type="checkbox" value="int4_gua" name="int4_gua"'.$sel.' />Assign GUA');
-  $sel = isVARtype('IPV6_PREFIX_ULA', $db, $cur_db, 'INT4IF') ? ' checked="checked"' : '';
-  putHtml('<input type="checkbox" value="int4_ula" name="int4_ula"'.$sel.' />Assign ULA');
-  putDNS_DHCPV6_Html($db, $cur_db, 'INT4IF', 'int4_ipv6ra');
-  putHtml('</td></tr>');
-
-  putHtml('<tr class="dtrow1"><td style="text-align: left;" colspan="6">');
-  putHtml('<strong>The DMZ Interface:</strong>');
-  putHtml('<select name="dmz_eth">');
-  putHtml('<option value="">none</option>');
-  $varif = getVARdef($db, 'DMZIF', $cur_db);
-  if (($n = arrayCount($eth)) > 0) {
-    for ($i = 0; $i < $n; $i++) {
-      $sel = ($varif === $eth[$i]) ? ' selected="selected"' : '';
-      putHtml('<option value="'.$eth[$i].'"'.$sel.'>'.$eth[$i].'</option>');
-    }
-  }
-  putHtml('</select>');
-  $value = getVARdef($db, 'DMZIP', $cur_db);
-  putHtml('&nbsp;&nbsp;IPv4:<input type="text" size="16" maxlength="15" value="'.$value.'" name="dmz_ip" />');
-  if (($value = getVARdef($db, 'DMZNM', $cur_db)) === '') {
-    $value = '255.255.255.0';
-  }
-  putHtml('NetMask:<input type="text" size="16" maxlength="15" value="'.$value.'" name="dmz_mask_ip" />');
-  putDNS_DHCP_Html($db, $cur_db, $varif, 'dmz_dhcp');
-  putHtml('</td></tr>');
-
-  putHtml('<tr class="dtrow1"><td style="text-align: left;" colspan="6">');
-  $value = getVARdef($db, 'DMZIPV6', $cur_db);
-  putHtml('&nbsp;&nbsp;IPv6/nn:<input type="text" size="45" maxlength="43" value="'.$value.'" name="dmz_ipv6" placeholder="Optional if GUA or ULA assigned" />');
-  $sel = isVARtype('IPV6_PREFIX_DELEGATION', $db, $cur_db, 'DMZIF') ? ' checked="checked"' : '';
-  putHtml('<input type="checkbox" value="dmz_gua" name="dmz_gua"'.$sel.' />Assign GUA');
-  $sel = isVARtype('IPV6_PREFIX_ULA', $db, $cur_db, 'DMZIF') ? ' checked="checked"' : '';
-  putHtml('<input type="checkbox" value="dmz_ula" name="dmz_ula"'.$sel.' />Assign ULA');
-  putDNS_DHCPV6_Html($db, $cur_db, 'DMZIF', 'dmz_ipv6ra');
-  putHtml('</td></tr>');
-
   putHtml('<tr class="dtrow0"><td colspan="6">&nbsp;</td></tr>');
 
   putHtml('<tr class="dtrow0"><td class="dialogText" style="text-align: left;" colspan="6">');
@@ -2128,23 +1981,25 @@ require_once '../common/header.php';
   putHtml('&nbsp;<i>(https://'.$_SERVER['HTTP_HOST'].'/admin/netstat/ or NetStat Tab)</i>');
   putHtml('</td></tr>');
 
-  putHtml('<tr class="dtrow1"><td style="text-align: left;" colspan="6">');
+  putHtml('<tr class="dtrow1"><td style="text-align: left; white-space: nowrap;" colspan="6">');
   putHtml('NetStat&nbsp;Interfaces:');
   if (($value = getVARdef($db, 'NETSTAT_EXTIF', $cur_db)) === '') {    // set in user.conf
     $value = 'External';
   }
   $sel = isVARtype('NETSTAT_CAPTURE', $db, $cur_db, 'EXTIF') ? ' checked="checked"' : '';
   putHtml('<input type="checkbox" value="netstat_EXTIF" name="netstat_EXTIF"'.$sel.' />&nbsp;'.$value);
-  $sel = isVARtype('NETSTAT_CAPTURE', $db, $cur_db, 'INTIF') ? ' checked="checked"' : '';
-  putHtml('<input type="checkbox" value="netstat_INTIF" name="netstat_INTIF"'.$sel.' />&nbsp;1st LAN');
-  $sel = isVARtype('NETSTAT_CAPTURE', $db, $cur_db, 'INT2IF') ? ' checked="checked"' : '';
-  putHtml('<input type="checkbox" value="netstat_INT2IF" name="netstat_INT2IF"'.$sel.' />&nbsp;2nd LAN');
-  $sel = isVARtype('NETSTAT_CAPTURE', $db, $cur_db, 'INT3IF') ? ' checked="checked"' : '';
-  putHtml('<input type="checkbox" value="netstat_INT3IF" name="netstat_INT3IF"'.$sel.' />&nbsp;3rd LAN');
-  $sel = isVARtype('NETSTAT_CAPTURE', $db, $cur_db, 'INT4IF') ? ' checked="checked"' : '';
-  putHtml('<input type="checkbox" value="netstat_INT4IF" name="netstat_INT4IF"'.$sel.' />&nbsp;4th LAN');
-  $sel = isVARtype('NETSTAT_CAPTURE', $db, $cur_db, 'DMZIF') ? ' checked="checked"' : '';
-  putHtml('<input type="checkbox" value="netstat_DMZIF" name="netstat_DMZIF"'.$sel.' />&nbsp;DMZ');
+  $ifname = array (
+  'INT'  => '1<sup>st</sup>',
+  'INT2' => '2<sup>nd</sup>',
+  'INT3' => '3<sup>rd</sup>',
+  'INT*' => '*th',
+  'DMZ'  => 'The DMZ'
+  );
+  foreach ($int_prefix as $ifn => $prefix) {
+    $intif = $prefix . "IF";
+    $sel = isVARtype('NETSTAT_CAPTURE', $db, $cur_db, $intif) ? ' checked="checked"' : '';
+    putHtml('<input type="checkbox" value="netstat_'.$intif.'" name="netstat_'.$intif.'"'.$sel.' />&nbsp;'.($ifname[$prefix]?:($ifn+1).'<sup>th</sup>'));
+  }
   putHtml('</td></tr>');
 
   putHtml('<tr class="dtrow1"><td style="text-align: left;" colspan="6">');
@@ -2159,18 +2014,13 @@ require_once '../common/header.php';
   putHtml('</select>');
   putHtml('</td></tr>');
 
-  putHtml('<tr class="dtrow1"><td style="text-align: left;" colspan="6">');
+  putHtml('<tr class="dtrow1"><td style="text-align: left; white-space: nowrap;" colspan="6">');
   putHtml("Universal Plug'n'Play Interfaces:");
-  $sel = isVARtype('UPNP_LISTEN', $db, $cur_db, 'INTIF') ? ' checked="checked"' : '';
-  putHtml('<input type="checkbox" value="upnp_INTIF" name="upnp_INTIF"'.$sel.' />&nbsp;1st LAN');
-  $sel = isVARtype('UPNP_LISTEN', $db, $cur_db, 'INT2IF') ? ' checked="checked"' : '';
-  putHtml('<input type="checkbox" value="upnp_INT2IF" name="upnp_INT2IF"'.$sel.' />&nbsp;2nd LAN');
-  $sel = isVARtype('UPNP_LISTEN', $db, $cur_db, 'INT3IF') ? ' checked="checked"' : '';
-  putHtml('<input type="checkbox" value="upnp_INT3IF" name="upnp_INT3IF"'.$sel.' />&nbsp;3rd LAN');
-  $sel = isVARtype('UPNP_LISTEN', $db, $cur_db, 'INT4IF') ? ' checked="checked"' : '';
-  putHtml('<input type="checkbox" value="upnp_INT4IF" name="upnp_INT4IF"'.$sel.' />&nbsp;4th LAN');
-  $sel = isVARtype('UPNP_LISTEN', $db, $cur_db, 'DMZIF') ? ' checked="checked"' : '';
-  putHtml('<input type="checkbox" value="upnp_DMZIF" name="upnp_DMZIF"'.$sel.' />&nbsp;DMZ');
+  foreach ($int_prefix as $ifn => $prefix) {
+    $intif = $prefix . "IF";
+    $sel = isVARtype('UPNP_LISTEN', $db, $cur_db, $intif) ? ' checked="checked"' : '';
+    putHtml('<input type="checkbox" value="upnp_'.$intif.'" name="upnp_'.$intif.'"'.$sel.' />&nbsp;'.($ifname[$prefix]?:($ifn+1).'<sup>th</sup>'));
+  }
   putHtml('</td></tr>');
 
   if (is_file('/etc/init.d/avahi')) {

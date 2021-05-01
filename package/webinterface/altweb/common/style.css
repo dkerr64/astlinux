@@ -361,6 +361,7 @@ a.tooltip:hover {
 a.tooltip b {
   display:none;
   text-align: left;
+  white-space: normal;
 }
 
 a.tooltip:hover b {
@@ -527,3 +528,18 @@ td.popup_title_loading {
   font-weight: normal;
 }
 
+/* rotation */
+div.rotate45 {
+  white-space: nowrap;
+  width:40px;
+  float:left;
+  transform: translate(5px, -10px) rotate(-55deg);
+  text-align: left;
+}
+
+div.lan-checkbox {
+  white-space: nowrap;
+  width:40px;
+  float:left;
+  text-align: left;
+}
