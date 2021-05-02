@@ -5,6 +5,15 @@
 . /etc/init.d/functions.d/network
 . /etc/init.d/functions.d/misc
 
+# Initialize internal and external interfaces
+INTIF_VARS="INTIF"
+for i in $(seq 2 ${INTIF_COUNT:-4}); do INTIF_VARS="${INTIF_VARS} INT${i}IF"; done;
+INTIF_NAMES=""
+for i in $INTIF_VARS; do INTIF_NAMES="${INTIF_NAMES} ${!i/none}"; done
+EXTIF_VARS="EXTIF EXT2IF"
+EXTIF_NAMES=""
+for i in $EXTIF_VARS; do EXTIF_NAMES="${EXTIF_NAMES} ${!i/none}"; done
+
 gen_nopd_dhcp6c_conf()
 {
   local interface="$1"
@@ -56,39 +65,12 @@ id-assoc pd 1 {"
 
     id=0
     unset IFS
-    for iname in $IPV6_PREFIX_DELEGATION; do
-      int=""
-      case $iname in
-        INTIF)
-          if [ -n "$INTIF" -a "$INTIF" != "none" ]; then
-            int="$INTIF"
-          fi
-          ;;
-        INT2IF)
-          if [ -n "$INT2IF" -a "$INT2IF" != "none" ]; then
-            int="$INT2IF"
-          fi
-          ;;
-        INT3IF)
-          if [ -n "$INT3IF" -a "$INT3IF" != "none" ]; then
-            int="$INT3IF"
-          fi
-          ;;
-        INT4IF)
-          if [ -n "$INT4IF" -a "$INT4IF" != "none" ]; then
-            int="$INT4IF"
-          fi
-          ;;
-        DMZIF)
-          if [ -n "$DMZIF" -a "$DMZIF" != "none" ]; then
-            int="$DMZIF"
-          fi
-          ;;
-      esac
-      if [ -n "$int" ]; then
+    for ifvar in $IPV6_PREFIX_DELEGATION; do
+      _IF="${!ifvar/none}"   # value of INTxIF
+      if [[ $INTIF_VARS =~ $ifvar && -n "$_IF" ]]; then
         # subnet comes back set to a 4 digit hex string, convert to decimal
-        id="$(printf '%d' 0x$(get_dhcpv6_subnet $int $len))"
-        echo "  prefix-interface $int {
+        id="$(printf '%d' 0x$(get_dhcpv6_subnet $_IF $len))"
+        echo "  prefix-interface $_IF {
     sla-id $id;
     sla-len $((64-len));
     ifid 1;
@@ -262,7 +244,7 @@ phyeth_disable_offload()
   logger -s -t network -p kern.info "Disabling \"$off_list\" offload on all configured ethernet interfaces."
 
   unset IFS
-  for eth in $EXTIF $EXT2IF $PPPOEIF $INTIF $INT2IF $INT3IF $INT4IF $DMZIF $BRIDGE0 $BRIDGE1 $BRIDGE2 $LXC_BRIDGE0; do
+  for eth in $EXTIF_NAMES $PPPOEIF $INTIF_NAMES $DMZIF $BRIDGE0 $BRIDGE1 $BRIDGE2 $LXC_BRIDGE0; do
     case $eth in
       eth*)
         for off in $off_list; do
@@ -319,25 +301,19 @@ start () {
 
   # if you want to change an interface's MAC address, you must do so
   # before marking it up or joining it to a bridge.
-  if [ -n "$EXTIF" -a -n "$EXTIFMAC" -a "$EXTIF" != "none" ]; then
-    case "$EXTIF" in
-    br[0-2])
-      ;;
-    *)
-      ip link set dev "$EXTIF" address $EXTIFMAC
-      ;;
-    esac
-  fi
-
-  if [ -n "$EXT2IF" -a -n "$EXT2IFMAC" -a "$EXT2IF" != "none" ]; then
-    case "$EXT2IF" in
-    br[0-2])
-      ;;
-    *)
-      ip link set dev "$EXT2IF" address $EXT2IFMAC
-      ;;
-    esac
-  fi
+  for ifvar in $EXTIF_VARS; do
+    _IF="${!ifvar/none}"       # value of EXTxIF
+    eval _MAC="\$${ifvar}MAC"  # value of EXTxIFMAC
+    if [ -n "$_IF" -a -n "$_MAC" ]; then
+      case "$_IF" in
+      br[0-2])
+        ;;
+      *)
+        ip link set dev "$_IF" address $_MAC
+        ;;
+      esac
+    fi
+  done
 
   #VLANS
   if [ -n "$VLANS" ]; then
@@ -415,143 +391,41 @@ start () {
   # 1) Manually assigned,
   # 2) Auto assigned from a site ULA prefix,
   # 3) Auto assigned from DHCPv6 client prefix delegation.
-  if [ -n "$INTIF" -a "$INTIF" != "none" ]; then
-    bringup=""
-    if [ -n "$INTIP" -a -n "$INTNM" ]; then
-      ip addr add $INTIP/$INTNM brd + dev $INTIF
-      if [ "$NTPBROADCAST" = "yes" ]; then
-        ip route add 224.0.0.0/4 dev $INTIF
-      fi
-      bringup="yes"
-    fi
-    if [ "$IPV6" = "yes" ]; then
-      IFS=" ,"
-      for ipv6_addr in $INTIPV6; do
-        ip -6 addr add $ipv6_addr dev $INTIF
-        bringup="yes"
-      done
-      unset IFS
-      regex="\bINTIF\b"
-      if [[ "$IPV6_PREFIX_ULA" =~ $regex ]]; then
-        ip -6 addr add $(get_ipv6_site_ula_prefix $INTIF) dev $INTIF
+  for ifvar in $INTIF_VARS "DMZIF"; do
+    _IF="${!ifvar/none}"           # value of INTxIF (or DMZIF)
+    eval _IP="\$${ifvar/IF/IP}"    # value of INTxIP
+    eval _NM="\$${ifvar/IF/NM}"    # value of INTxNM
+    eval _IP6="\$${ifvar/IF/IPV6}" # value of INTxIPV6
+    if [ -n "$_IF" ]; then
+      bringup=""
+      if [ -n "$_IP" -a -n "$_NM" ]; then
+        ip addr add $_IP/$_NM brd + dev $_IF
+        if [ "$NTPBROADCAST" = "yes" ]; then
+          ip route add 224.0.0.0/4 dev $_IF
+        fi
         bringup="yes"
       fi
-      if [[ "$IPV6_PREFIX_DELEGATION" =~ $regex && "$DHCPV6_CLIENT_REQUEST_PREFIX" != "no" ]]; then
-        bringup="yes"
+      if [ "$IPV6" = "yes" ]; then
+        IFS=" ,"
+        for ipv6_addr in $_IP6; do
+          ip -6 addr add $ipv6_addr dev $_IF
+          bringup="yes"
+        done
+        unset IFS
+        regex="\b${ifvar}\b"  # Regex so works with commas
+        if [[ "$IPV6_PREFIX_ULA" =~ $regex ]]; then
+          ip -6 addr add $(get_ipv6_site_ula_prefix $_IF) dev $_IF
+          bringup="yes"
+        fi
+        if [[ "$IPV6_PREFIX_DELEGATION" =~ $regex && "$DHCPV6_CLIENT_REQUEST_PREFIX" != "no" ]]; then
+          bringup="yes"
+        fi
+      fi
+      if [ "$bringup" = "yes" ]; then
+        ip link set dev $_IF up
       fi
     fi
-    if [ "$bringup" = "yes" ]; then
-      ip link set dev $INTIF up
-    fi
-  fi
-
-  if [ -n "$INT2IF" -a "$INT2IF" != "none" ]; then
-    bringup=""
-    if [ -n "$INT2IP" -a -n "$INT2NM" ]; then
-      ip addr add $INT2IP/$INT2NM brd + dev $INT2IF
-      bringup="yes"
-    fi
-    if [ "$IPV6" = "yes" ]; then
-      IFS=" ,"
-      for ipv6_addr in $INT2IPV6; do
-        ip -6 addr add $ipv6_addr dev $INT2IF
-        bringup="yes"
-      done
-      unset IFS
-      regex="\bINT2IF\b"
-      if [[ "$IPV6_PREFIX_ULA" =~ $regex ]]; then
-        ip -6 addr add $(get_ipv6_site_ula_prefix $INT2IF) dev $INT2IF
-        bringup="yes"
-      fi
-      if [[ "$IPV6_PREFIX_DELEGATION" =~ $regex && "$DHCPV6_CLIENT_REQUEST_PREFIX" != "no" ]]; then
-        bringup="yes"
-      fi
-    fi
-    if [ "$bringup" = "yes" ]; then
-      ip link set dev $INT2IF up
-    fi
-  fi
-
-  if [ -n "$INT3IF" -a "$INT3IF" != "none" ]; then
-    bringup=""
-    if [ -n "$INT3IP" -a -n "$INT3NM" ]; then
-      ip addr add $INT3IP/$INT3NM brd + dev $INT3IF
-      bringup="yes"
-    fi
-    if [ "$IPV6" = "yes" ]; then
-      IFS=" ,"
-      for ipv6_addr in $INT3IPV6; do
-        ip -6 addr add $ipv6_addr dev $INT3IF
-        bringup="yes"
-      done
-      unset IFS
-      regex="\bINT3IF\b"
-      if [[ "$IPV6_PREFIX_ULA" =~ $regex ]]; then
-        ip -6 addr add $(get_ipv6_site_ula_prefix $INT3IF) dev $INT3IF
-        bringup="yes"
-      fi
-      if [[ "$IPV6_PREFIX_DELEGATION" =~ $regex && "$DHCPV6_CLIENT_REQUEST_PREFIX" != "no" ]]; then
-        bringup="yes"
-      fi
-    fi
-    if [ "$bringup" = "yes" ]; then
-      ip link set dev $INT3IF up
-    fi
-  fi
-
-  if [ -n "$INT4IF" -a "$INT4IF" != "none" ]; then
-    bringup=""
-    if [ -n "$INT4IP" -a -n "$INT4NM" ]; then
-      ip addr add $INT4IP/$INT4NM brd + dev $INT4IF
-      bringup="yes"
-    fi
-    if [ "$IPV6" = "yes" ]; then
-      IFS=" ,"
-      for ipv6_addr in $INT4IPV6; do
-        ip -6 addr add $ipv6_addr dev $INT4IF
-        bringup="yes"
-      done
-      unset IFS
-      regex="\bINT4IF\b"
-      if [[ "$IPV6_PREFIX_ULA" =~ $regex ]]; then
-        ip -6 addr add $(get_ipv6_site_ula_prefix $INT4IF) dev $INT4IF
-        bringup="yes"
-      fi
-      if [[ "$IPV6_PREFIX_DELEGATION" =~ $regex && "$DHCPV6_CLIENT_REQUEST_PREFIX" != "no" ]]; then
-        bringup="yes"
-      fi
-    fi
-    if [ "$bringup" = "yes" ]; then
-      ip link set dev $INT4IF up
-    fi
-  fi
-
-  if [ -n "$DMZIF" -a "$DMZIF" != "none" ]; then
-    bringup=""
-    if [ -n "$DMZIP" -a -n "$DMZNM" ]; then
-      ip addr add $DMZIP/$DMZNM brd + dev $DMZIF
-      bringup="yes"
-    fi
-    if [ "$IPV6" = "yes" ]; then
-      IFS=" ,"
-      for ipv6_addr in $DMZIPV6; do
-        ip -6 addr add $ipv6_addr dev $DMZIF
-        bringup="yes"
-      done
-      unset IFS
-      regex="\bDMZIF\b"
-      if [[ "$IPV6_PREFIX_ULA" =~ $regex ]]; then
-        ip -6 addr add $(get_ipv6_site_ula_prefix $DMZIF) dev $DMZIF
-        bringup="yes"
-      fi
-      if [[ "$IPV6_PREFIX_DELEGATION" =~ $regex && "$DHCPV6_CLIENT_REQUEST_PREFIX" != "no" ]]; then
-        bringup="yes"
-      fi
-    fi
-    if [ "$bringup" = "yes" ]; then
-      ip link set dev $DMZIF up
-    fi
-  fi
+  done
 
   if [ -n "$WANDELAY" ]; then
     echo "Sleeping for $WANDELAY seconds before I bring up $EXTIF..."
@@ -670,6 +544,7 @@ start () {
           # Use Router Advertisements to set the default route
           sysctl -w net.ipv6.conf.${EXTIF}.accept_ra_defrtr=1 >/dev/null
           sysctl -w net.ipv6.conf.${EXTIF}.accept_ra=2 >/dev/null
+
         fi
       fi
     fi
@@ -766,46 +641,24 @@ stop () {
     kill $(cat "$PID")
   done
 
-  if [ -n "$EXTIF" -a "$EXTIF" != "none" ]; then
-    echo "Bringing down $EXTIF..."
-    if [ -n "$EXTIP_ALIAS" ]; then
-      alias_interface delete $EXTIF "$EXTIP_ALIAS"
+  #EXTERNAL INTERFACES
+  for ifvar in $EXTIF_VARS; do
+    _IF="${!ifvar/none}"                     # value of EXTxIF
+    eval _IP_ALIAS="\$${ifvar/IF/IP_ALIAS}"  # value of EXTxIP_ALIAS
+    if [ -n "$_IF" ]; then
+      echo "Bringing down $_IF..."
+      if [ -n "$_IP_ALIAS" ]; then
+        alias_interface delete $_IF "$_IP_ALIAS"
+      fi
+      ip link set dev $_IF down
     fi
-    ip link set dev $EXTIF down
-  fi
+  done
 
-  if [ -n "$EXT2IF" -a "$EXT2IF" != "none" ]; then
-    echo "Bringing down $EXT2IF..."
-    if [ -n "$EXT2IP_ALIAS" ]; then
-      alias_interface delete $EXT2IF "$EXT2IP_ALIAS"
-    fi
-    ip link set dev $EXT2IF down
-  fi
-
-  if [ -n "$INTIF" -a "$INTIF" != "none" ]; then
-    echo "Bringing down $INTIF..."
-    ip link set dev $INTIF down
-  fi
-
-  if [ -n "$INT2IF" -a "$INT2IF" != "none" ]; then
-    echo "Bringing down $INT2IF ..."
-    ip link set dev $INT2IF down
-  fi
-
-  if [ -n "$INT3IF" -a "$INT3IF" != "none" ]; then
-    echo "Bringing down $INT3IF..."
-    ip link set dev $INT3IF down
-  fi
-
-  if [ -n "$INT4IF" -a "$INT4IF" != "none" ]; then
-    echo "Bringing down $INT4IF..."
-    ip link set dev $INT4IF down
-  fi
-
-  if [ -n "$DMZIF" -a "$DMZIF" != "none" ]; then
-    echo "Bringing down $DMZIF ..."
-    ip link set dev $DMZIF down
-  fi
+  #INTERNAL INTERFACES
+  for eth in $INTIF_NAMES $DMZIF; do
+    echo "Bringing down $eth..."
+    ip link set dev $eth down
+  done
 
   #BRIDGES
   if [ -n "$BRIDGE0" ]; then
@@ -865,4 +718,3 @@ restart)
   ;;
 
 esac
-

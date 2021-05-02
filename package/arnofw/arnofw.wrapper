@@ -106,20 +106,7 @@ getLANinterface()
   # args: LAN
   local lanif=""
 
-  case $1 in
-  INTIF)
-    lanif="$INTIF"
-    ;;
-  INT2IF)
-    lanif="$INT2IF"
-    ;;
-  INT3IF)
-    lanif="$INT3IF"
-    ;;
-  INT4IF)
-    lanif="$INT4IF"
-    ;;
-  esac
+  eval lanif="\$$1"
 
   if [ -z "$lanif" ]; then
     return 1
@@ -198,13 +185,12 @@ astlinux_wrapper()
   NAT=0
 
   addINTERNALnet "$INTIF" "$INTIP" "$INTNM"
-
-  addINTERNALnet "$INT2IF" "$INT2IP" "$INT2NM"
-
-  addINTERNALnet "$INT3IF" "$INT3IP" "$INT3NM"
-
-  addINTERNALnet "$INT4IF" "$INT4IP" "$INT4NM"
-
+  for i in $(seq 2 ${INTIF_COUNT:-4}); do
+    eval _IF="\$INT${i}IF"
+    eval _IP="\$INT${i}IP"
+    eval _NM="\$INT${i}NM"
+    addINTERNALnet "$_IF" "$_IP" "$_NM"
+  done
   setDMZnet "$DMZIF" "$DMZIP" "$DMZNM"
 
   MODEM_IF=""

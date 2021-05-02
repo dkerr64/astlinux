@@ -106,7 +106,8 @@ no-dhcp-interface=$1"
 
 addDNSinterface_name()
 {
-  local ilist="INTIF INT2IF INT3IF INT4IF DMZIF"
+  local ilist="INTIF DMZIF"
+  for i in $(seq 2 ${INTIF_COUNT:-4}); do ilist="${ilist} INT${i}IF"; done;
   local iname interface regex manualIPv4 manualIPv6
   local IFS
   local ipv6_set="" ipv4_set=""
@@ -416,8 +417,11 @@ is_EXTDHCP_active()
 
 is_DHCP_active()
 {
+  local iflist="$INTIF $DMZIF"
+  local _IF=''
+  for i in $(seq 2 ${INTIF_COUNT:-4}); do eval _IF="\$INT${i}IF"; iflist="${iflist} $_IF"; done
 
-  for intf in $INTIF $INT2IF $INT3IF $INT4IF $DMZIF; do
+  for intf in $iflist; do
     if [ "$intf" != "none" ] && isDHCPinterface $intf; then
       return 0
     fi
@@ -508,16 +512,14 @@ nameserver 127.0.0.1" > /tmp/etc/resolv.conf
 
     addDNSMASQnet "$INTIF" "$INTIP" "$INTNM" "$INTDNS" lan >> /tmp/etc/dnsmasq.conf
     addIPV6net "INTIF" lan >> /tmp/etc/dnsmasq.conf
-
-    addDNSMASQnet "$INT2IF" "$INT2IP" "$INT2NM" "$INT2DNS" lan2 >> /tmp/etc/dnsmasq.conf
-    addIPV6net "INT2IF" lan2 >> /tmp/etc/dnsmasq.conf
-
-    addDNSMASQnet "$INT3IF" "$INT3IP" "$INT3NM" "$INT3DNS" lan3 >> /tmp/etc/dnsmasq.conf
-    addIPV6net "INT3IF" lan3 >> /tmp/etc/dnsmasq.conf
-
-    addDNSMASQnet "$INT4IF" "$INT4IP" "$INT4NM" "$INT4DNS" lan4 >> /tmp/etc/dnsmasq.conf
-    addIPV6net "INT4IF" lan4 >> /tmp/etc/dnsmasq.conf
-
+    for i in $(seq 2 ${INTIF_COUNT:-4}); do
+      eval _IP="\$INT${i}IP"
+      eval _IF="\$INT${i}IF"
+      eval _NM="\$INT${i}NM"
+      eval _DNS="\$INT${i}DNS"
+      addDNSMASQnet "$_IF" "$_IP" "$_NM" "$_DNS" lan${i} >> /tmp/etc/dnsmasq.conf
+      addIPV6net "INT${i}IF" lan${i} >> /tmp/etc/dnsmasq.conf
+    done
     addDNSMASQnet "$DMZIF" "$DMZIP" "$DMZNM" "$DMZDNS" dmz >> /tmp/etc/dnsmasq.conf
     addIPV6net "DMZIF" dmz >> /tmp/etc/dnsmasq.conf
 
@@ -581,4 +583,3 @@ restart)
   ;;
 
 esac
-

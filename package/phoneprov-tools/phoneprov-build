@@ -258,17 +258,13 @@ case $if_name in
     sip_server_if="$INTIF"
     sip_server_ipv4="$INTIP"
     ;;
-  INT2IF)
-    sip_server_if="$INT2IF"
-    sip_server_ipv4="$INT2IP"
+  INT[2-9]IF)
+    eval sip_server_if="\$${if_name}"
+    eval sip_server_ipv4="\$${if_name/IF/IP}"
     ;;
-  INT3IF)
-    sip_server_if="$INT3IF"
-    sip_server_ipv4="$INT3IP"
-    ;;
-  INT4IF)
-    sip_server_if="$INT4IF"
-    sip_server_ipv4="$INT4IP"
+  INT[1-9][0-9]IF)
+    eval sip_server_if="\$${if_name}"
+    eval sip_server_ipv4="\$${if_name/IF/IP}"
     ;;
   EXTIF)
     sip_server_if="$EXTIF"

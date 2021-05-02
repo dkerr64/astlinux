@@ -10,8 +10,17 @@
 SYS_gen_etc_hosts() {
   local ip hostip hostipv6 IFS
   local dd_host interface ip_list
-  local ipv4_list="$INTIP $INT2IP $INT3IP $INT4IP $DMZIP"
-  local ipv6_if_list="$INTIF $INT2IF $INT3IF $INT4IF $DMZIF "
+  local ipv4_list="$INTIP"
+  local ipv6_if_list="$INTIF"
+
+  for i in $(seq 2 ${INTIF_COUNT:-4}); do
+    eval _IP="\$INT${i}IP"
+    eval _IF="\$INT${i}IF"
+    ipv4_list="$ipv4_list $_IP"
+    ipv6_if_list="$ipv6_if_list $_IF"
+  done
+  ipv4_list="$ipv4_list $DMZIP"
+  ipv6_if_list="$ipv6_if_list $DMZIF"
 
   # find the first internal IPv4 address from list of static IP addresses
   hostip=$(echo $ipv4_list | xargs | cut -d' ' -f 1)
@@ -92,4 +101,3 @@ SYS_is_vpn_type()
 
   return 1
 }
-

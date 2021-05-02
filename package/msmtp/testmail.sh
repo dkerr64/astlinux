@@ -58,15 +58,13 @@ Test Email from '$HOSTNAME'
   if [ -n "$INTIF" ]; then
     echo "1st LAN IPv4 Network:   $(dev_to_ipv4_network $INTIF)"
   fi
-  if [ -n "$INT2IF" ]; then
-    echo "2nd LAN IPv4 Network:   $(dev_to_ipv4_network $INT2IF)"
-  fi
-  if [ -n "$INT3IF" ]; then
-    echo "3rd LAN IPv4 Network:   $(dev_to_ipv4_network $INT3IF)"
-  fi
-  if [ -n "$INT4IF" ]; then
-    echo "4th LAN IPv4 Network:   $(dev_to_ipv4_network $INT4IF)"
-  fi
+  _IFNAME=('1st' '2nd' '3rd')
+  for i in $(seq 2 ${INTIF_COUNT:-4}); do
+    eval _IF="\$INT${i}IF"
+    if [ -n "$_IF" ]; then
+      echo "${_IFNAME[$((i-1))]:-${i}th} LAN IPv4 Network:   $(dev_to_ipv4_network $_IF)"
+    fi
+  done
   if [ -n "$DMZIF" ]; then
     echo "The DMZ IPv4 Network:   $(dev_to_ipv4_network $DMZIF)"
   fi

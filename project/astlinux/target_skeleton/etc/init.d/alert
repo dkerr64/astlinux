@@ -62,14 +62,18 @@ welcome_msg()
             RAM: $memtotal MB, Available $memavail MB
      Board Type: $board${vendor:+
        Hardware: $vendor}
-
-      Interface: $EXTIF (External)   IPv4 Address: $(dev_to_ipv4_addresses $EXTIF)${INTIF:+
-      Interface: $INTIF (1st LAN)    IPv4 Network: $(dev_to_ipv4_networks $INTIF)}${INT2IF:+
-      Interface: $INT2IF (2nd LAN)    IPv4 Network: $(dev_to_ipv4_networks $INT2IF)}${INT3IF:+
-      Interface: $INT3IF (3rd LAN)    IPv4 Network: $(dev_to_ipv4_networks $INT3IF)}${INT4IF:+
-      Interface: $INT4IF (4th LAN)    IPv4 Network: $(dev_to_ipv4_networks $INT4IF)}${DMZIF:+
-      Interface: $DMZIF (The DMZ)    IPv4 Network: $(dev_to_ipv4_networks $DMZIF)}
 "
+  [[ -n $EXTIF ]] &&  echo "      Interface: $EXTIF (External)   IPv4 Address: $(dev_to_ipv4_addresses $EXTIF)"
+  [[ -n $EXT2IF ]] && echo "      Interface: $EXT2IF (2nd External)    IPv4 Network: $(dev_to_ipv4_networks $EXT2IF)"
+  [[ -n $INTIF ]] &&  echo "      Interface: $INTIF (1st LAN${INTNICKNAME:+, $INTNICKNAME})    IPv4 Network: $(dev_to_ipv4_networks $INTIF)"
+  _IFNAME=('1st' '2nd' '3rd')
+  for i in $(seq 2 ${INTIF_COUNT:-4}); do
+    eval _IF="\$INT${i}IF"
+    eval _IFN="\$INT${i}NICKNAME"
+    [[ -n $_IF ]] &&  echo "      Interface: $_IF (${_IFNAME[$((i-1))]:-${i}th} LAN${_IFN:+, $_IFN})   IPv4 Network: $(dev_to_ipv4_networks $_IF)"
+  done
+  [[ -n $DMZIF ]] &&  echo "      Interface: $DMZIF (The DMZ${DMZNICKNAME:+, $DMZNICKNAME})    IPv4 Network: $(dev_to_ipv4_networks $DMZIF)"
+
   if [ "$ENABLE_MOTD" != "no" ] && [ ! -f /tmp/etc/motd ]; then
     local H='\033[40m\033[1;32m'
     local L='\033[1;31m'
