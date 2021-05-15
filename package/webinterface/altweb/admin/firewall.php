@@ -165,6 +165,7 @@ function reduceAllowLANs($arr) {
   $arr = array_filter($arr, function($row) use ($arr) {
     // return true (i.e. keep row) if it is unique by testing
     // for empty array of similar rows (ie, no similar rule).
+    if (empty($row)) return(false);
     return(empty(array_filter($arr, function($value) use ($row) {
       $columns = explode(' ', $row);
       $found = 0;
@@ -172,8 +173,7 @@ function reduceAllowLANs($arr) {
       return( ($found === sizeof($columns)) && (strcmp($value, $row) !== 0));
     }) ) );
   });
-  // remove empty elements and return
-  return(array_filter($arr));
+  return($arr);
 }
 
 // Function: getARNOvars
