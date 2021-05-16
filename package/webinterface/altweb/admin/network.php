@@ -1525,7 +1525,7 @@ require_once '../common/header.php';
   }
   putHtml('<tr class="dtrow1"><td style="text-align: left;" colspan="4">');
   $value = getVARdef($db, 'VLANS', $cur_db);
-  putHtml('VLANS:<input type="text" size="36" maxlength="64" value="'.$value.'" name="vlans" />&nbsp;<i>(ethN.NN&nbsp;ethN.NN)</i></td>');
+  putHtml('VLANS:<input type="text" size="36" maxlength="256" value="'.$value.'" name="vlans" />&nbsp;<i>(ethN.NN&nbsp;ethN.NN)</i></td>');
   putHtml('<td style="text-align: left;" colspan="2">');
   $sel = (getVARdef($db, 'VLANCOS', $cur_db) !== '') ? ' checked="checked"' : '';
   putHtml('<input type="checkbox" value="vlan_cos" name="vlan_cos"'.$sel.' />&nbsp;VLAN COS</td></tr>');
