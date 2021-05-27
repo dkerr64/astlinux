@@ -1677,7 +1677,7 @@ require_once '../common/header.php';
     # Use echo rather than putHtml so that no newline inserted at end
     echo '<strong>'.($ifname[$prefix]?:($ifn+1).'<sup>th</sup> LAN').' Interface (';
     echo '<span contenteditable="true"
-          onkeypress="if (event.which === 13 || this.innerText.length >= 18) event.preventDefault();"
+          onkeypress="if (event.which === 13 || this.innerText.length >= 24) event.preventDefault();"
           onkeyup="document.getElementById(\''.$lcprefix.'_nickname\').value=this.innerText;">'.$value.'</span>';
     echo '):</strong>';
     if ($prefix === 'INT') {
