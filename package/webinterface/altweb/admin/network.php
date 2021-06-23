@@ -59,6 +59,7 @@
 // 02-04-2021, Remove IPsec (racoon) VPN support
 // 03-30-2021, Allow for variable number of internal interfaces
 // 06-22-2021, Allow for 0-9 BRIDGE interfaces
+// 06-22-2021, Dynamically add BOND entries to interface list (for link aggregation)
 //
 // System location of rc.conf file
 $CONFFILE = '/etc/rc.conf';
@@ -925,6 +926,7 @@ function get_new_ETHinterfaces(&$eth, $vlans_str) {
     $br_values = array("LXC_BRIDGE0" => "lxcbr0");
     for ($i = 0; $i < 10; $i++) {
       $br_values['BRIDGE'.$i] = 'br'.$i;
+      $br_values['BOND'.$i] = 'bond'.$i;
     }
     foreach ($br_values as $br_value => $value) {
       if (getVARdef($user_vars, $br_value) !== '') {

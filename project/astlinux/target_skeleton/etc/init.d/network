@@ -13,11 +13,15 @@ for i in $INTIF_VARS; do INTIF_NAMES="${INTIF_NAMES} ${!i/none}"; done
 EXTIF_VARS="EXTIF EXT2IF"
 EXTIF_NAMES=""
 for i in $EXTIF_VARS; do EXTIF_NAMES="${EXTIF_NAMES} ${!i/none}"; done
-# Get list of bridge interfaces configured, e.g. "BRIDGE0 BRIDGE1"
+
+# Get list of bridge interfaces configured, e.g. "BRIDGE0 BRIDGE1 .. BRIDGE9"
 BRIDGEIF_VARS=""
 for i in $(seq 0 9); do brvar="BRIDGE${i}" && [ -n "${!brvar}" ] && BRIDGEIF_VARS="${BRIDGEIF_VARS} ${brvar}"; done
 BRIDGEIF_NAMES=""
 for brvar in $BRIDGEIF_VARS; do BRIDGEIF_NAMES="${BRIDGEIF_NAMES} ${!brvar}"; done
+# Get list of bonded interfaces configured, e.g. "BOND0 BOND1 .. BOND9"
+BONDIF_VARS=""
+for i in $(seq 0 9); do bondvar="BOND${i}" && [ -n "${!bondvar}" ] && BONDIF_VARS="${BONDIF_VARS} ${bondvar}"; done
 
 gen_nopd_dhcp6c_conf()
 {
@@ -249,7 +253,7 @@ phyeth_disable_offload()
   logger -s -t network -p kern.info "Disabling \"$off_list\" offload on all configured ethernet interfaces."
 
   unset IFS
-  for eth in $EXTIF_NAMES $PPPOEIF $INTIF_NAMES $DMZIF $BRIDGEIF_NAMES $LXC_BRIDGE0; do
+  for eth in $EXTIF_NAMES $PPPOEIF $INTIF_NAMES $DMZIF $BRIDGEIF_NAMES $LXC_BRIDGE0 $BONDIF_NAMES; do
     case $eth in
       eth*)
         for off in $off_list; do
@@ -304,6 +308,21 @@ start () {
   ip addr add 127.0.0.1/8 dev lo scope host
   ip link set dev lo up
 
+  #BONDS
+  if [ -n "$BONDIF_VARS" ]; then
+    # Bonding interfaces are useful for Link Aggregation.  A bonded interface
+    # could be EXTIF and can nest (a bond can be a slave to a bond) and can
+    # have VLAN attached.  So we must create the bond interface early, but
+    # wait to add slaves until after we have created VLANs.
+    modprobe bonding max_bonds=0 miimon=100
+    unset IFS
+    for bondvar in $BONDIF_VARS; do
+      bondmvar="${bondvar}_MODE"
+      # default to LACP 802.3ad link aggregation
+      ip link add name "bond${bondvar:(-1)}" type bond mode "${!bondmvar:-802.3ad}"
+    done
+  fi
+
   # if you want to change an interface's MAC address, you must do so
   # before marking it up or joining it to a bridge.
   for ifvar in $EXTIF_VARS; do
@@ -340,6 +359,14 @@ start () {
       fi
     done
   fi
+
+  #BONDS - add slaves
+  unset IFS
+  for bondvar in $BONDIF_VARS; do
+    for ifn in ${!bondvar}; do
+      ip link set dev $ifn master "bond${bondvar:(-1)}"
+    done
+  done
 
   #BRIDGES
   for brvar in $BRIDGEIF_VARS; do
@@ -665,6 +692,16 @@ stop () {
   if [ -n "$LXC_BRIDGE0" ]; then
     bridge_remove "$LXC_BRIDGE0" lxcbr0
   fi
+
+  #BONDS
+  for bondvar in $BONDIF_VARS; do
+    ip link set dev "bond${bondvar:(-1)}" down
+    for ifn in ${!bondvar}; do
+      ip link set dev $ifn nomaster
+      ip link set dev $ifn down
+    done
+    ip link delete "bond${bondvar:(-1)}" type bond
+  done
 
   #VLANS
   if [ -n "$VLANS" ]; then
