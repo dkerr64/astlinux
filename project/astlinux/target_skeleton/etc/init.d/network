@@ -13,6 +13,11 @@ for i in $INTIF_VARS; do INTIF_NAMES="${INTIF_NAMES} ${!i/none}"; done
 EXTIF_VARS="EXTIF EXT2IF"
 EXTIF_NAMES=""
 for i in $EXTIF_VARS; do EXTIF_NAMES="${EXTIF_NAMES} ${!i/none}"; done
+# Get list of bridge interfaces configured, e.g. "BRIDGE0 BRIDGE1"
+BRIDGEIF_VARS=""
+for i in $(seq 0 9); do brvar="BRIDGE${i}" && [ -n "${!brvar}" ] && BRIDGEIF_VARS="${BRIDGEIF_VARS} ${brvar}"; done
+BRIDGEIF_NAMES=""
+for brvar in $BRIDGEIF_VARS; do BRIDGEIF_NAMES="${BRIDGEIF_NAMES} ${!brvar}"; done
 
 gen_nopd_dhcp6c_conf()
 {
@@ -244,7 +249,7 @@ phyeth_disable_offload()
   logger -s -t network -p kern.info "Disabling \"$off_list\" offload on all configured ethernet interfaces."
 
   unset IFS
-  for eth in $EXTIF_NAMES $PPPOEIF $INTIF_NAMES $DMZIF $BRIDGE0 $BRIDGE1 $BRIDGE2 $LXC_BRIDGE0; do
+  for eth in $EXTIF_NAMES $PPPOEIF $INTIF_NAMES $DMZIF $BRIDGEIF_NAMES $LXC_BRIDGE0; do
     case $eth in
       eth*)
         for off in $off_list; do
@@ -275,7 +280,7 @@ start () {
   local IF
 
   # IPv6
-  if [ "$IPV6" = "yes" -o -n "$BRIDGE0" -o -n "$BRIDGE1" -o -n "$BRIDGE2" -o -n "$LXC_BRIDGE0" -o -n "$WIREGUARD_IP" ]; then
+  if [ "$IPV6" = "yes" -o -n "$BRIDGEIF_NAMES" -o -n "$LXC_BRIDGE" -o -n "$WIREGUARD_IP" ]; then
     modprobe ipv6
     # Disable IPv6 Autoconf by default
     IFS=$'\n'
@@ -306,7 +311,7 @@ start () {
     eval _MAC="\$${ifvar}MAC"  # value of EXTxIFMAC
     if [ -n "$_IF" -a -n "$_MAC" ]; then
       case "$_IF" in
-      br[0-2])
+      br[0-9])
         ;;
       *)
         ip link set dev "$_IF" address $_MAC
@@ -337,17 +342,9 @@ start () {
   fi
 
   #BRIDGES
-  if [ -n "$BRIDGE0" ]; then
-    bridge_load_configure "$BRIDGE0" br0
-  fi
-
-  if [ -n "$BRIDGE1" ]; then
-    bridge_load_configure "$BRIDGE1" br1
-  fi
-
-  if [ -n "$BRIDGE2" ]; then
-    bridge_load_configure "$BRIDGE2" br2
-  fi
+  for brvar in $BRIDGEIF_VARS; do
+    bridge_load_configure "${!brvar}" "br${brvar:(-1)}"
+  done
 
   if [ -n "$LXC_BRIDGE0" ]; then
     bridge_load_configure "$LXC_BRIDGE0" lxcbr0
@@ -356,7 +353,7 @@ start () {
   # and now we retry applying the MAC address if it's a bridge interface.
   if [ -n "$EXTIF" -a -n "$EXTIFMAC" -a "$EXTIF" != "none" ]; then
     case "$EXTIF" in
-    br[0-2])
+    br[0-9])
       ip link set dev "$EXTIF" down
       ip link set dev "$EXTIF" address $EXTIFMAC
       ;;
@@ -365,7 +362,7 @@ start () {
 
   if [ -n "$EXT2IF" -a -n "$EXT2IFMAC" -a "$EXT2IF" != "none" ]; then
     case "$EXT2IF" in
-    br[0-2])
+    br[0-9])
       ip link set dev "$EXT2IF" down
       ip link set dev "$EXT2IF" address $EXT2IFMAC
       ;;
@@ -437,7 +434,7 @@ start () {
     case $PPPOEIF in
     eth*)
       ip link set dev $PPPOEIF up ;;
-    br[012])
+    br[0-9])
       ip link set dev $PPPOEIF up
       # because bridging does weird and unpleasant things to PPPoE packets
       sysctl -w net.bridge.bridge-nf-filter-pppoe-tagged=0 >/dev/null
@@ -661,17 +658,9 @@ stop () {
   done
 
   #BRIDGES
-  if [ -n "$BRIDGE0" ]; then
-    bridge_remove "$BRIDGE0" br0
-  fi
-
-  if [ -n "$BRIDGE1" ]; then
-    bridge_remove "$BRIDGE1" br1
-  fi
-
-  if [ -n "$BRIDGE2" ]; then
-    bridge_remove "$BRIDGE2" br2
-  fi
+  for brvar in $BRIDGEIF_VARS; do
+    bridge_remove "${!brvar}" "br${brvar:(-1)}"
+  done
 
   if [ -n "$LXC_BRIDGE0" ]; then
     bridge_remove "$LXC_BRIDGE0" lxcbr0

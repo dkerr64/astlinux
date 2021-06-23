@@ -58,6 +58,7 @@
 // 12-13-2020, Replace getdns/stubby with unbound for DNS-over-TLS
 // 02-04-2021, Remove IPsec (racoon) VPN support
 // 03-30-2021, Allow for variable number of internal interfaces
+// 06-22-2021, Allow for 0-9 BRIDGE interfaces
 //
 // System location of rc.conf file
 $CONFFILE = '/etc/rc.conf';
@@ -921,7 +922,10 @@ function get_new_ETHinterfaces(&$eth, $vlans_str) {
 
   if (is_file($USERCONFFILE)) {
     $user_vars = parseRCconf($USERCONFFILE);
-    $br_values = array("BRIDGE0" => "br0", "BRIDGE1" => "br1", "BRIDGE2" => "br2", "LXC_BRIDGE0" => "lxcbr0");
+    $br_values = array("LXC_BRIDGE0" => "lxcbr0");
+    for ($i = 0; $i < 10; $i++) {
+      $br_values['BRIDGE'.$i] = 'br'.$i;
+    }
     foreach ($br_values as $br_value => $value) {
       if (getVARdef($user_vars, $br_value) !== '') {
         $vars[] = $value;
