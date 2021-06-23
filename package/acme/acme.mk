@@ -42,6 +42,7 @@ define ACME_INSTALL_TARGET_CMDS
 	$(INSTALL) -D -m 0644 $(@D)/notify/mail.sh $(TARGET_DIR)/stat/etc/acme/notify/mail.sh
 	$(INSTALL) -D -m 0755 package/acme/acme-client.sh $(TARGET_DIR)/usr/sbin/acme-client
 	$(INSTALL) -D -m 0755 $(@D)/acme.sh $(TARGET_DIR)/stat/etc/acme/acme.sh
+	$(INSTALL) -D -m 0644 package/acme/acme.logrotate $(TARGET_DIR)/etc/logrotate.d/acme
 	$(ACME_DNSAPI_INSTALL_FILES)
 	ln -sf /mnt/kd/acme $(TARGET_DIR)/etc/acme
 	# Make the scripts non-executable, they are sourced by acme.sh
@@ -52,6 +53,7 @@ define ACME_UNINSTALL_TARGET_CMDS
 	rm -f  $(TARGET_DIR)/usr/sbin/acme-client
 	rm -f  $(TARGET_DIR)/etc/acme
 	rm -rf $(TARGET_DIR)/stat/etc/acme
+	rm -f  $(TARGET_DIR)/etc/logrotate.d/acme
 endef
 
 $(eval $(call GENTARGETS,package,acme))

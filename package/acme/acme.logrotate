@@ -1,0 +1,7 @@
+#
+/mnt/kd/acme/acme.sh.log {
+  missingok
+  size 100k
+  copytruncate
+  rotate 1
+}
