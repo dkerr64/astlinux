@@ -602,13 +602,16 @@ start () {
     up_delay=0
     ip link set dev $EXTIF up
     sleep 4
+    ifplugd -apq -t2 -u3 -d3 -i $EXTIF -r /etc/ifplugd/udhcpc.action
+    # Find state of the interface.  If not up then no point in starting DHCP client,
+    # that can be triggered by ifplugd when the interface later comes up.
+    [[ "$(cat /sys/class/net/${EXTIF}/operstate)" =~ ^(up|dormant|unknown)$ ]] && extif_status=1 || extif_status=0
     if [ "$IPV6" = "yes" -a "$DHCPV6_CLIENT_ENABLE" = "yes" ]; then
       up_delay=10
       init_dhcp6c extif $EXTIF
-      dhcp6c -c /etc/wide-dhcpv6/dhcp6c-$EXTIF.conf -p /var/run/dhcp6c-$EXTIF.pid $EXTIF
+      [[ $extif_status -eq 1 ]] && dhcp6c -c /etc/wide-dhcpv6/dhcp6c-$EXTIF.conf -p /var/run/dhcp6c-$EXTIF.pid $EXTIF
     fi
-    udhcpc -b -T2 -t6 -S -s /etc/udhcpc.script -x "hostname:$HOSTNAME" -p /var/run/udhcpc-$EXTIF.pid -i $EXTIF
-    ifplugd -apq -t2 -u3 -d3 -i $EXTIF -r /etc/ifplugd/udhcpc.action
+    [[ $extif_status -eq 1 ]] && udhcpc -b -T2 -t6 -S -s /etc/udhcpc.script -x "hostname:$HOSTNAME" -p /var/run/udhcpc-$EXTIF.pid -i $EXTIF
     while [ $up_delay -gt 0 ] && [ ! -f /var/db/dhcp6c_cache ]; do
       up_delay=$((up_delay - 1))
       sleep 1

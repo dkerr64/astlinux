@@ -143,9 +143,10 @@ targets_ok() {
   local routes cnt
 
   routes="$(ip route list dev $EXTIF 2>/dev/null)"
-  if [ -z "$routes" ]; then
+  if [ -z "$routes" ] || [[ "$routes" =~ "linkdown" ]]; then
     # No routes implies the interface is down or missing
     # Act as no targets are reachable
+    log DEBUG "Link $EXTIF is down"
     return 0
   fi
 
@@ -234,10 +235,16 @@ switch_to_secondary() {
 }
 
 check_wan_status() {
-
-  if [ $TARGETS_FAILED -ge $THRESHOLD -a "$ACTIVE_CONNECTION" = "$PRIMARY_STR" ]; then
+  local extif_status="$(cat /sys/class/net/${EXTIF}/operstate)"
+  local ext2if_status="$(cat /sys/class/net/${EXT2IF}/operstate)"
+  log DEBUG "Connection status for $EXTIF link is $extif_status, for $EXT2IF is $ext2if_status, active connection is $ACTIVE_CONNECTION"
+  [[ "$extif_status" =~ ^(up|dormant|unknown)$ ]] && extif_status=1 || extif_status=0
+  [[ "$ext2if_status" =~ ^(up|dormant|unknown)$ ]] && ext2if_status=1 || ext2if_status=0
+  if [ $TARGETS_FAILED -ge $THRESHOLD -o $extif_status -eq 0 ] && [ "$ACTIVE_CONNECTION" = "$PRIMARY_STR" -a $ext2if_status -eq 1 ]; then
+    # Failed to reach targets, or EXTIF is down... switch to secondary if EXT2IF is up
     switch
-  elif [ $TARGETS_FAILED -eq 0 -a "$ACTIVE_CONNECTION" = "$SECONDARY_STR" ]; then
+  elif [ $TARGETS_FAILED -eq 0 -o $ext2if_status -eq 0 ] && [ "$ACTIVE_CONNECTION" = "$SECONDARY_STR" ]; then
+    # EXTIF is back up and targets responding, or EXT2IF has gone down... switch back to primary
     switch
   else
     log DEBUG "${WAN_LINK_STR}${ACTIVE_CONNECTION}"
@@ -270,11 +277,11 @@ switch() {
     if [ -x $SCRIPTFILE ]; then
       rtn_str="$($SCRIPTFILE "$SECONDARY_STR" "$EXTIF" "$PRIMARY_GW" "$EXT2IF" "$SECONDARY_GW" "$SECONDARY_GWIPV6" 3>&1 1>&2)"
     fi
-    idle_wait 10
     MESG="Primary WAN link failed on '$HOSTNAME'. Switched to secondary link."
     BODY="$(gen_body_text) $rtn_str"
+    log INFO "$MESG Wait 10 seconds before sending notification"
+    idle_wait 10
     system-notify "$MESG" "$BODY"
-    log INFO "$MESG"
     log DEBUG "Failover Hysteresis started, sleeping for $SECONDARY_DELAY seconds."
     idle_wait $SECONDARY_DELAY
 
@@ -292,11 +299,11 @@ switch() {
     if [ -x $SCRIPTFILE ]; then
       rtn_str="$($SCRIPTFILE "$PRIMARY_STR" "$EXTIF" "$PRIMARY_GW" "$EXT2IF" "$SECONDARY_GW" "$SECONDARY_GWIPV6" 3>&1 1>&2)"
     fi
-    idle_wait 10
     MESG="Primary WAN link OK on '$HOSTNAME'. Switched back to primary link."
     BODY="$(gen_body_text) $rtn_str"
+    log INFO "$MESG Wait 10 seconds before sending notification"
+    idle_wait 10
     system-notify "$MESG" "$BODY"
-    log INFO "$MESG"
     log DEBUG "Failback Hysteresis started, sleeping for $PRIMARY_DELAY seconds."
     idle_wait $PRIMARY_DELAY
   fi
@@ -396,13 +403,6 @@ if ! which fping >/dev/null 2>&1; then
   exit 1
 fi
 
-PRIMARY_GW="$(ip route list dev $EXTIF 2>/dev/null | sed -n -r -e 's/^default .*via +([^ ]+).*$/\1/p')"
-if [ -z "$PRIMARY_GW" -a "${EXTIF%[0-9]}" != "ppp" ]; then
-  echo "1" > "$STARTFILE"
-  log_all ERROR "Primary interface gateway not found, will restart on a network change."
-  exit 1
-fi
-
 if [ -n "$EXT2GW" ]; then
   SECONDARY_GW="$EXT2GW"
 elif [ -f "/tmp/udhcpc-${EXT2IF}.conf" ]; then
@@ -418,6 +418,11 @@ if [ "$IPV6" = "yes" -a -n "$EXT2GWIPV6" ]; then
   SECONDARY_GWIPV6="$EXT2GWIPV6"
 else
   SECONDARY_GWIPV6=""
+fi
+
+PRIMARY_GW="$(ip route list dev $EXTIF 2>/dev/null | sed -n -r -e 's/^default .*via +([^ ]+).*$/\1/p')"
+if [ -z "$PRIMARY_GW" -a "${EXTIF%[0-9]}" != "ppp" ]; then
+  log_all WARNING "Primary interface gateway not found, will switch to secondary."
 fi
 
 if [ -n "$SECONDARY_GW" ] && [ "$SECONDARY_GW" = "$(ip route list dev $EXT2IF 2>/dev/null | sed -n -r -e 's|^0.0.0.0/1 .*via +([^ ]+).*$|\1|p')" ]; then
