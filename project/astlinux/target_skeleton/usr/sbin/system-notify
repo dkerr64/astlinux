@@ -25,7 +25,7 @@
 #  <<TODO>> ddclient (will require patch to ddclient)
 #
 # Push notifications are sent using the Pushover.net service.  Sign
-# up for an account at https://pushover.net and set in (TODO gui) or user.conf... 
+# up for an account at https://pushover.net and set in (TODO gui) or user.conf...
 #  PUSHOVER_USER_KEY="<value>"
 #  PUSHOVER_APP_TOKEN="<value>"
 #  PUSHOVER_PRIORITY="<value>"   ## optional
@@ -55,6 +55,7 @@ USER_SCRIPT_VARS=""
 ######################################################################
 
 PUSHOVER_API="https://api.pushover.net/1/messages.json"
+PUSHOVER_IP=""
 
 . /etc/rc.conf
 
@@ -125,7 +126,7 @@ _json() {
   local key="$2"
   local value=""
 
-  value="$(echo "$json" | 
+  value="$(echo "$json" |
            perl -MJSON::PP=decode_json \
                 -e '$/=undef;
                 my $data=<>;
@@ -137,7 +138,7 @@ _json() {
     local i=0
     value=""
     while true; do
-      subval="$(echo "$json" | 
+      subval="$(echo "$json" |
                 perl -MJSON::PP=decode_json \
                      -e '$/=undef;
                      my $data=<>;
@@ -281,10 +282,19 @@ send_pushover() {
       else
         # Curl has a bug where DNS lookups could block for 20 seconds no matter what we set --max-time too.
         # So lets check DNS lookups first, with a 1 second timeout on name resolution...
+        local SECURE=""
         local DOMAIN="$(echo "${PUSHOVER_API}" | awk -F[/:] '{print $4}')"
-        local IP=""
-        if IP="$(nslookup -type=A -timeout=1 ${DOMAIN})" && IP="${IP##* }" && ! [[ $IP =~ NXDOMAIN|SERVFAIL ]]; then
-          # Found the IP address, so DNS lookup is working
+        local IP="$(host -t A ${DOMAIN} | sed -n -r -e 's#^.* has address ([0-9.]+)$#\1#p' | head -1)"
+        if [ -z "$IP" ]; then
+          IP=${PUSHOVER_IP} ## If we fail to find IP address from DNS, hard code from user.conf
+          if [ -n "$IP" ]; then
+            logger -s -t "$PROGRAM" -p user.warn "DNS lookup for ${DOMAIN} failed, using IP address $IP from user.conf"
+            PUSHOVER_API=${PUSHOVER_API/$DOMAIN/$IP}
+            SECURE="--insecure"
+          fi
+        fi
+        if [ -n "$IP" ]; then
+          # Found the IP address
           JSON_REPLY="$(curl --silent \
                     --connect-timeout 5 \
                     --max-time 5 \
@@ -297,7 +307,8 @@ send_pushover() {
                     ${PUSHOVER_IMAGE:+--form "attachment=@${PUSHOVER_IMAGE}"}\
                     ${PUSHOVER_DEVICE:+--form-string "device=${PUSHOVER_DEVICE}"}\
                     ${PUSHOVER_SOUND:+--form-string "sound=${PUSHOVER_SOUND}"}\
-                    ${PUSHOVER_API})"
+                    --header "Host: ${DOMAIN}"\
+                    ${SECURE} ${PUSHOVER_API})"
           CURL_RC=$?
           [[ $JSON_REPLY =~ ($'\n\n'[0-9]+)$ ]]          # Match the HTTP return code at end of reply
           HTTP_RC="${BASH_REMATCH[0]#$'\n\n'}"           # Remove the two newlines
@@ -317,16 +328,16 @@ send_pushover() {
           fi
         else
           # DNS lookup failed
-          logger -s -t "$PROGRAM" -p user.err "${SERVICE} failed to send pushover msg: ${PUSHOVER_MSG}, DNS lookup for ${DOMAIN} failed)"
+          logger -s -t "$PROGRAM" -p user.err "${SERVICE} failed to send pushover msg: ${PUSHOVER_MSG}, DNS lookup for ${DOMAIN} failed"
         fi
-        # After senting push, inform user script of status 
+        # After senting push, inform user script of status
         if [ $PUSH_RC -eq 0 ]; then
           _USER_SCRIPT "PUSH_SUCCESS"
         else
           _USER_SCRIPT "PUSH_FAILED"
         fi
       fi
-    fi 
+    fi
   fi
   if [ $SCRIPT_RC -ne 127 -a $SCRIPT_RC -ne 1 ]; then
     # User script file executed without error, check return codes
@@ -390,7 +401,7 @@ elif [ "$SERVICE" = "wanfailover" ]; then
   # and detail in $2 ($BODY)
   ##------------------------------------------------------------------
   email_addrs "$WAN_FAILOVER_NOTIFY" "$WAN_FAILOVER_NOTIFY_FROM"
-  send_pushover "$MSG" 
+  send_pushover "$MSG"
   send_email "System" "$MSG" "$BODY"
 
 elif [ "$SERVICE" = "tarsnapbackup" ]; then
