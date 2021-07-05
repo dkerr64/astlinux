@@ -284,13 +284,20 @@ send_pushover() {
         # So lets check DNS lookups first, with a 1 second timeout on name resolution...
         local SECURE=""
         local DOMAIN="$(echo "${PUSHOVER_API}" | awk -F[/:] '{print $4}')"
-        local IP="$(host -t A ${DOMAIN} | sed -n -r -e 's#^.* has address ([0-9.]+)$#\1#p' | head -1)"
+        local IP="$(host -t A ${DOMAIN} | sed -n -r -e 's#^.* has address ([0-9.]+)$#\1#p')"
         if [ -z "$IP" ]; then
           IP=${PUSHOVER_IP} ## If we fail to find IP address from DNS, hard code from user.conf
           if [ -n "$IP" ]; then
             logger -s -t "$PROGRAM" -p user.warn "DNS lookup for ${DOMAIN} failed, using IP address $IP from user.conf"
             PUSHOVER_API=${PUSHOVER_API/$DOMAIN/$IP}
             SECURE="--insecure"
+          fi
+        elif [ -n "$PUSHOVER_IP" ] && [[ ! "$IP" =~ "$PUSHOVER_IP" ]]; then
+          # Our saved PUSHOVER_IP is not valid, we should send notification but cannot recurse to ourself as that will just loop
+          local cmd="${SMS_CMD:-$(which LB1120)}"
+          logger -s -t "$PROGRAM" -p user.warn "WARNING: Check IP address for ${DOMAIN} set in user.conf as PUSHOVER_IP"
+          if [ -n "$cmd" -a -n "$SMS_PW" -a -n "$SMS_URL" -a -n "$SMS_TO" ]; then
+            $cmd sms --sendto "$SMS_TO" --url "$SMS_URL" --password "$SMS_PW" -m "PBX WARNING: Check IP address for ${DOMAIN} set in user.conf as PUSHOVER_IP"
           fi
         fi
         if [ -n "$IP" ]; then
