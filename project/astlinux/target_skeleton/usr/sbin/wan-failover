@@ -86,6 +86,9 @@ idle_wait()
     cnt=$((cnt+1))
     sleep 1
   done
+  if [ $cnt -lt $time ]; then
+    log INFO "idle_wait interrupted at $cnt of $time seconds; $PIDFILE file deleted?"
+  fi
 }
 
 add_target_static_routes() {
