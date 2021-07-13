@@ -5,10 +5,16 @@
 === docs/ChangeLog.txt
 =========================================================
 
-Additions for AstLinux 1.4.3:
+Additions for AstLinux 1.4.4:
 =============================
 
 Released @TBD@
+
+
+Additions for AstLinux 1.4.3:
+=============================
+
+Released 2021-07-11
 
 ** System
 
