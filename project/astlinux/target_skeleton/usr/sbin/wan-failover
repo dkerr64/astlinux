@@ -285,14 +285,14 @@ switch() {
     log INFO "$MESG Wait 10 seconds before sending notification"
     idle_wait 10
     system-notify "$MESG" "$BODY"
-    log DEBUG "Failover Hysteresis started, sleeping for $SECONDARY_DELAY seconds."
+    log INFO "Failover Hysteresis started, sleeping for $SECONDARY_DELAY seconds."
     idle_wait $SECONDARY_DELAY
 
   elif [ "$ACTIVE_CONNECTION" = "$SECONDARY_STR" ]; then
     if [ -x $SCRIPTFILE_EXIT ]; then
       $SCRIPTFILE_EXIT "SECONDARY_EXIT" "$EXTIF" "$PRIMARY_GW" "$EXT2IF" "$SECONDARY_GW" "$SECONDARY_GWIPV6"
       if [ $? -ne 0 ]; then
-        log DEBUG "Switch to primary link delayed by ${SCRIPTFILE_EXIT} nonzero return"
+        log INFO "Switch to primary link delayed by ${SCRIPTFILE_EXIT} nonzero return"
         idle_wait 10
         return
       fi
@@ -307,7 +307,7 @@ switch() {
     log INFO "$MESG Wait 10 seconds before sending notification"
     idle_wait 10
     system-notify "$MESG" "$BODY"
-    log DEBUG "Failback Hysteresis started, sleeping for $PRIMARY_DELAY seconds."
+    log INFO "Failback Hysteresis started, sleeping for $PRIMARY_DELAY seconds."
     idle_wait $PRIMARY_DELAY
   fi
 }
