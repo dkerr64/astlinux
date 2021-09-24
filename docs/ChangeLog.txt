@@ -25,10 +25,14 @@ Released @TBD@
 -- acme-client, version bump to 2.9.0
 
 -- e2fsprogs, version bump to 1.46.4
+   Note: New filesystems created with mke2fs will now always use an inode size of 256 bytes.  This allows y2038 support.
+   Previously, "small" (< 512 MB) filesystems used 128-byte inodes.  When a new AstLinux system is setup, (via webinterface or initial-setup)
+   the Unionfs partition size defaults to 256 MB. Now with 256-byte inodes, the max usable space is reduced to 227 MB (previously 235 MB).
+   For only new system setups, this effectively makes the Unionfs partition 8 MB smaller.  Not a concern for most users.
 
--- ethtool, version bump to 5.13
+-- ethtool, version bump to 5.14
 
--- libedit, version bump to 20210714-3.1
+-- libedit, version bump to 20210910-3.1
 
 -- libidn, version bump to 1.38
 
@@ -36,7 +40,9 @@ Released @TBD@
 
 -- rng-tools, version 6.5, jitterentropy version bump to 3.1.0
 
--- strace, version bump to 5.13
+-- sqlite, version bump to 3.36.0
+
+-- strace, version bump to 5.14
 
 -- system-vendor, update system-vendor.ids
 
@@ -48,18 +54,26 @@ Released @TBD@
 
 -- OpenSSL, version bump to 1.1.1l, security fixes: CVE-2021-3711, CVE-2021-3712
 
--- libcurl (curl) version bump to 7.78.0, security fixes: CVE-2021-22922, CVE-2021-22923, CVE-2021-22924
-                                                          CVE-2021-22925, CVE-2021-22926
+-- WireGuard VPN, module 1.0.20210606 (no change), tools 1.0.20210914 (version bump)
+
+-- libcurl (curl) version bump to 7.79.0, security fixes: CVE-2021-22922, CVE-2021-22923, CVE-2021-22924
+                                          CVE-2021-22925, CVE-2021-22926, CVE-2021-22946, CVE-2021-22947
 
 -- LibreTLS, version bump to 3.3.4
 
 -- iperf, version bump to 2.1.4
 
+-- keepalived, version bump to 2.2.4
+
 -- luasec, version bump to 1.0.2
+
+-- msmtp, version bump to 1.8.16
 
 -- prosody, version bump to 0.11.10, security fix: CVE-2021-37601
 
 -- unbound, version bump to 1.13.2
+
+-- vnStat, version bump to 2.8
 
 -- vsftpd, version bump to 3.0.5
 
