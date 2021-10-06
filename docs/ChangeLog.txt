@@ -12,17 +12,20 @@ Released @TBD@
 
 ** System
 
--- Linux Kernel 4.19.204 (version bump), security and bug fixes.
+-- Linux Kernel 4.19.208 (version bump), security and bug fixes.
+   Kernel config: Enable ifb and sch_cake modules, useful for traffic shaping.
 
 -- ixgbe, enable the Intel 10-Gigabit Ethernet Network Driver
 
--- igc, backport from linux-5.4.136, Intel i225 2.5-Gigabit Ethernet Network Driver
+-- igc, backport from linux-5.4.148, Intel i225 2.5-Gigabit Ethernet Network Driver
 
 -- r8125, version 9.006.04, Realtek RTL8125 2.5-Gigabit Ethernet Network Driver
 
 -- igb, version bump to 5.7.2, Intel 1.0-Gigabit Ethernet Network Driver
 
 -- acme-client, version bump to 2.9.0
+
+-- acpid, version bump to 2.0.33
 
 -- e2fsprogs, version bump to 1.46.4
    Note: New filesystems created with mke2fs will now always use an inode size of 256 bytes.  This allows y2038 support.
@@ -36,6 +39,8 @@ Released @TBD@
 
 -- libidn, version bump to 1.38
 
+-- libsrtp, version bump to 2.4.2
+
 -- Monit, version bump to 5.29.0
 
 -- rng-tools, version 6.5, jitterentropy version bump to 3.1.0
@@ -46,9 +51,17 @@ Released @TBD@
 
 -- system-vendor, update system-vendor.ids
 
+-- unionfs (fuse), version bump to 2.2
+
 -- usbutils, version bump to 014
 
+-- zabbix, version bump to 4.0.34
+
 -- ca-certificates, update trusted root certificates 2021-07-05
+
+-- mac2vendor, oui.txt database snapshot 2021-09-29
+
+-- Time Zone Database update, tzdata2021b and php-timezonedb-2021.2
 
 ** Networking
 
@@ -56,7 +69,7 @@ Released @TBD@
 
 -- WireGuard VPN, module 1.0.20210606 (no change), tools 1.0.20210914 (version bump)
 
--- libcurl (curl) version bump to 7.79.0, security fixes: CVE-2021-22922, CVE-2021-22923, CVE-2021-22924
+-- libcurl (curl) version bump to 7.79.1, security fixes: CVE-2021-22922, CVE-2021-22923, CVE-2021-22924
                                           CVE-2021-22925, CVE-2021-22926, CVE-2021-22946, CVE-2021-22947
 
 -- LibreTLS, version bump to 3.3.4
