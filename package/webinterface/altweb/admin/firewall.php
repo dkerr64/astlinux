@@ -100,7 +100,7 @@ $proto_label = array (
   '41' => '6to4'
 );
 
-$cake_lla = array (
+$cake_llt = array (
   '' => 'disabled',
   'ethernet' => 'Ethernet: ethernet',
   'docsis' => 'Ethernet: docsis',
@@ -451,7 +451,7 @@ function saveFIREWALLsettings($conf_dir, $conf_file, $db, $delete = NULL) {
     fwrite($fp, $value."\n");
     $value = 'VOIPPORTS="'.tuq($_POST['shaper_voipports']).'"';
     fwrite($fp, $value."\n");
-    $value = 'EXTSHAPE_TUNE_CAKE="'.trim($_POST['cake_lla'].' '.$_POST['cake_ack_filter']).'"';
+    $value = 'EXTSHAPE_TUNE_CAKE="'.trim($_POST['cake_llt'].' '.$_POST['cake_ack_filter']).'"';
     fwrite($fp, $value."\n");
   }
 
@@ -1118,9 +1118,9 @@ if (! is_null($TRAFFIC_SHAPER_FILE)) {
   putHtml('Uplink Speed:');
   putHtml('</td><td style="text-align: left;">');
   if (($value = getVARdef($vars, 'EXTUP')) === '') {
-    $value = '800';
+    $value = '10000';
   }
-  putHtml('<input type="text" size="8" maxlength="6" value="'.$value.'" name="shaper_extup" />');
+  putHtml('<input type="text" size="8" maxlength="7" value="'.$value.'" name="shaper_extup" />');
   putHtml('<select name="shaper_extup_enable">');
   putHtml('<option value="yes">K bits-per-second</option>');
   putHtml('</select>');
@@ -1140,10 +1140,10 @@ if (! is_null($TRAFFIC_SHAPER_FILE)) {
   $tune_cake = getVARdef($vars, 'EXTSHAPE_TUNE_CAKE');
   $tune_cake_array = preg_split('/\s+/', $tune_cake, -1, PREG_SPLIT_NO_EMPTY);
   putHtml('<tr class="dtrow1"><td style="text-align: right;">');
-  putHtml('Link Layer Adaption:');
+  putHtml('Link Layer Tuning:');
   putHtml('</td><td style="text-align: left;">');
-  putHtml('<select name="cake_lla">');
-  foreach ($cake_lla as $key => $value) {
+  putHtml('<select name="cake_llt">');
+  foreach ($cake_llt as $key => $value) {
     $sel = (in_array($key, $tune_cake_array)) ? ' selected="selected"' : '';
     putHtml('<option value="'.$key.'"'.$sel.'>'.$value.'</option>');
   }
