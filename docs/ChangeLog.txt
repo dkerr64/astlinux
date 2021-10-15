@@ -74,6 +74,10 @@ Released @TBD@
 
 -- LibreTLS, version bump to 3.3.4
 
+-- arnofw (AIF), reload-blocklist-netset script, add support for 'apiban'
+   Note: 'apiban' requires an API Key in /mnt/kd/apiban.conf via https://apiban.org/
+   More info: https://doc.astlinux-project.org/userdoc:tt_firewall_external_block_list#updating_netset_blocklists
+
 -- arnofw (AIF), traffic-shaper plugin, add CAKE support
    New rc.conf variable, EXTSHAPE_TUNE_CAKE to append CAKE tuning options
 
@@ -101,7 +105,7 @@ Released @TBD@
 -- Asterisk 13.38.3 ('13se' version bump)
    Latest Asterisk 13.x "Security Fixes Only" version, built --without-pjproject
 
--- Asterisk 13.38.3 (version bump) and 16.21.0 (version bump)
+-- Asterisk 13.38.3 (version bump) and 16.21.1 (version bump)
    New Asterisk 16 applications: WaitForCondition, Reload, StoreDTMF, SendMF
    New Asterisk 16 functions: FRAME_DROP, SAYFILES, SCRAMBLE
 
