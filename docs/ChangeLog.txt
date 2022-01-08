@@ -12,7 +12,27 @@ Released @TBD@
 
 ** System
 
--- Linux Kernel 4.19.208
+-- Linux Kernel 4.19.224 (version bump), security and bug fixes.
+
+-- e2fsprogs, version bump to 1.46.5
+
+-- ethtool, version bump to 5.15
+
+-- expat, version bump to 2.4.2
+
+-- kexec, version bump to 2.0.23
+
+-- liburiparser, version 0.9.1, backport security fixes: CVE-2021-46141, CVE-2021-46142
+
+-- nano, version 2.7.5, fix issue where not saving a file could still copy the file to /mnt/asturw/
+
+-- rng-tools, version 6.5, jitterentropy version bump to 3.3.1
+
+-- sqlite, version bump to 3.37.2
+
+-- strace, version bump to 5.15
+
+-- udev (eudev), version bump to 3.2.11, new "eudev-project" Alpine, Devuan and Gentoo maintainers.
 
 -- ca-certificates, update trusted root certificates 2021-10-26
 
@@ -20,7 +40,27 @@ Released @TBD@
 
 ** Networking
 
+-- OpenSSL, version bump to 1.1.1m, security fixes: none
+
+-- WireGuard VPN, module 1.0.20211208 (version bump), tools 1.0.20210914 (no change)
+
+-- chrony, version bump to 4.2
+
+-- iperf, version bump to 2.1.6
+
+-- libcurl (curl) version bump to 7.80.0
+
+-- LibreTLS, version bump to 3.4.2
+
 -- msmtp, version bump to 1.8.19, 'msmtpd' security fix
+
+-- prosody, version bump to 0.11.11
+
+-- sngrep, version bump to 1.4.10
+
+-- unbound, version bump to 1.14.0
+
+-- whois, version bump to 5.5.11
 
 ** Asterisk
 
@@ -35,7 +75,7 @@ Released @TBD@
 
 ** Web Interface
 
--- (no change)
+-- Status tab, updated "Show Licenses" information.
 
 
 Additions for AstLinux 1.4.4:
