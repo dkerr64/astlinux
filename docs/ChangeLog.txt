@@ -12,25 +12,32 @@ Released @TBD@
 
 ** System
 
--- Linux Kernel 4.19.224 (version bump), security and bug fixes.
+-- Linux Kernel 4.19.230 (version bump), security and bug fixes.
 
 -- e2fsprogs, version bump to 1.46.5
 
--- ethtool, version bump to 5.15
+-- ethtool, version bump to 5.16
 
--- expat, version bump to 2.4.2
+-- expat, version bump to 2.4.4, security fixes: CVE-2021-45960, CVE-2021-46143, CVE-2022-23852, CVE-2022-23990
+                                                 CVE-2022-22822 to CVE-2022-22827
 
 -- kexec, version bump to 2.0.23
 
+-- libjpeg, version bump to 9e, security fix
+
 -- liburiparser, version 0.9.1, backport security fixes: CVE-2021-46141, CVE-2021-46142
+
+-- libusb, version bump to 1.0.25
 
 -- logrotate, version bump to 3.19.0
 
--- Monit, version bump to 5.30.0
+-- Monit, version bump to 5.31.0
 
 -- nano, version 2.7.5, fix issue where not saving a file could still copy the file to /mnt/asturw/
 
 -- rng-tools, version 6.5, jitterentropy version bump to 3.3.1
+
+-- screen, version 4.9.0
 
 -- sqlite, version bump to 3.37.2
 
@@ -38,11 +45,13 @@ Released @TBD@
 
 -- udev (eudev), version bump to 3.2.11, new "eudev-project" Alpine, Devuan and Gentoo maintainers.
 
--- zabbix, version bump to 4.0.37
+-- zabbix, version bump to 4.0.38
 
 -- Default HTTPS certificate, use 2048 key length
 
--- ca-certificates, update trusted root certificates 2021-10-26
+-- ca-certificates, update trusted root certificates 2022-02-01
+
+-- mac2vendor, oui.txt database snapshot 2022-02-16
 
 -- Time Zone Database update, tzdata2021e and php-timezonedb-2021.5
 
@@ -52,13 +61,21 @@ Released @TBD@
 
 -- WireGuard VPN, module 1.0.20211208 (version bump), tools 1.0.20210914 (no change)
 
+-- strongSwan, version 5.5.3, security fix: CVE-2021-45079
+
 -- chrony, version bump to 4.2
 
 -- darkstat, version bump to 3.0.721
 
 -- dnsmasq, version 2.84, patch: Minimum safe packet size is recommended to be 1232
 
+-- fping, version bump to 5.1
+
 -- iperf, version bump to 2.1.6
+
+-- iperf3, version bump to 3.11
+
+-- keepalived, version bump to 2.2.7
 
 -- libcurl (curl) version bump to 7.81.0
 
@@ -68,11 +85,17 @@ Released @TBD@
 
 -- mtr, version bump to 0.95
 
--- prosody, version bump to 0.11.12
+-- prosody, version bump to 0.11.13
 
 -- sngrep, version bump to 1.4.10
 
--- unbound, version bump to 1.14.0
+-- stunnel, version bump to 5.62
+
+-- tarsnap, version bump to 1.0.40, "Trust No One" encrypted backups using the Tarsnap Backup service.
+
+-- unbound, version bump to 1.15.0
+
+-- vnStat, version bump to 2.9
 
 -- whois, version bump to 5.5.11
 
@@ -81,7 +104,7 @@ Released @TBD@
 -- Asterisk 13.38.3 ('13se' no change)
    Last Asterisk 13.x "Legacy" version, built --without-pjproject
 
--- Asterisk 16.23.0 (version bump) and 18.9.0 (new version)
+-- Asterisk 16.21.1 (no change) and 18.10.0 (new version)
 
 -- DAHDI, dahdi-linux 3.1.0 (no change) and dahdi-tools 3.1.0 (no change)
 
@@ -89,7 +112,7 @@ Released @TBD@
 
 -- neon, version bump to 0.32.2, used for Asterisk Calendar Support
 
--- FOP2, available version bump to 2.31.31
+-- FOP2, available version bump to 2.31.32
    Note: If you have a license, you may need to purchase an "Annual Software Maintenance" license if you upgrade.
    More info: https://doc.astlinux-project.org/userdoc:tt_asterisk-fop2-upgrade
 
