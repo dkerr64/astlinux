@@ -72,6 +72,10 @@ find_runnix_drive() {
   if [ -z "$DRIVE" ]; then
     DRIVE="$(mount | awk '/\/oldroot\/cdrom/ { print substr($1,1,length($1)-1); }')"
   fi
+  if grep -q "nvm" <<< "$DRIVE"; then
+    # it is a NVMe drive, remove the letter 'p' from the end
+    DRIVE="${DRIVE%p}"
+  fi
   if [ -z "$DRIVE" ]; then
     echo "Runnix Drive could not be found."
     exit $RED
@@ -185,8 +189,14 @@ configure() {
   PNUM="$(/sbin/fdisk -l | grep "^$1" | wc -l)"
 
   if [ "$DRIVE" = "$1" ]; then
-    part_union=2
-    part_kd=3
+    if grep -q "nvm" <<< "$DRIVE"; then
+      # it is a NVMe drive, include the letter 'p'
+      part_union="p2"
+      part_kd="p3"
+    else
+      part_union=2
+      part_kd=3
+    fi
   else
     echo "Drive $1 does not match RUNNIX drive: $DRIVE."
     exit $RED

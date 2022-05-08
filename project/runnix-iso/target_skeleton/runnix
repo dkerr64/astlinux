@@ -10,6 +10,40 @@ CDROM_DRIVES="sr0 sr1 sr2 sr3"
 
 DRIVES="sda sdb sdc sdd sde sdf sdg sdh vda vdb vdc vdd"
 
+setup_nvme() {
+  # Create /dev/nvme* devices.  Cannot do this in target skeleton as
+  # the major number for nvme block devices is >255 and that is not
+  # working during build. So do it on boot.
+  local char_major=$(cat /proc/devices | grep nvme | cut -d' ' -f 1)
+  if [ -z "$char_major" ]; then return; fi
+  # The kernel was built with NVMe support.  Create device stubs.
+  # We will do two controllers [0..1] and look for attached drives.
+  local char_minor=0
+  local blk_major=0
+  local blk_minor=0
+  local blk_dev=""
+  local blk_name=""
+  local NL='
+'
+
+  mount -o remount,rw /dev/root /
+  for char_minor in 0 1; do
+    IFS=$NL
+    blk_name=""
+    for blk_dev in $(grep -e "nvme${char_minor}" /proc/diskstats); do
+      blk_major="$(echo $blk_dev | awk '{print $1}')"
+      blk_minor="$(echo $blk_dev | awk '{print $2}')"
+      blk_name="$(echo $blk_dev | awk '{print $3}')"
+      mknod -m 600 "/dev/${blk_name}" b $blk_major $blk_minor
+    done
+    unset IFS
+    if [ -n "$blk_name" ]; then
+      mknod -m 600 "/dev/nvme${char_minor}" c "$char_major" $char_minor
+    fi
+  done
+  mount -o remount,ro /dev/root /
+}
+
 setup_network () {
 
   if [ -z "$NDEV" -a -n "$1" ]; then
@@ -125,6 +159,7 @@ mount -t proc none /proc
 mount -t sysfs none /sys
 mount -t tmpfs none /tmp
 mkdir /tmp/etc
+setup_nvme
 
 CMDLINE="$(cat /proc/cmdline)"
 
