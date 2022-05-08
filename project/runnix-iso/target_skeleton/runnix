@@ -164,6 +164,16 @@ if [ -z "$DEVICE" ]; then
         umount /dev/${x}1
       fi
     fi
+    # On a EFI boot USB stick the first partition is EFI System
+    # so need to check 2nd partition for the Astlinux install files
+    if mount -t vfat -o ro /dev/${x}2 $BASE 2>/dev/null; then
+      if [ -f $BASE/os/isoflag ]; then
+        DEVICE="${x}"
+        break
+      else
+        umount /dev/${x}2
+      fi
+    fi
   done
 fi
 
