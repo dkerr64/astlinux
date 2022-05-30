@@ -12,10 +12,10 @@ Released @TBD@
 
 ** System
 
--- Linux Kernel 4.19.236 (version bump), security and bug fixes.
+-- Linux Kernel 4.19.242 (version bump), security and bug fixes.
    Kernel config: Enable EFI, EFI_STUB, RELOCATABLE, FB_EFI, FRAMEBUFFER_CONSOLE (short list) for EFI support.
 
--- RUNNIX, version bump to runnix-0.6.10, with Linux Kernel 4.19.236, add UEFI boot support as well as Legacy BIOS boot.
+-- RUNNIX, version bump to runnix-0.6.11, with Linux Kernel 4.19.242, add UEFI boot support as well as Legacy BIOS boot.
    == syslinux, version 6.03, enable EFI (64-bit) support
    == gnu-efi, new package, version 3.0.10
    More info: https://doc.astlinux-project.org/userdoc:boot-bios-uefi
@@ -23,6 +23,10 @@ Released @TBD@
 -- igc, backport from linux-5.4.191, Intel i225 2.5-Gigabit Ethernet Network Driver
 
 -- r8125, version 9.009.00, Realtek RTL8125 2.5-Gigabit Ethernet Network Driver
+
+-- igb, version bump to 5.10.2, Intel 1.0-Gigabit Ethernet Network Driver
+
+-- e2fsprogs, version 1.46.5, add patch for security fix: CVE-2022-1304
 
 -- ethtool, version bump to 5.17
 
@@ -45,6 +49,8 @@ Released @TBD@
 -- php, version 7.2.34, add security fix: CVE-2021-21707
 
 -- rng-tools, version 6.5, jitterentropy version bump to 3.4.0
+
+-- smartctl (smartmontools), version bump to 7.3, drivedb.h snapshot 2022-05-10
 
 -- sqlite, version bump to 3.38.5, JSON support is now enabled
 
@@ -74,11 +80,12 @@ Released @TBD@
 
 -- iperf, version bump to 2.1.7
 
--- libcurl (curl) version bump to 7.83.0, security fixes: CVE-2022-22576, CVE-2022-27774, CVE-2022-27775, CVE-2022-27776
+-- libcurl (curl) version bump to 7.83.1, security fixes: CVE-2022-22576, CVE-2022-27774, CVE-2022-27775, CVE-2022-27776
+                          CVE-2022-27778, CVE-2022-27779, CVE-2022-27780, CVE-2022-27781, CVE-2022-27782, CVE-2022-30115
 
 -- libmnl, version bump to 1.0.5
 
--- LibreTLS, version bump to 3.5.1
+-- LibreTLS, version bump to 3.5.2
 
 -- lighttpd/php, anonymize header version information
 
