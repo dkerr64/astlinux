@@ -669,7 +669,7 @@ if (is_file('/var/lock/lxc.lock')) {
   }
 }
 if (getPREFdef($global_prefs, 'status_disk_usage') !== 'no') {
-    $cmd = 'df -h /tmp | grep "^ *[A-Z][a-z]"';
+    $cmd = 'df -h /tmp';
     $cmd .= '; df -h | grep "^/dev/[nsv][vd][ma-h][e0-9]" | sort -k 1,1';
     $status_disk_usage = @popen($cmd, 'r');
 }
