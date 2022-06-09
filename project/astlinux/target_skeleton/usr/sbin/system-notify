@@ -268,6 +268,7 @@ send_pushover() {
 
   ##------------------------------------------------------------------
   if [ -z "$SEND_PUSHOVER" ]; then
+    logger -s -t "$PROGRAM" -p user.info "Pushover disabled for ${SERVICE}: Message: ${PUSHOVER_MSG}"
     _USER_SCRIPT "PUSH_DISABLED"
   else
     # Push notification enabled for this SERVICE,
@@ -449,6 +450,15 @@ elif [ "$SERVICE" = "fossilcommit" ]; then
   email_addrs "$FOSSIL_NOTIFY" "$FOSSIL_NOTIFY_FROM"
   send_pushover "$MSG"
   send_email "Fossil Commit" "$MSG" "$BODY"
+
+elif [ "$SERVICE" = "notify_fifo" ]; then
+  ##------------------------------------------------------------------
+  # SERVICE=keepalived
+  # passes in message in $1 ($MSG)
+  ##------------------------------------------------------------------
+  email_addrs # no specific SERVICE email addresses so default to SYSTEM addresses
+  send_pushover "$MSG"
+  send_email "Keepalived" "$MSG" "Keepalived on '$HOSTNAME': $MSG."
 
 else
   ##------------------------------------------------------------------
