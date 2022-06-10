@@ -67,7 +67,11 @@ BODY="$2"         ## optional
 PROGRAM="${0##*/}"
 
 # And who called me...
-PARENT="$(ps pid,comm,args | perl -ne "s/^\s*$PPID\s*\w*\s*({\w*?}\s|)// && print")"
+PARENT="$(ps pid,comm,args 2>/dev/null | grep "^$PPID" | awk '{print $3 " " $4}')"
+if [ -z "$PARENT" ]; then
+  # non-BusyBox version of ps...
+  PARENT="$(ps --no-headers -f -p $PPID 2>/dev/null | awk '{print $8 " " $9}')"
+fi
 SERVICE="${PARENT%%[[:space:]]*}"   # first word in command line
 SERVICE="${SERVICE##*/}"            # remove any path in front of command
 SERVICE="${SERVICE%.*}"             # remove anything after last period (e.g .sh, .pl, .script)
