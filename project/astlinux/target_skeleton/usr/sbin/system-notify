@@ -67,7 +67,7 @@ BODY="$2"         ## optional
 PROGRAM="${0##*/}"
 
 # And who called me...
-PARENT="$(ps pid,comm,args 2>/dev/null | grep "^$PPID" | awk '{print $3 " " $4}')"
+PARENT="$(ps pid,comm,args 2>/dev/null | grep "^\s*$PPID" | awk '{print $3 " " $4}')"
 if [ -z "$PARENT" ]; then
   # non-BusyBox version of ps...
   PARENT="$(ps --no-headers -f -p $PPID 2>/dev/null | awk '{print $8 " " $9}')"
