@@ -239,15 +239,13 @@ switch_to_secondary() {
 
 check_wan_status() {
   local extif_status="$(cat /sys/class/net/${EXTIF}/operstate)"
-  local ext2if_status="$(cat /sys/class/net/${EXT2IF}/operstate)"
-  log DEBUG "Connection status for $EXTIF link is $extif_status, for $EXT2IF is $ext2if_status, active connection is $ACTIVE_CONNECTION"
+  log DEBUG "Connection status for $EXTIF link is $extif_status, active connection is $ACTIVE_CONNECTION"
   [[ "$extif_status" =~ ^(up|dormant|unknown)$ ]] && extif_status=1 || extif_status=0
-  [[ "$ext2if_status" =~ ^(up|dormant|unknown)$ ]] && ext2if_status=1 || ext2if_status=0
-  if [ $TARGETS_FAILED -ge $THRESHOLD -o $extif_status -eq 0 ] && [ "$ACTIVE_CONNECTION" = "$PRIMARY_STR" -a $ext2if_status -eq 1 ]; then
-    # Failed to reach targets, or EXTIF is down... switch to secondary if EXT2IF is up
+  if [ $TARGETS_FAILED -ge $THRESHOLD -o $extif_status -eq 0 ] && [ "$ACTIVE_CONNECTION" = "$PRIMARY_STR" ]; then
+    # Failed to reach targets, or EXTIF is down (so assume failed targets)... switch to secondary.
+    TARGETS_FAILED = $THRESHOLD
     switch
-  elif [ $TARGETS_FAILED -eq 0 -o $ext2if_status -eq 0 ] && [ "$ACTIVE_CONNECTION" = "$SECONDARY_STR" ]; then
-    # EXTIF is back up and targets responding, or EXT2IF has gone down... switch back to primary
+  elif [ $TARGETS_FAILED -eq 0 -a "$ACTIVE_CONNECTION" = "$SECONDARY_STR" ]; then
     switch
   else
     log DEBUG "${WAN_LINK_STR}${ACTIVE_CONNECTION}"
