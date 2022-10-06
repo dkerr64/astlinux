@@ -53,6 +53,7 @@
 // 01-05-2021, pppoe-status, accept return values of 0 and 1
 // 02-04-2021, Remove IPsec (racoon) VPN support
 // 04-22-2022, Added UEFI indicator
+// 09-13-2022, Changed "Voicemail User", "DAHDI" and "Jabber" to custom Asterisk Name/Command status
 //
 // System location of OpenVPN Client logfile
 $OVPNCLOGFILE = '/var/log/openvpnclient-status.log';
@@ -122,6 +123,34 @@ function getDaemons() {
     }
   }
   return($status);
+}
+
+// Function: outputASTERISKcommand
+// Retain embedded empty lines
+//
+function outputASTERISKcommand($filename) {
+
+  $ph = @fopen($filename, "r");
+  $valid_line = FALSE;
+  $empty_lines = 0;
+  while (! feof($ph)) {
+    $line = trim(fgets($ph, 1024));
+    if (strncasecmp($line, 'verbosity ', 10) && stripos($line, 'command is deprecated') === FALSE) {
+      if ($line !== '') {
+        if ($valid_line) {
+          while ($empty_lines > 0) {
+            putText('');
+            $empty_lines--;
+          }
+        }
+        putText($line);
+        $valid_line = TRUE;
+      } else {
+        $empty_lines++;
+      }
+    }
+  }
+  fclose($ph);
 }
 
 // Function: parseUPSstatus
@@ -1384,15 +1413,7 @@ if ($daemon['asterisk'] > 0) {
   if ($status == 0 && getPREFdef($global_prefs, 'status_show_active_chan') !== 'no') {
     putHtml("<h2>Active Channels:</h2>");
     putHtml('<pre>');
-    $ph = @fopen($tmpfile, "r");
-    while (! feof($ph)) {
-      if (($line = trim(fgets($ph, 1024))) !== '') {
-        if (strncasecmp($line, 'verbosity ', 10) && stripos($line, 'command is deprecated') === FALSE) {
-          putText($line);
-        }
-      }
-    }
-    fclose($ph);
+    outputASTERISKcommand($tmpfile);
     putHtml('</pre>');
   } elseif ($status != 0) {
     putHtml("<h2>Asterisk:</h2>");
@@ -1407,15 +1428,7 @@ if ($daemon['asterisk'] > 0) {
     putHtml("<pre>");
     $tmpfile = tempnam("/tmp", "PHP_");
     asteriskCMD('sip show registry', $tmpfile);
-    $ph = @fopen($tmpfile, "r");
-    while (! feof($ph)) {
-      if (($line = trim(fgets($ph, 1024))) !== '') {
-        if (strncasecmp($line, 'verbosity ', 10)) {
-          putText($line);
-        }
-      }
-    }
-    fclose($ph);
+    outputASTERISKcommand($tmpfile);
     @unlink($tmpfile);
     putHtml("</pre>");
   }
@@ -1444,15 +1457,7 @@ if ($daemon['asterisk'] > 0) {
     putHtml("<pre>");
     $tmpfile = tempnam("/tmp", "PHP_");
     asteriskCMD('iax2 show registry', $tmpfile);
-    $ph = @fopen($tmpfile, "r");
-    while (! feof($ph)) {
-      if (($line = trim(fgets($ph, 1024))) !== '') {
-        if (strncasecmp($line, 'verbosity ', 10)) {
-          putText($line);
-        }
-      }
-    }
-    fclose($ph);
+    outputASTERISKcommand($tmpfile);
     @unlink($tmpfile);
     putHtml("</pre>");
   }
@@ -1477,68 +1482,49 @@ if ($daemon['asterisk'] > 0) {
   }
 
   if ($status == 0 && getPREFdef($global_prefs, 'status_voicemail_show_users') === 'yes') {
+    if (($cmd = getPREFdef($global_prefs, 'status_voicemail_users_name_cmdstr')) === '') {
+      $cmd = 'Voicemail User Status';
+    }
+    putHtml("<h2>".htmlspecialchars($cmd).":</h2>");
+    putHtml("<pre>");
     if (($cmd = getPREFdef($global_prefs, 'status_voicemail_users_cmdstr')) === '') {
       $cmd = 'voicemail show users';
     }
-    putHtml("<h2>Voicemail User Status:</h2>");
-    putHtml("<pre>");
     $tmpfile = tempnam("/tmp", "PHP_");
     asteriskCMD($cmd, $tmpfile);
-    $ph = @fopen($tmpfile, "r");
-    while (! feof($ph)) {
-      if (($line = trim(fgets($ph, 1024))) !== '') {
-        if (strncasecmp($line, 'verbosity ', 10) && stripos($line, 'command is deprecated') === FALSE) {
-          putText($line);
-        }
-      }
-    }
-    fclose($ph);
+    outputASTERISKcommand($tmpfile);
     @unlink($tmpfile);
     putHtml("</pre>");
   }
 
   if ($status == 0 && getPREFdef($global_prefs, 'status_dahdi_show_status') === 'yes') {
+    if (($cmd = getPREFdef($global_prefs, 'status_dahdi_status_name_cmdstr')) === '') {
+      $cmd = 'DAHDI Status';
+    }
+    putHtml("<h2>".htmlspecialchars($cmd).":</h2>");
+    putHtml("<pre>");
     if (($cmd = getPREFdef($global_prefs, 'status_dahdi_status_cmdstr')) === '') {
       $cmd = 'dahdi show status';
     }
-    putHtml("<h2>DAHDI Status:</h2>");
-    putHtml("<pre>");
     $tmpfile = tempnam("/tmp", "PHP_");
-    if ($cmd === 'wanrouter status' || $cmd === 'wanrouter summary') {
-      shell('/usr/sbin/'.$cmd.' >'.$tmpfile, $ret_status);
-    } else {
-      asteriskCMD($cmd, $tmpfile);
-    }
-    $ph = @fopen($tmpfile, "r");
-    while (! feof($ph)) {
-      if (($line = trim(fgets($ph, 1024))) !== '') {
-        if (strncasecmp($line, 'verbosity ', 10)) {
-          putText($line);
-        }
-      }
-    }
-    fclose($ph);
+    asteriskCMD($cmd, $tmpfile);
+    outputASTERISKcommand($tmpfile);
     @unlink($tmpfile);
     putHtml("</pre>");
   }
 
   if ($status == 0 && getPREFdef($global_prefs, 'status_jabber_show_status') === 'yes') {
+    if (($cmd = getPREFdef($global_prefs, 'status_jabber_status_name_cmdstr')) === '') {
+      $cmd = 'Jabber Status';
+    }
+    putHtml("<h2>".htmlspecialchars($cmd).":</h2>");
+    putHtml("<pre>");
     if (($cmd = getPREFdef($global_prefs, 'status_jabber_status_cmdstr')) === '') {
       $cmd = 'jabber show connections';
     }
-    putHtml("<h2>Jabber Status:</h2>");
-    putHtml("<pre>");
     $tmpfile = tempnam("/tmp", "PHP_");
     asteriskCMD($cmd, $tmpfile);
-    $ph = @fopen($tmpfile, "r");
-    while (! feof($ph)) {
-      if (($line = trim(fgets($ph, 1024))) !== '') {
-        if (strncasecmp($line, 'verbosity ', 10)) {
-          putText($line);
-        }
-      }
-    }
-    fclose($ph);
+    outputASTERISKcommand($tmpfile);
     @unlink($tmpfile);
     putHtml("</pre>");
   }
@@ -1552,27 +1538,7 @@ if ($daemon['asterisk'] > 0) {
     if (($cmd = getPREFdef($global_prefs, 'status_custom_asterisk_cmdstr')) !== '') {
       $tmpfile = tempnam("/tmp", "PHP_");
       asteriskCMD($cmd, $tmpfile);
-      $ph = @fopen($tmpfile, "r");
-      $valid_line = FALSE;
-      $empty_lines = 0;
-      while (! feof($ph)) {
-        $line = trim(fgets($ph, 1024));
-        if (strncasecmp($line, 'verbosity ', 10)) {
-          if ($line !== '') {
-            if ($valid_line) {
-              while ($empty_lines > 0) {
-                putText('');
-                $empty_lines--;
-              }
-            }
-            putText($line);
-            $valid_line = TRUE;
-          } else {
-            $empty_lines++;
-          }
-        }
-      }
-      fclose($ph);
+      outputASTERISKcommand($tmpfile);
       @unlink($tmpfile);
     }
     putHtml("</pre>");

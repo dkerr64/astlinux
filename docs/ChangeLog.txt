@@ -5,10 +5,94 @@
 === docs/ChangeLog.txt
 =========================================================
 
-Additions for AstLinux 1.4.7:
+Additions for AstLinux 1.4.8:
 =============================
 
 Released @TBD@
+
+** System
+
+-- Linux Kernel 4.19.260 (version bump), security and bug fixes.
+
+-- igc, backport from linux-5.4.211, Intel i225/i226 2.5-Gigabit Ethernet Network Driver
+
+-- acpid, version bump to 2.0.34
+
+-- ethtool, version bump to 5.19
+
+-- expat, version bump to 2.4.9, security fix: CVE-2022-40674
+
+-- libxml2, version bump to 2.10.2
+
+-- ne, version bump to 3.3.2
+
+-- php, version 7.2.34, add security fix: CVE-2022-31629
+
+-- sqlite, version bump to 3.39.4
+
+-- strace, version bump to 5.19
+
+-- zlib, version 1.2.12, backport security fix: CVE-2022-37434
+
+-- system-vendor, improved hypervisor check, look at dmesg.boot for 'Hypervisor detected:'
+
+-- system-vendor, update system-vendor.ids
+
+-- zabbix, version bump to 4.0.44
+
+-- Time Zone Database update, tzdata2022d and php-timezonedb-2022.4
+
+** Networking
+
+-- strongSwan, version 5.5.3, security fix: CVE-2022-40617
+
+-- libcurl (curl) version bump to 7.85.0, security fixes: CVE-2022-35252
+
+-- chrony, version bump to 4.3
+
+-- iperf, version bump to 2.1.8
+
+-- iperf3, version bump to 3.12
+
+-- msmtp, version bump to 1.8.22
+
+-- sngrep, version bump to 1.6.0
+
+-- stunnel, version bump to 5.65
+
+-- unbound, version bump to 1.16.3, security fix: CVE-2022-3204
+
+-- (Custom Build Only) tinyproxy, version 1.11.1, security fix: CVE-2022-40468
+
+** Asterisk
+
+-- Asterisk 13.38.3 ('13se' no change)
+   Last Asterisk 13.x "Legacy" version, built --without-pjproject
+
+-- Asterisk 16.28.0 (version bump) and 18.14.0 (version bump)
+
+-- DAHDI, dahdi-linux 3.1.0 (no change) and dahdi-tools 3.1.0 (no change)
+
+-- pjsip 2.12.1 (no change)
+
+-- neon, version bump to 0.32.4, used for Asterisk Calendar Support
+
+-- FOP2, available version bump to 2.31.33
+   Note: If you have a license, you may need to purchase an "Annual Software Maintenance" license if you upgrade.
+   More info: https://doc.astlinux-project.org/userdoc:tt_asterisk-fop2-upgrade
+
+** Web Interface
+
+-- Network tab, tzdata renames Europe/Kiev to Europe/Kyiv Timezone.
+
+-- Status and Prefs tab, change "Voicemail User Status", "DAHDI Status" and "Jabber Status" to custom Asterisk
+   Name/Command status. Defaults to previous standard Asterisk Name/Command values for backward compatibility.
+
+
+Additions for AstLinux 1.4.7:
+=============================
+
+Released 2022-09-01
 
 ** System
 
