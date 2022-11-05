@@ -226,6 +226,25 @@ failover_traffic_shaping()
   esac
 }
 
+create_vlan_interface()
+{
+  local IF="$1"
+  local VID="$2"
+
+  ip link add link $IF name $IF.$VID type vlan id $VID
+  ip link set dev $IF up
+  if [ "$VLANCOS" = "yes" ]; then
+    vconfig set_egress_map "$IF.$VID" 0 3 > /dev/null
+    vconfig set_egress_map "$IF.$VID" 1 3 > /dev/null
+    vconfig set_egress_map "$IF.$VID" 2 1 > /dev/null
+    vconfig set_egress_map "$IF.$VID" 3 1 > /dev/null
+    vconfig set_egress_map "$IF.$VID" 4 4 > /dev/null
+    vconfig set_egress_map "$IF.$VID" 5 5 > /dev/null
+    vconfig set_egress_map "$IF.$VID" 6 6 > /dev/null
+    vconfig set_egress_map "$IF.$VID" 7 7 > /dev/null
+  fi
+}
+
 bridge_load_configure()
 {
   local br_list="$1" br_name="$2" br IFS
@@ -235,13 +254,29 @@ bridge_load_configure()
   ## Disable bridge firewalling for intra-bridge traffic
   ## Note: For kernels >= 3.18, not loading br_netfilter avoids filtering.
 
-  ip link add name $br_name type bridge
+  ip link add name $br_name type bridge vlan_filtering 1
 
   unset IFS
   for br in $br_list; do
     ip link set dev $br up
     ip link set dev $br master $br_name
   done
+
+  # add VLAN IDs to the bridge and each interface for those VLANs
+  # being created on top of this bridge.  Then create VLAN interface.
+  if [ -n "$VLANS" ]; then
+    for i in $VLANS; do
+      IF="${i%%.*}"
+      if [ "$IF" = "$br_name" ]; then
+        VID="${i##*.}"
+        for br in $br_list; do
+          bridge vlan add vid $VID dev $br
+        done
+        bridge vlan add vid $VID dev $br_name self
+        create_vlan_interface "$IF" "$VID"
+      fi
+    done
+  fi
 }
 
 bridge_remove()
@@ -379,21 +414,14 @@ start () {
 
   #VLANS
   if [ -n "$VLANS" ]; then
+    modprobe 8021q
     for i in $VLANS; do
-      IF="$(echo $i | cut -d. -f1)"
-      VID="$(echo $i | cut -d. -f2)"
-      modprobe 8021q
-      ip link add link $IF name $IF.$VID type vlan id $VID
-      ip link set dev $IF up
-      if [ "$VLANCOS" = "yes" ]; then
-        vconfig set_egress_map "$IF.$VID" 0 3 > /dev/null
-        vconfig set_egress_map "$IF.$VID" 1 3 > /dev/null
-        vconfig set_egress_map "$IF.$VID" 2 1 > /dev/null
-        vconfig set_egress_map "$IF.$VID" 3 1 > /dev/null
-        vconfig set_egress_map "$IF.$VID" 4 4 > /dev/null
-        vconfig set_egress_map "$IF.$VID" 5 5 > /dev/null
-        vconfig set_egress_map "$IF.$VID" 6 6 > /dev/null
-        vconfig set_egress_map "$IF.$VID" 7 7 > /dev/null
+      IF="${i%%.*}"
+      if [ ! -d "/sys/class/net/$IF/bridge" ]; then
+        # only create VLAN interface if not on a bridge, as bridges not
+        # created yet. But we may need other VLANs to put into bridges!
+        VID="${i##*.}"
+        create_vlan_interface "$IF" "$VID"
       fi
     done
   fi
