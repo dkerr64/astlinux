@@ -5,14 +5,22 @@
 === docs/ChangeLog.txt
 =========================================================
 
-Additions for AstLinux 1.4.8:
+Additions for AstLinux 1.4.9:
 =============================
 
 Released @TBD@
 
+
+Additions for AstLinux 1.4.8:
+=============================
+
+Released 2022-12-21
+
 ** System
 
 -- Linux Kernel 4.19.266 (version bump), security and bug fixes.
+
+-- RUNNIX, version bump to runnix-0.6.13, with Linux Kernel 4.19.266
 
 -- igc, backport from linux-5.4.211, Intel i225/i226 2.5-Gigabit Ethernet Network Driver
 
@@ -34,6 +42,8 @@ Released @TBD@
 
 -- libxml2, version bump to 2.10.3, security fixes: CVE-2022-40303, CVE-2022-40304
 
+-- logrotate, version bump to 3.21.0
+
 -- ne, version bump to 3.3.2
 
 -- pciutils, version bump to 3.9.0
@@ -42,7 +52,7 @@ Released @TBD@
 
 -- sqlite, version bump to 3.39.4
 
--- strace, version bump to 6.0
+-- strace, version bump to 6.1
 
 -- sudo, version 1.8.32, add security fix: CVE-2022-43995
 
@@ -57,6 +67,8 @@ Released @TBD@
 -- zabbix, version bump to 4.0.44
 
 -- ca-certificates, update trusted root certificates 2022-10-11
+
+-- mac2vendor, oui.txt database snapshot 2022-12-17
 
 -- Time Zone Database update, tzdata2022g and php-timezonedb-2022.7
 
@@ -83,6 +95,8 @@ Released @TBD@
 
 -- netsnmp, version bump to 5.9.3, security fixes: CVE-2022-24805, CVE-2022-24809, CVE-2022-24806, CVE-2022-24807
                                                    CVE-2022-24808, CVE-2022-24810
+
+-- prosody, version bump to 0.11.14
 
 -- sngrep, version bump to 1.6.0
 
