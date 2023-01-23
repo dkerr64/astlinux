@@ -21,10 +21,6 @@ init ()
 
 start ()
 {
-  if [ -z "$LXC_BRIDGE0" ]; then
-    exit
-  fi
-
   if ls /mnt/kd/lxc/container/*/config >/dev/null 2>&1 && [ ! -f $LOCK_FILE ]; then
     echo "Starting LXC container..."
 
