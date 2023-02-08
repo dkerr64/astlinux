@@ -256,6 +256,10 @@ bridge_load_configure()
 
   ip link add name $br_name type bridge vlan_filtering 1
 
+  # IPv6 is dependent on multicast to work, e.g. neighor discovery.  Multicast
+  # snooping can mess that up, so disable on bridge.
+  echo -n 0 > /sys/class/net/${br_name}/bridge/multicast_snooping
+
   unset IFS
   for br in $br_list; do
     ip link set dev $br up
@@ -563,6 +567,10 @@ start () {
           up_delay=4
           init_dhcp6c ext2if $EXT2IF
           ifplugd -apq -t2 -u3 -d3 -i $EXT2IF -r /etc/ifplugd/dhcp6c.action
+          # Find state of the interface.  If not up then no point in starting DHCP client,
+          # that can be triggered by ifplugd when the interface later comes up.
+          [[ "$(cat /sys/class/net/${EXT2IF}/operstate)" =~ ^(up|dormant|unknown)$ ]] && ext2if_status=1 || ext2if_status=0
+          [[ $ext2if_status -eq 1 ]] && /etc/ifplugd/dhcp6c.action $EXT2IF up
         elif [ -n "$EXT2IPV6" ]; then
           ip -6 addr add $EXT2IPV6 dev $EXT2IF
         fi
@@ -608,6 +616,10 @@ start () {
           up_delay=10
           init_dhcp6c extif $EXTIF
           ifplugd -apq -t2 -u3 -d3 -i $EXTIF -r /etc/ifplugd/dhcp6c.action
+          # Find state of the interface.  If not up then no point in starting DHCP client,
+          # that can be triggered by ifplugd when the interface later comes up.
+          [[ "$(cat /sys/class/net/${EXTIF}/operstate)" =~ ^(up|dormant|unknown)$ ]] && extif_status=1 || extif_status=0
+          [[ $extif_status -eq 1 ]] && /etc/ifplugd/dhcp6c.action $EXTIF up
         fi
         if [ "$DHCPV6_CLIENT_ENABLE" != "yes" -o "$DHCPV6_CLIENT_REQUEST_ADDRESS" = "no" ]; then
           if [ -n "$EXTIPV6" ]; then
@@ -650,8 +662,14 @@ start () {
     ip link set dev $EXT2IF up
     sleep 4
 
-    # No DHCPv6 - Static IPv6 if defined
+    # DHCPv6 and Static IPv6 if defined
     if [ "$IPV6" = "yes" ]; then
+      if [ "$EXT2DHCPV6_CLIENT_ENABLE" = "yes" ]; then
+        # Find state of the interface.  If not up then no point in starting DHCP client,
+        # that can be triggered by ifplugd when the interface later comes up.
+        [[ "$(cat /sys/class/net/${EXTIF}/operstate)" =~ ^(up|dormant|unknown)$ ]] && ext2if_status=1 || ext2if_status=0
+        [[ $ext2if_status -eq 1 ]] && /etc/ifplugd/dhcp6c.action $EXT2IF up
+      fi
       if [ -n "$EXT2IPV6" -a "$EXT2DHCPV6_CLIENT_ENABLE" != "yes" ]; then
         ip -6 addr add $EXT2IPV6 dev $EXT2IF
       fi
@@ -669,15 +687,14 @@ start () {
     ip link set dev $EXTIF up
     sleep 4
     ifplugd -apq -t2 -u3 -d3 -i $EXTIF -r /etc/ifplugd/udhcpc.action
-    # Find state of the interface.  If not up then no point in starting DHCP client,
-    # that can be triggered by ifplugd when the interface later comes up.
-    [[ "$(cat /sys/class/net/${EXTIF}/operstate)" =~ ^(up|dormant|unknown)$ ]] && extif_status=1 || extif_status=0
     if [ "$IPV6" = "yes" -a "$DHCPV6_CLIENT_ENABLE" = "yes" ]; then
       up_delay=10
       init_dhcp6c extif $EXTIF
-      [[ $extif_status -eq 1 ]] && dhcp6c -c /etc/wide-dhcpv6/dhcp6c-$EXTIF.conf -p /var/run/dhcp6c-$EXTIF.pid $EXTIF
     fi
-    [[ $extif_status -eq 1 ]] && udhcpc -b -T2 -t6 -S -s /etc/udhcpc.script -x "hostname:$HOSTNAME" -p /var/run/udhcpc-$EXTIF.pid -i $EXTIF
+    # Find state of the interface.  If not up then no point in starting DHCP client,
+    # that can be triggered by ifplugd when the interface later comes up.
+    [[ "$(cat /sys/class/net/${EXTIF}/operstate)" =~ ^(up|dormant|unknown)$ ]] && extif_status=1 || extif_status=0
+    [[ $extif_status -eq 1 ]] && /etc/ifplugd/udhcpc.action $EXTIF up
     while [ $up_delay -gt 0 ] && [ ! -f /var/db/dhcp6c_cache ]; do
       up_delay=$((up_delay - 1))
       sleep 1
