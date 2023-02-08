@@ -363,6 +363,7 @@ tftp-root=/tftpboot"
   # IPv6 Options
   if [ "$IPV6" = "yes" ]; then
     echo "quiet-ra"
+    echo "enable-ra"
   fi
 }
 
