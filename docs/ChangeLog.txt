@@ -37,13 +37,23 @@ Released @TBD@
 
 -- linux-firmware, version bump to 20210919, provide binary blobs for r8169 and tg3 NIC drivers
 
+-- Monit, version bump to 5.33.0
+
+-- php, version 7.2.34, add security fixes: CVE-2023-0567, CVE-2023-0568, CVE-2023-0662
+
 -- rng-tools, version 6.5, jitterentropy version bump to 3.4.1
+
+-- set-kcmd-cstate, new command to manage whether 'processor.max_cstate=1' is passed to the kernel or not (default).
 
 -- sqlite, version bump to 3.40.1
 
 -- sudo, version 1.8.32, add security fix: CVE-2023-22809
 
+-- system-vendor, update system-vendor.ids
+
 -- tiff, version bump to 4.5.0, security fixes: many
+
+-- upgrade-run-image, now propagates the processor.max_cstate=1 kernel option on upgrades.
 
 -- util-linux, version 2.33.2, hwclock: make glibc 2.31 compatible
 
@@ -65,7 +75,7 @@ Released @TBD@
 
 -- iproute2 (ip, tc, bridge, etc.) version bump to 6.0.0
 
--- libcurl (curl) version bump to 7.87.0, security fixes: CVE-2022-43551, CVE-2022-43552
+-- libcurl (curl) version bump to 7.88.1, security fixes: CVE-2022-43551, CVE-2022-43552, CVE-2023-23914, CVE-2023-23915, CVE-2023-23916
 
 -- LibreTLS, version bump to 3.7.0
 
