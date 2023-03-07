@@ -10,11 +10,17 @@ Additions for AstLinux 1.5.0:
 
 Released @TBD@
 
+** IMPORTANT NOTICE
+
+-- Existing AstLinux installs created before 1.5.0 can be upgraded to 1.5.0 (or later) and downgraded back without issue.
+   New AstLinux installs created with 1.5.0 (or later) can not run versions before 1.5.0 since the newly created
+   ext4 partitions contain filesystem features not understood by the previous ext2 filesystem driver.
+
 ** System
 
 -- Linux Kernel 5.10.162 (major version bump), security and bug fixes.
 
--- RUNNIX, version bump to runnix-0.6.13b (test version), with Linux Kernel 5.10.158
+-- RUNNIX, version bump to runnix-0.6.14, with Linux Kernel 5.10.162, e2fsprogs 1.46.6
    == gnu-efi, version bump to 3.0.15
    == memtest, remove native support.  Boot via USB with Memtest86+ if needed.
 
@@ -51,7 +57,7 @@ Released @TBD@
 
 -- system-vendor, update system-vendor.ids
 
--- tiff, version bump to 4.5.0, security fixes: many
+-- tiff, version bump to 4.5.0, security fixes: many, add patch for CVE-2022-48281
 
 -- upgrade-run-image, now propagates the processor.max_cstate=1 kernel option on upgrades.
 
@@ -71,7 +77,7 @@ Released @TBD@
 
 -- wireguard, igb, igc and e1000e drivers are now native with the 5.10 kernel
 
--- arnofw (AIF), tweak rule for allowing DHCPv6 requests, fix for Comcast/Xfinity users
+-- arnofw (AIF), version bump to 2.0.2-08-astlinux, tweak rule for allowing DHCPv6 requests, fix for Comcast/Xfinity users
 
 -- iproute2 (ip, tc, bridge, etc.) version bump to 6.0.0
 
@@ -101,11 +107,13 @@ Released @TBD@
    Note: Retain patch to support (wctdm) TDM400P PCI cards.
    Note: Retain patch to support (wcfxo) X100P PCI cards.
 
--- pjsip 2.12.1 (no change)
+-- pjsip 2.12.1 (no change), patch security fixes: CVE-2022-23537, CVE-2022-23547
 
 -- neon, version bump to 0.32.5, used for Asterisk Calendar Support
 
 ** Web Interface
+
+-- Edit tab, shell syntax, support bash here-string
 
 -- Update Copyright (c) 2004-2023
 
