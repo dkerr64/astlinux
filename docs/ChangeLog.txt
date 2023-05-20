@@ -5,10 +5,78 @@
 === docs/ChangeLog.txt
 =========================================================
 
-Additions for AstLinux 1.5.0:
+Additions for AstLinux 1.5.1:
 =============================
 
 Released @TBD@
+
+** System
+
+-- Linux Kernel 5.10.178 (version bump), security and bug fixes.
+
+-- ethtool, version bump to 6.2
+
+-- libpcap, version bump to 1.10.4
+
+-- libxml2, version bump to 2.10.4, security fixes: CVE-2023-29469, CVE-2023-28484
+
+-- ncurses, version bump to 6.4, security fix: CVE-2023-29491 using --disable-root-environ build
+
+-- pciutils, version bump to 3.10.0
+
+-- sqlite, version bump to 3.41.2
+
+-- strace, version bump to 6.2
+
+-- system-vendor, update system-vendor.ids
+
+-- zabbix, version bump to 4.0.45
+
+-- Time Zone Database update, tzdata2023c and php-timezonedb-2023.3
+
+-- (Custom Build Only) dmidecode, version bump to 3.5
+
+-- (Custom Build Only) flashrom, version bump to 1.3.0
+
+** Networking
+
+-- dnsmasq, version 2.84, security fix: CVE-2023-28450
+
+-- iperf, version bump to 2.1.9
+
+-- iperf3, version bump to 3.13
+
+-- libcurl (curl) version bump to 8.0.1, security fixes: CVE-2023-27537, CVE-2023-27536, CVE-2023-27535, CVE-2023-27534, CVE-2023-27533
+
+-- luasec, version bump to 1.3.1
+
+-- sngrep, version bump to 1.7.0
+
+-- tcpdump, version 4.99.4
+
+-- whois, version bump to 5.5.17
+
+** Asterisk
+
+-- Asterisk 13.38.3 ('13se' no change)
+   Last Asterisk 13.x "Legacy" version, built --without-pjproject
+
+-- Asterisk 16.30.0 (no change) and 18.17.1 (version bump)
+   Add Asterisk 16.x pjsip_pubsub-fixes-for-pjsip-2.13 patch
+
+-- DAHDI, dahdi-linux 3.2.0 (no change) and dahdi-tools 3.2.0 (no change)
+
+-- pjsip 2.13 (version bump)
+
+** Web Interface
+
+-- no change
+
+
+Additions for AstLinux 1.5.0:
+=============================
+
+Released 2023-03-08
 
 ** IMPORTANT NOTICE
 
