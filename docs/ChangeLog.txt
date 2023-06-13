@@ -14,7 +14,11 @@ Released @TBD@
 
 -- Linux Kernel 5.10.178 (version bump), security and bug fixes.
 
--- ethtool, version bump to 6.2
+-- acme-client, version 2.9.0, add upstream patch to fix remote exec CVE
+
+-- ethtool, version bump to 6.3
+
+-- Fossil, (major) version bump to 2.22
 
 -- libpcap, version bump to 1.10.4
 
@@ -24,13 +28,19 @@ Released @TBD@
 
 -- pciutils, version bump to 3.10.0
 
--- sqlite, version bump to 3.41.2
+-- sqlite, version bump to 3.42.0
 
--- strace, version bump to 6.2
+-- strace, version bump to 6.3
 
 -- system-vendor, update system-vendor.ids
 
--- zabbix, version bump to 4.0.45
+-- udev (eudev), version bump to 3.2.12
+
+-- zabbix, version bump to 4.0.46
+
+-- ca-certificates, update trusted root certificates 2023-05-30
+
+-- mac2vendor, oui.txt database snapshot 2023-06-10
 
 -- Time Zone Database update, tzdata2023c and php-timezonedb-2023.3
 
@@ -40,13 +50,18 @@ Released @TBD@
 
 ** Networking
 
+-- OpenSSL, version bump to 1.1.1u, security fixes: CVE-2023-0464, CVE-2023-0465, CVE-2023-0466, CVE-2023-2650
+
 -- dnsmasq, version 2.84, security fix: CVE-2023-28450
 
 -- iperf, version bump to 2.1.9
 
 -- iperf3, version bump to 3.13
 
--- libcurl (curl) version bump to 8.0.1, security fixes: CVE-2023-27537, CVE-2023-27536, CVE-2023-27535, CVE-2023-27534, CVE-2023-27533
+-- keepalived, version bump to 2.2.8
+
+-- libcurl (curl) version bump to 8.1.2, security fixes: CVE-2023-27537, CVE-2023-27536, CVE-2023-27535, CVE-2023-27534, CVE-2023-27533
+                                                         CVE-2023-28319, CVE-2023-28320, CVE-2023-28321, CVE-2023-28322
 
 -- luasec, version bump to 1.3.1
 
@@ -61,7 +76,7 @@ Released @TBD@
 -- Asterisk 13.38.3 ('13se' no change)
    Last Asterisk 13.x "Legacy" version, built --without-pjproject
 
--- Asterisk 16.30.0 (no change) and 18.17.1 (version bump)
+-- Asterisk 16.30.0 (no change) and 18.18.0 (version bump)
    Add Asterisk 16.x pjsip_pubsub-fixes-for-pjsip-2.13 patch
 
 -- DAHDI, dahdi-linux 3.2.0 (no change) and dahdi-tools 3.2.0 (no change)
@@ -70,7 +85,7 @@ Released @TBD@
 
 ** Web Interface
 
--- no change
+-- Status tab, updated "Show Licenses" information.
 
 
 Additions for AstLinux 1.5.0:
