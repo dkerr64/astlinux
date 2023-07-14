@@ -5,20 +5,63 @@
 === docs/ChangeLog.txt
 =========================================================
 
-Additions for AstLinux 1.5.1:
+Additions for AstLinux 1.5.2:
 =============================
 
 Released @TBD@
 
 ** System
 
--- Linux Kernel 5.10.178 (version bump), security and bug fixes.
+-- Linux Kernel 5.10.179
+
+-- ethtool, version bump to 6.4
+
+-- libpng, version bump to 1.6.40
+
+-- libxml2, version bump to 2.11.4
+
+-- strace, version bump to 6.4
+
+** Networking
+
+-- chrony, version bump to 4.4-pre2
+
+-- msmtp, version bump to 1.8.24
+
+** Asterisk
+
+-- Asterisk 13.38.3 ('13se' no change)
+   Last Asterisk 13.x "Legacy" version, built --without-pjproject
+
+-- Asterisk 16.30.0 (no change) and 18.18.0 (no change)
+
+-- DAHDI, dahdi-linux 3.2.0 (no change) and dahdi-tools 3.2.0 (no change)
+
+-- pjsip 2.13.1 (version bump)
+
+** Web Interface
+
+-- Status tab, support Asterisk 18 output lines greater than 256 characters.
+
+
+Additions for AstLinux 1.5.1:
+=============================
+
+Released 2023-07-04
+
+** System
+
+-- Linux Kernel 5.10.179 (version bump), security and bug fixes.
+
+-- RUNNIX, version bump to runnix-0.6.15, with Linux Kernel 5.10.179, ncurses 6.4
 
 -- acme-client, version 2.9.0, add upstream patch to fix remote exec CVE
 
 -- ethtool, version bump to 6.3
 
 -- Fossil, (major) version bump to 2.22
+
+-- libcap, version bump to 2.69, security fixes: CVE-2023-2602, CVE-2023-2603
 
 -- libpcap, version bump to 1.10.4
 
@@ -34,9 +77,11 @@ Released @TBD@
 
 -- system-vendor, update system-vendor.ids
 
+-- tiff, version bump to 4.5.1
+
 -- udev (eudev), version bump to 3.2.12
 
--- zabbix, version bump to 4.0.46
+-- zabbix, version bump to 4.0.47, security fix: CVE-2023-29456
 
 -- ca-certificates, update trusted root certificates 2023-05-30
 
