@@ -4,15 +4,15 @@
 #
 ##############################################################
 
-ifeq ($(BR2_PACKAGE_ASTERISK_v16),y)
-ASTERISK_VERSION := 16.30.0
+ifeq ($(BR2_PACKAGE_ASTERISK_v18),y)
+ASTERISK_VERSION := 18.19.0
 ASTERISK_LABEL :=
 else
- ifeq ($(BR2_PACKAGE_ASTERISK_v18),y)
-ASTERISK_VERSION := 18.18.0
+ ifeq ($(BR2_PACKAGE_ASTERISK_v20),y)
+ASTERISK_VERSION := 20.4.0
 ASTERISK_LABEL :=
  else
-ASTERISK_VERSION := 13.38.3
+ASTERISK_VERSION := 16.30.0
 ASTERISK_LABEL := se
  endif
 endif
@@ -144,6 +144,10 @@ ASTERISK_EXTRAS+=dahdi-tools
 ASTERISK_CONFIGURE_ARGS+= \
 			--with-dahdi="$(STAGING_DIR)/usr" \
 			--with-tonezone="$(STAGING_DIR)/usr"
+else
+ASTERISK_CONFIGURE_ARGS+= \
+			--without-dahdi \
+			--without-tonezone
 endif
 
 ifeq ($(strip $(BR2_PACKAGE_SQLITE)),y)
@@ -174,13 +178,10 @@ ASTERISK_CONFIGURE_ENV+= \
  endif
 endif
 
-ifneq ($(ASTERISK_VERSION_SINGLE),13)
-## Asterisk 16.x
 ifeq ($(strip $(BR2_PACKAGE_UNBOUND)),y)
 ASTERISK_EXTRAS+=unbound
 ASTERISK_CONFIGURE_ARGS+= \
                         --with-unbound="$(STAGING_DIR)/usr"
-endif
 endif
 
 ifeq ($(strip $(BR2_PACKAGE_PJSIP)),y)
@@ -280,12 +281,30 @@ else
 		menuselect/menuselect --enable IMAP_STORAGE menuselect.makeopts; \
 	)
  endif
+ ifeq ($(ASTERISK_VERSION_SINGLE),20)
+	## Asterisk 20.x version
+	(cd $(ASTERISK_DIR); \
+		menuselect/menuselect --enable chan_sip menuselect.makeopts; \
+	)
+ else
+	## Asterisk 16.x and 18.x versions
+	(cd $(ASTERISK_DIR); \
+		menuselect/menuselect --enable res_pktccops --disable app_dahdiras menuselect.makeopts; \
+	)
+ endif
+	## All Asterisk versions
 	(cd $(ASTERISK_DIR); \
 		menuselect/menuselect --enable app_meetme --enable app_page --enable app_macro menuselect.makeopts; \
-		menuselect/menuselect --enable res_pktccops menuselect.makeopts; \
 		menuselect/menuselect --disable CORE-SOUNDS-EN-GSM --disable MOH-OPSOUND-WAV menuselect.makeopts; \
 		menuselect/menuselect --disable BUILD_NATIVE menuselect.makeopts; \
 	)
+ ifneq ($(strip $(BR2_PACKAGE_DAHDI_LINUX)),y)
+	## Disable DAHDI related modules
+	(cd $(ASTERISK_DIR); \
+		menuselect/menuselect --disable chan_dahdi --disable codec_dahdi --disable app_meetme menuselect.makeopts; \
+		menuselect/menuselect --disable res_timing_dahdi --disable app_flash menuselect.makeopts; \
+	)
+ endif
 endif
 	# Don't force a "clean", create .lastclean
 	cp -f $(ASTERISK_DIR)/.cleancount $(ASTERISK_DIR)/.lastclean
@@ -334,16 +353,9 @@ $(TARGET_DIR)/$(ASTERISK_TARGET_BINARY): $(ASTERISK_DIR)/$(ASTERISK_BINARY)
 # Remove unwanted MOH sound files to save space
 	rm -f $(TARGET_DIR)/stat/var/lib/asterisk/moh/macroform-robot_dity.*
 	rm -f $(TARGET_DIR)/stat/var/lib/asterisk/moh/macroform-cold_day.*
-ifneq ($(wildcard package/asterisk/config/extensions.conf),)
-	mkdir -p $(TARGET_DIR)/stat/etc/asterisk
-	rsync -a --exclude=".svn" package/asterisk/config/* $(TARGET_DIR)/stat/etc/asterisk/
-else
 	mv $(TARGET_DIR)/etc/asterisk $(TARGET_DIR)/stat/etc/
-endif
-	$(INSTALL) -D -m 0755 package/asterisk/logger.conf $(TARGET_DIR)/stat/etc/asterisk/logger.conf
+	$(INSTALL) -D -m 0644 package/asterisk/logger.conf $(TARGET_DIR)/stat/etc/asterisk/logger.conf
 
-	chmod -R 750 $(TARGET_DIR)/stat/etc/asterisk
-	rm -rf $(TARGET_DIR)/etc/asterisk
 	ln -sf /tmp/etc/asterisk $(TARGET_DIR)/etc/asterisk
 	ln -sf /var/tmp/asterisk/sounds/custom-sounds $(TARGET_DIR)/stat/var/lib/asterisk/sounds/custom-sounds
 	ln -sf /var/tmp/asterisk/agi-bin/custom-agi $(TARGET_DIR)/stat/var/lib/asterisk/agi-bin/custom-agi
