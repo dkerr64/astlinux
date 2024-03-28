@@ -44,7 +44,7 @@ astlinux_deploy() {
       logger -s -t acme-client "Failed to deploy ACME certificates HTTPS, invalid HTTPSCERT path"
     else
       service lighttpd stop
-      cat "$_ckey" "$_ccert" > "$HTTPSCERT"
+      cat "$_ckey" "$_cfullchain" > "$HTTPSCERT"
       chmod 600 "$HTTPSCERT"
       if [ -n "$HTTPSCHAIN" ]; then
         if [ -f "$_cfullchain" ]; then
