@@ -1,0 +1,41 @@
+--- a/lib/py-compile	2024-05-11 12:21:17.618961542 -0400
++++ b/lib/py-compile	2024-05-11 11:54:20.818298840 -0400
+@@ -116,7 +116,7 @@
+ fi
+ 
+ $PYTHON -c "
+-import sys, os, py_compile, imp
++import sys, os, py_compile, importlib
+ 
+ files = '''$files'''
+ 
+@@ -129,15 +129,15 @@
+ 	    continue
+     sys.stdout.write(file)
+     sys.stdout.flush()
+-    if hasattr(imp, 'get_tag'):
+-        py_compile.compile(filepath, imp.cache_from_source(filepath), path)
++    if hasattr(importlib, 'get_tag'):
++        py_compile.compile(filepath, importlib.cache_from_source(filepath), path)
+     else:
+         py_compile.compile(filepath, filepath + 'c', path)
+ sys.stdout.write('\n')" || exit $?
+ 
+ # this will fail for python < 1.5, but that doesn't matter ...
+ $PYTHON -O -c "
+-import sys, os, py_compile, imp
++import sys, os, py_compile, importlib
+ 
+ # pypy does not use .pyo optimization
+ if hasattr(sys, 'pypy_translation_info'):
+@@ -153,8 +153,8 @@
+ 	    continue
+     sys.stdout.write(file)
+     sys.stdout.flush()
+-    if hasattr(imp, 'get_tag'):
+-        py_compile.compile(filepath, imp.cache_from_source(filepath, False), path)
++    if hasattr(importlib, 'get_tag'):
++        py_compile.compile(filepath, importlib.cache_from_source(filepath, False), path)
+     else:
+         py_compile.compile(filepath, filepath + 'o', path)
+ sys.stdout.write('\n')" 2>/dev/null || :
