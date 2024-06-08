@@ -1,8 +1,10 @@
 
 # AstLinux
 
+>[!NOTE]
+>This is my personal fork of the [Astlinux](https://github.com/astlinux-project/astlinux) project maintained by [@abelbeck](https://github.com/abelbeck). My fork adds features/function specific to my personal home environment that have currently not been accepted to merge into the mainline code.
+-------------------------------------------------------------------------------
 This is the buildsystem for the AstLinux distribution.
-
 -------------------------------------------------------------------------------
 Linux Build System:
 
