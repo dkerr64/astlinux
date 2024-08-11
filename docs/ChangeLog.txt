@@ -12,7 +12,9 @@ Released @TBD@
 
 ** System
 
--- Linux Kernel 5.10.218 (version bump), security and bug fixes.
+-- Linux Kernel 5.10.223 (version bump), security and bug fixes.
+
+-- ethtool, version bump to 6.9
 
 -- jitterentropy-rngd, new package, version 1.2.8, Random Number Generator (RNG) daemon
    Enabled by default to increase the available entropy for the kernel's "random" sources.
@@ -23,18 +25,35 @@ Released @TBD@
 
 -- libedit, version bump to 20240517-3.1
 
+-- libsodium, version bump to 1.0.20
+
+-- logrotate, version bump to 3.22.0
+
 -- Monit, version bump to 5.34.0
+
+-- netcalc, version bump to 2.1.7
 
 -- pciutils, version bump to 3.13.0
 
--- strace, version bump to 6.9
+-- strace, version bump to 6.10
+
+-- ca-certificates, update trusted root certificates 2024-07-02
 
 ** Networking
 
--- libcurl (curl) version bump to 8.8.0
+-- libcurl (curl) version bump to 8.9.1, security fix: CVE-2024-6874
 
 -- iperf3, version bump to 3.17.1, security fix: CVE-2024-26306
    Note: Breaking change to authentication features, is not backwards compatible with older versions of iperf3 (before 3.17).
+
+-- keepalived, version bump to 2.3.1
+
+-- s3fs, new package, version 1.94, allows a user to mount an S3 bucket via FUSE filesystem
+   The s3fs service does not start by default.
+   New rc.conf variables: S3FS_START, S3FS_URL, S3FS_BUCKET, S3FS_PASSWD, S3FS_READONLY, S3FS_OPTIONS
+   More info: https://doc.astlinux-project.org/userdoc:tt_s3_object_storage_client
+
+-- sngrep, version bump to 1.8.2, security fix
 
 -- unbound, version bump to 1.20.0, security fix: CVE-2024-33655
 
@@ -43,14 +62,14 @@ Released @TBD@
 -- Asterisk 16.30.0 ('16se' no change)
    Last Asterisk 16.x "Legacy" version, built --without-pjproject and --without-dahdi
 
--- Asterisk 18.23.1 (version bump) and 20.8.1 (version bump)
+-- Asterisk 18.24.2 (version bump) and 20.9.2 (version bump)
    Built --with-pjproject and --with-dahdi
 
 -- pjsip 2.14.1 (no change)
 
 -- DAHDI, dahdi-linux 3.2.0 (no change) and dahdi-tools 3.2.0 (no change)
 
--- FOP2, available version bump to 2.31.41
+-- FOP2, available version bump to 2.31.43
    Note: If you have a license, you may need to purchase an "Annual Software Maintenance" license if you upgrade.
    More info: https://doc.astlinux-project.org/userdoc:tt_asterisk-fop2-upgrade
 
