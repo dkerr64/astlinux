@@ -5,27 +5,112 @@
 === docs/ChangeLog.txt
 =========================================================
 
-Additions for AstLinux 1.5.5:
+Additions for AstLinux 1.5.6:
 =============================
 
 Released @TBD@
 
 ** System
 
+-- Linux Kernel 5.10.226 (version bump), security and bug fixes.
+
+-- ethtool, version bump to 6.11
+
+-- expat, version bump to 2.6.3, security fixes: CVE-2024-45490, CVE-2024-45491, CVE-2024-45492
+
+-- libcap, version bump to 2.71
+
+-- libpcap, version bump to 1.10.5
+
+-- libpng, version bump to 1.6.44
+
+-- Monit, version bump to 5.34.2
+
+-- php, version 7.2.34, add security fixes: CVE-2024-8925, CVE-2024-8927
+
+-- screen, version 5.0.0
+
+-- sqlite, version bump to 3.47.0
+
+-- strace, version bump to 6.11
+
+-- tiff, version bump to 4.7.0
+
+-- ca-certificates, update trusted root certificates 2024-09-24
+
+-- Time Zone Database update, tzdata2024b and php-timezonedb-2024.2
+
+-- (Custom Build Only) flashrom, version bump to 1.4.0
+
+-- Update build system tools:
+   == autoconf, version bump to 2.71
+   == automake, version bump to 1.16.5
+   == libtool, version bump to 2.4.6
+
+** Networking
+
+-- OpenSSL, version 1.1.1w, security fixes: CVE-2023-5678, CVE-2024-0727, CVE-2024-2511, CVE-2024-4741, CVE-2024-5535, CVE-2024-9143
+
+-- libcurl (curl) version bump to 8.10.1
+
+-- chrony, version bump to 4.6.1
+
+-- keepalived, version bump to 2.3.2
+
+-- msmtp, version bump to 1.8.27
+
+-- s3fs, version bump to 1.95
+
+-- stunnel, version bump to 5.73
+
+-- tcpdump, version 4.99.5
+
+-- unbound, version bump to 1.22.0, security fix: CVE-2024-8508
+
+** Asterisk
+
+-- Asterisk 16.30.0 ('16se' no change)
+   Last Asterisk 16.x "Legacy" version, built --without-pjproject and --without-dahdi
+
+-- Asterisk 18.25.0 (version bump) and 20.10.0 (version bump)
+   Built --with-pjproject and --with-dahdi
+
+-- pjsip 2.14.1 (no change)
+
+-- DAHDI, dahdi-linux 3.2.0 (no change) and dahdi-tools 3.2.0 (no change)
+
+** Web Interface
+
+-- Phoneprov tab, add "grandstream" reload/reboot matches.
+
+
+Additions for AstLinux 1.5.5:
+=============================
+
+Released 2024-09-28
+
+** System
+
 -- Linux Kernel 5.10.223 (version bump), security and bug fixes.
 
--- ethtool, version bump to 6.9
+-- RUNNIX, version bump to runnix-0.6.19, with Linux Kernel 5.10.223
+
+-- ethtool, version bump to 6.10
 
 -- jitterentropy-rngd, new package, version 1.2.8, Random Number Generator (RNG) daemon
    Enabled by default to increase the available entropy for the kernel's "random" sources.
    New rc.conf variable JITTERENTROPY_RNGD can be set to "no" to disable.
    Note: Previous rng-tools 'rngd' daemon is no longer used.
 
+-- kmod, version bump to 33
+
 -- libcap, version bump to 2.70
 
--- libedit, version bump to 20240517-3.1
+-- libedit, version bump to 20240808-3.1
 
 -- libsodium, version bump to 1.0.20
+
+-- libxml2, version bump to 2.11.9, security fix: CVE-2024-40896
 
 -- logrotate, version bump to 3.22.0
 
@@ -35,13 +120,19 @@ Released @TBD@
 
 -- pciutils, version bump to 3.13.0
 
+-- sqlite, version bump to 3.46.1
+
 -- strace, version bump to 6.10
 
 -- ca-certificates, update trusted root certificates 2024-07-02
 
+-- mac2vendor, oui.txt database snapshot 2024-09-14
+
 ** Networking
 
 -- libcurl (curl) version bump to 8.9.1, security fix: CVE-2024-6874
+
+-- chrony, version bump to 4.6
 
 -- iperf3, version bump to 3.17.1, security fix: CVE-2024-26306
    Note: Breaking change to authentication features, is not backwards compatible with older versions of iperf3 (before 3.17).
@@ -55,21 +146,22 @@ Released @TBD@
 
 -- sngrep, version bump to 1.8.2, security fix
 
--- unbound, version bump to 1.20.0, security fix: CVE-2024-33655
+-- unbound, version bump to 1.21.0, security fix: CVE-2024-33655
 
 ** Asterisk
 
 -- Asterisk 16.30.0 ('16se' no change)
    Last Asterisk 16.x "Legacy" version, built --without-pjproject and --without-dahdi
+   Backport patch for security fix CVE-2024-42491
 
--- Asterisk 18.24.2 (version bump) and 20.9.2 (version bump)
+-- Asterisk 18.24.3 (version bump) and 20.9.3 (version bump)
    Built --with-pjproject and --with-dahdi
 
 -- pjsip 2.14.1 (no change)
 
 -- DAHDI, dahdi-linux 3.2.0 (no change) and dahdi-tools 3.2.0 (no change)
 
--- FOP2, available version bump to 2.31.43
+-- FOP2, available version bump to 2.31.45
    Note: If you have a license, you may need to purchase an "Annual Software Maintenance" license if you upgrade.
    More info: https://doc.astlinux-project.org/userdoc:tt_asterisk-fop2-upgrade
 
