@@ -4,25 +4,25 @@
 #
 #############################################################
 
-LIBCURL_VERSION = 8.10.1
+LIBCURL_VERSION = 8.11.1
 LIBCURL_SOURCE = curl-$(LIBCURL_VERSION).tar.gz
 LIBCURL_SITE = https://curl.haxx.se/download
 LIBCURL_INSTALL_STAGING = YES
 
 LIBCURL_DEPENDENCIES = host-pkg-config \
-	$(if $(BR2_PACKAGE_ZLIB),zlib) \
-	$(if $(BR2_PACKAGE_OPENLDAP),openldap)
+	$(if $(BR2_PACKAGE_ZLIB),zlib)
 
 LIBCURL_CONF_OPT = \
 	--disable-verbose \
 	--disable-manual \
 	--disable-curldebug \
+	--disable-websockets \
 	--disable-mqtt \
 	--disable-gopher \
+	--disable-ldap \
 	--disable-alt-svc \
 	--disable-libcurl-option \
 	--enable-symbol-hiding \
-	--with-random=/dev/urandom \
 	--without-libidn2 \
 	--without-libpsl \
 	--enable-ipv6
@@ -47,7 +47,8 @@ endef
 LIBCURL_POST_INSTALL_TARGET_HOOKS += LIBCURL_TARGET_CLEANUP
 
 define LIBCURL_STAGING_FIXUP_CURL_CONFIG
-	$(SED) "s,prefix=/usr,prefix=$(STAGING_DIR)/usr,g" $(STAGING_DIR)/usr/bin/curl-config
+	$(SED) "s,^prefix=.*,prefix='$(STAGING_DIR)/usr',g" $(STAGING_DIR)/usr/bin/curl-config
+	$(SED) "s,^exec_prefix=.*,exec_prefix='$(STAGING_DIR)/usr',g" $(STAGING_DIR)/usr/bin/curl-config
 endef
 LIBCURL_POST_INSTALL_STAGING_HOOKS += LIBCURL_STAGING_FIXUP_CURL_CONFIG
 
