@@ -1749,7 +1749,7 @@ if (isset($status_show_system_logs)) {
 }
 }
 if ($async_load !== 'yes') {
-putHtml('<p style="color: orange;">Asterisk&reg; is a registered trademark of Digium, Inc.</p>');
+putHtml('<p style="color: orange;">Asterisk&reg; is a registered trademark of Sangoma US Inc.</p>');
 }
 } // End of HTTP GET
 require_once $COMMON.'footer.php';
