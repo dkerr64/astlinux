@@ -5,10 +5,67 @@
 === docs/ChangeLog.txt
 =========================================================
 
-Additions for AstLinux 1.5.6:
+Additions for AstLinux 1.5.10:
 =============================
 
 Released @TBD@
+
+** System
+
+-- Linux Kernel 5.10.234-cip57, security and bug fixes.
+   Switch to using the "Civil Infrastructure Platform" SLTS v5.10 kernel
+   More info: https://wiki.linuxfoundation.org/civilinfrastructureplatform/start
+
+-- Add NVMe block device system support as a bootable disk.
+   Note: Requires runnix-0.6.21 or later to boot via an NVMe drive.
+
+-- RUNNIX, version bump to runnix-0.6.21, with Linux Kernel 5.10.234-cip57
+   Note, for testing purposes runnix-0.6.21 is available here:
+   upgrade-RUNNIX-image check https://lonnie.abelbeck.com/runnix-efi
+
+-- expat, version bump to 2.7.0, security fix: CVE-2024-8176
+
+-- libpng, version bump to 1.6.46
+
+-- sqlite, version bump to 3.49.1
+
+-- strace, version bump to 6.13
+
+-- system-vendor, update system-vendor.ids
+
+** Networking
+
+-- OpenSSH, version 8.4p1, security fix: CVE-2025-26465
+
+-- libcurl (curl) version bump to 8.12.1, security fixes: CVE-2025-0167, CVE-2025-0665, CVE-2025-0725
+
+-- dnsmasq, version 2.84, add patch to fix any TFTP packet with padding which doesn't end with a zero.
+
+-- msmtp, version bump to 1.8.28
+
+-- vnStat, version bump to 2.13
+
+** Asterisk
+
+-- Asterisk 16.30.0 ('16se' no change)
+   Last Asterisk 16.x "Legacy" version, built --without-pjproject and --without-dahdi
+
+-- Asterisk 18.26.1 (no change) and 20.12.0 (version bump)
+   Built --with-pjproject and --with-dahdi
+
+-- pjsip 2.14.1 (no change for 18.x) and pjsip 2.15.1 (version bump for 20.x)
+
+-- DAHDI, dahdi-linux 3.2.0 (no change) and dahdi-tools 3.2.0 (no change)
+
+** Web Interface
+
+-- Status tab, add NVMe support.
+
+
+Additions for AstLinux 1.5.6:
+=============================
+
+Released 2025-01-30
 
 ** System
 
