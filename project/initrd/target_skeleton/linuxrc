@@ -8,47 +8,6 @@ MAX_IMAGEFS_SIZE=262144   # 256m
 
 #functions
 
-setup_nvme() {
-  # Create /dev/nvme* devices.  Cannot do this in target skeleton as
-  # the major number for nvme block devices is >255 and that is not
-  # working during build. So do it on boot.
-  local char_major=$(cat /proc/devices | grep nvme | cut -d' ' -f 1)
-  if [ -z "$char_major" ]; then return; fi
-  # The kernel was built with NVMe support.  Create device stubs.
-  # We will do two controllers [0..1] and look for attached drives.
-  local char_minor=0
-  local blk_major=0
-  local blk_minor=0
-  local blk_dev=""
-  local blk_name=""
-  local NL='
-'
-
-  mount -o remount,rw /dev/root /
-  for char_minor in 0 1; do
-    IFS=$NL
-    blk_name=""
-    for blk_dev in $(grep -e "nvme${char_minor}" /proc/diskstats); do
-      blk_major="$(echo $blk_dev | awk '{print $1}')"
-      blk_minor="$(echo $blk_dev | awk '{print $2}')"
-      blk_name="$(echo $blk_dev | awk '{print $3}')"
-      mknod -m 600 "/dev/${blk_name}" b $blk_major $blk_minor
-      # if not partition add to $DRIVES
-      # should probably do it the other way around, only add partitions
-      # but that would require changes to how sda/vda etc. are handled
-      # (but it would be cleaner)
-      if [ "$(echo $blk_name | cut -c 8)" != "p" ]; then
-        DRIVES="$DRIVES $blk_name"
-      fi
-    done
-    unset IFS
-    if [ -n "$blk_name" ]; then
-      mknod -m 600 "/dev/nvme${char_minor}" c "$char_major" $char_minor
-    fi
-  done
-  mount -o remount,ro /dev/root /
-}
-
 sync_inittab() {
   local mp="$1"
 
@@ -157,7 +116,6 @@ EOF
 # Get kernel CMDLINE
 mount -t proc none /proc
 mount -t sysfs none /sys
-setup_nvme
 
 CMDLINE="`cat /proc/cmdline`"
 
@@ -165,8 +123,7 @@ CDROM=""
 
 # Mount Root Device
 for x in $DRIVES; do
-  [[ "$(echo $x | cut -c-3)" = "nvm" ]] && p="p" || p=""
-  if mount -t vfat -o ro /dev/${x}${p}1 /cdrom >/dev/null 2>&1; then
+  if mount -t vfat -o ro /dev/${x}1 /cdrom >/dev/null 2>&1; then
     if [ -f /cdrom/os/astflag ]; then
       CDROM="${x}"
       break
