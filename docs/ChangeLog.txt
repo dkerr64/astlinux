@@ -5,43 +5,121 @@
 === docs/ChangeLog.txt
 =========================================================
 
-Additions for AstLinux 1.5.10:
+Additions for AstLinux 1.5.11:
 =============================
 
 Released @TBD@
 
 ** System
 
--- Linux Kernel 5.10.234-cip57, security and bug fixes.
+-- Linux Kernel 5.10.237-cip60, security and bug fixes.
+
+-- Monit, version bump to 5.35.2
+
+-- screen, version 5.0.1, security fixes: CVE-2025-46805, CVE-2025-46804, CVE-2025-46803, CVE-2025-46802, CVE-2025-23395
+
+-- smartctl (smartmontools), version bump to 7.5, drivedb.h snapshot 2025-04-27
+
+-- ca-certificates, update trusted root certificates 2025-05-20
+
+** Networking
+
+-- iperf3, version bump to 3.19
+
+-- unbound, version bump to 1.23.0
+
+** Asterisk
+
+-- Asterisk 16.30.0 ('16se' no change)
+   Last Asterisk 16.x "Legacy" version, built --without-pjproject and --without-dahdi
+   Backport patch for security fix CVE-2025-47780, asterisk.conf option 'disable_remote_console_shell'
+
+-- Asterisk 18.26.2 (version bump)
+   Built --with-pjproject and --with-dahdi
+   w/pjsip 2.14.1 (no change)
+   Note: A new asterisk.conf option 'disable_remote_console_shell' has been added.
+
+-- Asterisk 20.14.1 (version bump)
+   Built --with-pjproject and --with-dahdi
+   w/pjsip 2.15.1 (no change)
+   Note: A new asterisk.conf option 'disable_remote_console_shell' has been added.
+
+-- DAHDI, dahdi-linux 3.2.0 (no change) and dahdi-tools 3.2.0 (no change)
+
+-- FOP2, available version bump to 2.31.46
+   Note: If you have a license, you may need to purchase an "Annual Software Maintenance" license if you upgrade.
+   More info: https://doc.astlinux-project.org/userdoc:tt_asterisk-fop2-upgrade
+
+** Web Interface
+
+-- Phoneprov and Prefs tab, add Phoneprov Status Admin Link HTTPS option.
+
+
+Additions for AstLinux 1.5.10:
+=============================
+
+Released 2025-04-30
+
+** System
+
+-- Linux Kernel 5.10.236-cip59, security and bug fixes.
    Switch to using the "Civil Infrastructure Platform" SLTS v5.10 kernel
    More info: https://wiki.linuxfoundation.org/civilinfrastructureplatform/start
 
 -- Add NVMe block device system support as a bootable disk.
    Note: Requires runnix-0.6.21 or later to boot via an NVMe drive.
 
--- RUNNIX, version bump to runnix-0.6.21, with Linux Kernel 5.10.234-cip57
-   Note, for testing purposes runnix-0.6.21 is available here:
-   upgrade-RUNNIX-image check https://lonnie.abelbeck.com/runnix-efi
+-- RUNNIX, version bump to runnix-0.6.22, with Linux Kernel 5.10.236-cip59
 
--- expat, version bump to 2.7.0, security fix: CVE-2024-8176
+-- r8125, version 9.015.00, Realtek RTL8125 2.5-Gigabit Ethernet Network Driver
 
--- libpng, version bump to 1.6.46
+-- ethtool, version bump to 6.14
+
+-- expat, version bump to 2.7.1, security fix: CVE-2024-8176
+
+-- htop, version bump to 3.4.1
+
+-- kmod, version bump to 34.2
+
+-- libcap, version bump to 2.76
+
+-- libpng, version bump to 1.6.47
+
+-- libsrtp, version bump to 2.7.0
+
+-- libusb, version bump to 1.0.28
+
+-- Monit, version bump to 5.35.1
+
+-- ne, version bump to 3.3.4
 
 -- sqlite, version bump to 3.49.1
 
--- strace, version bump to 6.13
+-- strace, version bump to 6.14
 
 -- system-vendor, update system-vendor.ids
+
+-- ca-certificates, update trusted root certificates 2025-02-25
+
+-- Time Zone Database update, tzdata2025b and php-timezonedb-2025.2
 
 ** Networking
 
 -- OpenSSH, version 8.4p1, security fix: CVE-2025-26465
 
--- libcurl (curl) version bump to 8.12.1, security fixes: CVE-2025-0167, CVE-2025-0665, CVE-2025-0725
+-- libcurl (curl) version bump to 8.13.0, security fixes: CVE-2025-0167, CVE-2025-0665, CVE-2025-0725
 
 -- dnsmasq, version 2.84, add patch to fix any TFTP packet with padding which doesn't end with a zero.
 
+-- keepalived, version bump to 2.3.3
+
 -- msmtp, version bump to 1.8.28
+
+-- tarsnap, version bump to 1.0.41, "Trust No One" encrypted backups using the Tarsnap Backup service.
+
+-- virtiofs, for genx86_64-vm builds, Proxmox 8.4 and later supports this feature via QEMU on the host.
+   Disabled by default, define QEMU_VIRTIOFS_SHARE to enable.
+   New rc.conf variables: QEMU_VIRTIOFS_SHARE, QEMU_VIRTIOFS_READONLY
 
 -- vnStat, version bump to 2.13
 
@@ -50,12 +128,22 @@ Released @TBD@
 -- Asterisk 16.30.0 ('16se' no change)
    Last Asterisk 16.x "Legacy" version, built --without-pjproject and --without-dahdi
 
--- Asterisk 18.26.1 (no change) and 20.12.0 (version bump)
+-- Asterisk 18.26.1 (no change)
    Built --with-pjproject and --with-dahdi
+   w/pjsip 2.14.1 (no change)
 
--- pjsip 2.14.1 (no change for 18.x) and pjsip 2.15.1 (version bump for 20.x)
+-- Asterisk 20.13.0 (version bump)
+   Built --with-pjproject and --with-dahdi
+   w/pjsip 2.15.1 (version bump)
+   New module: func_uuid.so
+
+-- neon, version bump to 0.34.2, used for Asterisk Calendar Support
 
 -- DAHDI, dahdi-linux 3.2.0 (no change) and dahdi-tools 3.2.0 (no change)
+
+-- FOP2, available version bump to 2.31.46
+   Note: If you have a license, you may need to purchase an "Annual Software Maintenance" license if you upgrade.
+   More info: https://doc.astlinux-project.org/userdoc:tt_asterisk-fop2-upgrade
 
 ** Web Interface
 
