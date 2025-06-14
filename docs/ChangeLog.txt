@@ -14,19 +14,54 @@ Released @TBD@
 
 -- Linux Kernel 5.10.237-cip60, security and bug fixes.
 
+-- libmad, version 0.15.1b, security fixes: CVE-2017-8372, CVE-2017-8373, CVE-2017-8374
+
+-- libpng, version bump to 1.6.48
+
+-- libusb, version bump to 1.0.29
+
 -- Monit, version bump to 5.35.2
+
+-- php, version 7.2.34, add security fix: GHSA-wg4p-4hqh-c3g9
 
 -- screen, version 5.0.1, security fixes: CVE-2025-46805, CVE-2025-46804, CVE-2025-46803, CVE-2025-46802, CVE-2025-23395
 
 -- smartctl (smartmontools), version bump to 7.5, drivedb.h snapshot 2025-04-27
 
+-- sox, version 14.4.2, security fixes: CVE-2017-15371, CVE-2017-11358, CVE-2017-15370, CVE-2017-11332, CVE-2017-11359, CVE-2017-15372, CVE-2017-15642,
+                                        CVE-2019-8354, CVE-2019-8355, CVE-2019-8356, CVE-2019-8357, CVE-2019-13590,
+                                        CVE-2021-3643, CVE-2021-23210, CVE-2021-23159, CVE-2021-23172, CVE-2023-34318, CVE-2021-33844, CVE-2021-40426,
+                                        CVE-2022-31650, CVE-2023-26590, CVE-2022-31651, CVE-2023-32627
+
+-- sqlite, version bump to 3.50.1
+
+-- strace, version bump to 6.15
+
+-- system-vendor, update system-vendor.ids
+
 -- ca-certificates, update trusted root certificates 2025-05-20
 
 ** Networking
 
+-- OpenSSL, version 1.1.1w, security fix: CVE-2024-13176
+
+-- OpenSSH, version 8.4p1, security fix: CVE-2025-32728
+
+-- WireGuard, wireguard-tools, version bump to 1.0.20250521
+
+-- libcurl (curl) version bump to 8.14.1
+
+-- chrony, version bump to 4.7
+
 -- iperf3, version bump to 3.19
 
+-- msmtp, version bump to 1.8.30
+
+-- stunnel, version bump to 5.75
+
 -- unbound, version bump to 1.23.0
+
+-- whois, version bump to 5.6.2
 
 ** Asterisk
 
@@ -46,13 +81,15 @@ Released @TBD@
 
 -- DAHDI, dahdi-linux 3.2.0 (no change) and dahdi-tools 3.2.0 (no change)
 
--- FOP2, available version bump to 2.31.46
+-- FOP2, available version bump to 2.31.47
    Note: If you have a license, you may need to purchase an "Annual Software Maintenance" license if you upgrade.
    More info: https://doc.astlinux-project.org/userdoc:tt_asterisk-fop2-upgrade
 
 ** Web Interface
 
 -- Phoneprov and Prefs tab, add Phoneprov Status Admin Link HTTPS option.
+
+-- Edit tab, add editing /var/db/dnsmasq-lease.db and dnsmasq-lease6.db
 
 
 Additions for AstLinux 1.5.10:
