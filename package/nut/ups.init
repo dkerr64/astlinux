@@ -13,15 +13,6 @@ gen_ups_conf()
 
   case $UPS_DRIVER in
 
-    snmp-ups) echo "[ups]
-driver = ${UPS_DRIVER}
-port = ${UPS_DRIVER_PORT}
-community = public
-snmp_version = v2c
-pollfreq = 15
-"
-    ;;
-
     netxml-ups) echo "[ups]
 driver = ${UPS_DRIVER}
 port = ${UPS_DRIVER_PORT}
@@ -61,13 +52,13 @@ gen_upsd_users()
   if [ -n "$master_pass" ]; then
     echo "[master]
 password = ${master_pass}
-upsmon master
+upsmon primary
 "
   fi
 
   echo "[${UPS_MONITOR_USER:-monuser}]
 password = ${UPS_MONITOR_PASS:-astlinux}
-upsmon slave
+upsmon secondary
 "
 }
 
@@ -79,13 +70,13 @@ gen_upsmon_conf()
     host="$UPS_MONITOR_HOST"
     user="$UPS_MONITOR_USER"
     pass="$UPS_MONITOR_PASS"
-    type="slave"
+    type="secondary"
     pollfreq=10
   elif [ -n "$master_pass" ]; then
     host="ups@localhost"
     user="master"
     pass="$master_pass"
-    type="master"
+    type="primary"
     pollfreq=5
   else
     return
@@ -220,6 +211,8 @@ init ()
 
 start ()
 {
+  ## Disable startup "failed to notify about ... will not spam more about it" syslogs
+  export NUT_QUIET_INIT_UPSNOTIFY=true
 
   if [ -f /etc/ups/ups.conf -o -f /etc/ups/upsmon.conf ]; then
     echo "$(date "+%Y-%m-%d %H:%M:%S") - started" > $LOGFILE
