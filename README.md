@@ -5,6 +5,10 @@
 >This is my personal fork of the [Astlinux](https://github.com/astlinux-project/astlinux) project maintained by [@abelbeck](https://github.com/abelbeck). My fork adds features/function specific to my personal home environment that have currently not been accepted to merge into the mainline code.
 -------------------------------------------------------------------------------
 This is the buildsystem for the AstLinux distribution.
+
+**IMPORTANT NOTICE:**\
+`After over 21 years (2026-03-01), AstLinux is considered deprecated. New AstLinux installations are no longer recommended.`
+
 -------------------------------------------------------------------------------
 Linux Build System:
 
@@ -35,10 +39,7 @@ Further Details:
 - Get Started: https://doc.astlinux-project.org/devdoc:documentation
 
 -------------------------------------------------------------------------------
-Discussion Mailing Lists: https://www.astlinux-project.org/contact.html
-
--------------------------------------------------------------------------------
-The AstLinux Team
+AstLinux Project
 
 https://www.astlinux-project.org
 

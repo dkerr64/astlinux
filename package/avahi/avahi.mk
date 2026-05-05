@@ -6,9 +6,9 @@
 
 AVAHI_VERSION = 0.8
 AVAHI_SOURCE = avahi-$(AVAHI_VERSION).tar.gz
-AVAHI_SITE = https://github.com/lathiat/avahi/releases/download/v$(AVAHI_VERSION)
-AVAHI_AUTORECONF = YES
+AVAHI_SITE = https://github.com/avahi/avahi/releases/download/v$(AVAHI_VERSION)
 AVAHI_INSTALL_STAGING = YES
+AVAHI_AUTORECONF = YES
 
 AVAHI_CONF_ENV = \
 	ac_cv_func_strtod=yes \

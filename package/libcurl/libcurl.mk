@@ -4,7 +4,7 @@
 #
 #############################################################
 
-LIBCURL_VERSION = 8.16.0
+LIBCURL_VERSION = 8.17.0
 LIBCURL_SOURCE = curl-$(LIBCURL_VERSION).tar.gz
 LIBCURL_SITE = https://curl.haxx.se/download
 LIBCURL_INSTALL_STAGING = YES
@@ -20,6 +20,7 @@ LIBCURL_CONF_OPT = \
 	--disable-mqtt \
 	--disable-gopher \
 	--disable-ldap \
+	--disable-smb \
 	--disable-alt-svc \
 	--disable-libcurl-option \
 	--enable-symbol-hiding \

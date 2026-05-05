@@ -4,17 +4,12 @@
 #
 ##############################################################
 
-ifeq ($(BR2_PACKAGE_ASTERISK_v18),y)
-ASTERISK_VERSION := 18.26.4
+ifeq ($(BR2_PACKAGE_ASTERISK_v20),y)
+ASTERISK_VERSION := 20.19.0
 ASTERISK_LABEL :=
 else
- ifeq ($(BR2_PACKAGE_ASTERISK_v20),y)
-ASTERISK_VERSION := 20.15.2
-ASTERISK_LABEL :=
- else
-ASTERISK_VERSION := 16.30.0
+ASTERISK_VERSION := 18.26.4
 ASTERISK_LABEL := se
- endif
 endif
 ASTERISK_SOURCE := asterisk-$(ASTERISK_VERSION).tar.gz
 ASTERISK_SITE := https://downloads.asterisk.org/pub/telephony/asterisk/releases
@@ -35,7 +30,7 @@ ndots = $(subst $(space),$(dot),$(wordlist $(1),$(2),$(subst $(dot),$(space),$3)
 ASTERISK_VERSION_SINGLE := $(call ndots,1,1,$(ASTERISK_VERSION))
 ASTERISK_VERSION_TUPLE := $(call ndots,1,2,$(ASTERISK_VERSION))
 
-ASTERISK_GLOBAL_MAKEOPTS := $(BASE_DIR)/../project/astlinux/asterisk.makeopts-$(ASTERISK_VERSION_SINGLE)
+ASTERISK_GLOBAL_MAKEOPTS :=
 
 ASTERISK_CONFIGURE_ENV += \
 			USE_GETIFADDRS=yes
@@ -292,13 +287,14 @@ else
 		menuselect/menuselect --enable chan_sip menuselect.makeopts; \
 	)
  else
-	## Asterisk 16.x and 18.x versions
+	## Asterisk 18.x version
 	(cd $(ASTERISK_DIR); \
 		menuselect/menuselect --enable res_pktccops --disable app_dahdiras menuselect.makeopts; \
 	)
  endif
 	## All Asterisk versions
 	(cd $(ASTERISK_DIR); \
+		menuselect/menuselect --enable ENABLE_SRTP_AES_192 --enable ENABLE_SRTP_AES_256 --enable ENABLE_SRTP_AES_GCM menuselect.makeopts; \
 		menuselect/menuselect --enable app_meetme --enable app_page --enable app_macro menuselect.makeopts; \
 		menuselect/menuselect --disable res_stir_shaken menuselect.makeopts; \
 		menuselect/menuselect --disable CORE-SOUNDS-EN-GSM --disable MOH-OPSOUND-WAV menuselect.makeopts; \
