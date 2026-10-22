@@ -21,11 +21,22 @@ LIBCURL_CONF_OPT = \
 	--disable-gopher \
 	--disable-ldap \
 	--disable-smb \
+	--disable-dict \
+	--disable-ipfs \
+	--disable-rtsp \
+	--disable-imap \
+	--disable-pop3 \
+	--disable-smtp \
+	--disable-telnet \
 	--disable-alt-svc \
+	--disable-ares \
+	--disable-ntlm \
+	--disable-tls-srp \
 	--disable-libcurl-option \
 	--enable-symbol-hiding \
 	--without-libidn2 \
 	--without-libpsl \
+	--without-librtmp \
 	--enable-ipv6
 
 ifeq ($(BR2_PACKAGE_OPENSSL),y)

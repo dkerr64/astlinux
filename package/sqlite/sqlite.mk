@@ -4,7 +4,7 @@
 #
 #############################################################
 
-SQLITE_VERSION = 3530200
+SQLITE_VERSION = 3540100
 SQLITE_SOURCE = sqlite-autoconf-$(SQLITE_VERSION).tar.gz
 SQLITE_SITE = https://www.sqlite.org/2026
 SQLITE_INSTALL_STAGING = YES
@@ -23,9 +23,15 @@ SQLITE_CONF_OPT = \
 	--disable-session \
 	--disable-static \
 	--disable-static-shell \
-	--disable-readline \
 	--enable-threadsafe \
 	--localstatedir=/var
+
+ifeq ($(BR2_PACKAGE_NCURSES)$(BR2_PACKAGE_LIBEDIT),yy)
+SQLITE_DEPENDENCIES += ncurses libedit
+SQLITE_CONF_OPT += --editline --with-readline-cflags=-I$(STAGING_DIR)/usr/include
+else
+SQLITE_CONF_OPT += --disable-readline
+endif
 
 SQLITE_CONF_ENV = CFLAGS="$(TARGET_CFLAGS) $(SQLITE_CFLAGS)"
 

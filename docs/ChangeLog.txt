@@ -5,10 +5,168 @@
 === docs/ChangeLog.txt
 =========================================================
 
-Additions for AstLinux 1.5.14:
+Additions for AstLinux 1.5.16:
 =============================
 
 Released @TBD@
+
+** System
+
+-- Linux Kernel 5.10.271-cip78, security and bug fixes. (add patches for 5.10.272 fixes)
+
+-- expat, version bump to 2.9.0, security fixes: CVE-2026-93990, CVE-2026-77214, CVE-2026-102633
+
+-- libpcap, version bump to 1.11.0
+
+-- libpng, version bump to 1.6.59, security fix: CVE-2026-46675
+
+-- libsrtp, version bump to 2.8.1
+
+-- pcre2, version bump to 10.49, security fix: GHSA-r9hj-j2rw-4q3m
+
+-- php, version 7.2.34, add security fixes: CVE-2026-109618, CVE-2026-109619 (php2shell)
+
+-- sqlite, version bump to 3.54.1, now includes editline support that existed before version 3.49
+
+-- zlib, version 1.3.2, add security patch for CVE-2026-85091
+
+-- ca-certificates, update trusted root certificates 2026-10-20, security fix
+
+** Networking
+
+-- libcurl (curl) version 8.17.0, disable features NTLM and TLS-SRP, deprecated/removed upstream
+
+-- arnofw (AIF), version bump to 2.0.2-09-astlinux, fixed: Missing colon causing unpriv udp multicast/broadcast logging to be broken
+
+-- iperf3, version bump to 3.22, security fixes: CVE-2026-101283, CVE-2026-101276, CVE-2026-102253, CVE-2026-71217, CVE-2026-71218
+
+-- rsync, version bump to 3.5.1
+
+-- sipgrep, version bump to 2.2.4, security fix
+
+-- sngrep, version bump to 1.9.0
+
+-- tcpdump, version bump to 4.99.7
+
+** Asterisk
+
+-- Asterisk 18.26.4 ('18se' no change)
+   Last Asterisk 18.x "Legacy" version, built --without-pjproject and --without-dahdi
+   Backport patches for security fixes
+
+-- Asterisk 20.21.0 (no change)
+   Built --with-pjproject and --with-dahdi
+   w/pjsip 2.17 (no change)
+
+-- DAHDI, dahdi-linux 3.2.0 (no change) and dahdi-tools 3.2.0 (no change)
+
+-- FOP2, available version bump to 2.31.52
+   Note: If you have a license, you may need to purchase an "Annual Software Maintenance" license if you upgrade.
+   More info: https://doc.astlinux-project.org/userdoc:tt_asterisk-fop2-upgrade
+
+** Web Interface
+
+-- Status tab, updated "Show Licenses" information.
+
+-- OpenVPN Server sub-tab, fix generated .ovpn 'remote ...' protocol entry
+
+
+Additions for AstLinux 1.5.15:
+=============================
+
+Released 2026-09-30
+
+** System
+
+-- Linux Kernel 5.10.268-cip77, security and bug fixes.
+
+-- RUNNIX, version bump to runnix-0.6.27, with Linux Kernel 5.10.268-cip77
+
+-- r8125, version 9.018.00, Realtek RTL8125 2.5-Gigabit Ethernet Network Driver
+
+-- acme-client, version 2.9.0, add patch to change default renew to 35 days
+   More info: https://letsencrypt.org/2025/12/02/from-90-to-45
+
+-- expat, version bump to 2.8.4, security fix: CVE-2026-72522, CVE-2026-66046, CVE-2026-76641, CVE-2026-76956, CVE-2026-76957
+
+-- htop, version bump to 3.5.3, security fix: CVE-2024-37676
+
+-- iprange, version bump to 2.1.1, IPv6 fixes
+
+-- jansson, version bump to 2.15.1
+
+-- jitterentropy-rngd, version bump to 1.3.2
+
+-- libpcap, version bump to 1.10.7, security fixes: CVE-2026-0799, CVE-2026-31912, CVE-2026-31911, CVE-2026-6244, CVE-2026-6554, CVE-2026-18313, CVE-2026-18238
+
+-- libxml2, version bump to 2.15.4, security fixes
+
+-- Monit, version bump to 6.0.0
+
+-- pcre2, version bump to 10.48, security fixes
+
+-- php, version 7.2.34, add security fixes: CVE-2026-7568, CVE-2026-14355
+
+-- screen, version 5.0.2, security fixes
+
+-- sqlite, version bump to 3.53.4
+
+-- tiff, version bump to 4.7.2
+
+-- ca-certificates, update trusted root certificates 2026-08-13
+
+-- mac2vendor, oui.txt database snapshot 2026-09-16
+
+-- Time Zone Database update, tzdata2026d and php-timezonedb-2026.4
+
+** Networking
+
+-- OpenSSH, version 8.4p1, security fixes: CVE-2025-61984, CVE-2025-61985, CVE-2026-35388, CVE-2026-35385, CVE-2026-35387, CVE-2026-35414, CVE-2026-35386
+
+-- OpenVPN, version 2.4.12, security fixes: CVE-2026-35058, CVE-2026-40215
+
+-- strongSwan, version 5.5.3, security fixes: CVE-2026-78123, CVE-2026-78124, CVE-2026-78126, CVE-2026-78127, CVE-2026-78129
+                                              CVE-2026-78130, CVE-2026-78131, CVE-2026-78132, CVE-2026-78134
+
+-- libcurl (curl) version 8.17.0, security fixes: CVE-2025-14524, CVE-2025-14819, CVE-2026-1965, CVE-2026-3783, CVE-2026-3784, CVE-2026-4873
+                                                  CVE-2026-5545, CVE-2026-6253, CVE-2026-6429
+   Note: Disable unneeded protocols to lower security footprint. Resulting in, Protocols: file ftp ftps http https tftp
+
+-- chrony, version bump to 4.9
+
+-- keepalived, version bump to 2.4.3
+
+-- msmtp, version bump to 1.8.34
+
+-- rsync, version bump to 3.5.0, security fixes: 33 CVE-2026-nnnnn
+
+-- sngrep, version bump to 1.8.4
+
+-- stunnel, version bump to 5.80, security fixes: CVE-2026-70367, CVE-2026-70368
+
+-- unbound, version bump to 1.26.1, security fixes: 33 CVE-2026-nnnnn
+
+** Asterisk
+
+-- Asterisk 18.26.4 ('18se' no change)
+   Last Asterisk 18.x "Legacy" version, built --without-pjproject and --without-dahdi
+   Backport patches for security fixes
+
+-- Asterisk 20.21.0 (version bump)
+   Built --with-pjproject and --with-dahdi
+   w/pjsip 2.17 (no change)
+
+-- DAHDI, dahdi-linux 3.2.0 (no change) and dahdi-tools 3.2.0 (no change)
+
+** Web Interface
+
+-- (no change)
+
+
+Additions for AstLinux 1.5.14:
+=============================
+
+Released 2026-06-30
 
 ** System
 
@@ -20,7 +178,8 @@ Released @TBD@
 
 -- ethtool, version bump to 6.19
 
--- expat, version bump to 2.8.1, security fixes: CVE-2026-32776, CVE-2026-32777, CVE-2026-32778, CVE-2026-41080, CVE-2026-45186
+-- expat, version bump to 2.8.2, security fixes: CVE-2026-32776, CVE-2026-32777, CVE-2026-32778, CVE-2026-41080, CVE-2026-45186
+                                                 CVE-2026-50219, CVE-2026-56131, CVE-2026-56132, CVE-2026-564[03-12]
 
 -- htop, version bump to 3.5.1
 
@@ -100,8 +259,9 @@ Released @TBD@
 
 -- Asterisk 18.26.4 ('18se' no change)
    Last Asterisk 18.x "Legacy" version, built --without-pjproject and --without-dahdi
+   Backport patches for security fixes: CVE-2026-57188, CVE-2026-57189, CVE-2026-57198, CVE-2026-57194, CVE-2026-57195, CVE-2026-57199
 
--- Asterisk 20.20.0 (version bump)
+-- Asterisk 20.20.1 (version bump)
    Built --with-pjproject and --with-dahdi
    w/pjsip 2.17 (version bump)
    New module: res_cdrel_custom.so
